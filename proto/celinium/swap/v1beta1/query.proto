@@ -1,0 +1,55 @@
+syntax = "proto3";
+package celinium.swap.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "celinium/swap/v1beta1/params.proto";
+
+option go_package = "celinium/x/swap/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  // Params defines a gRPC query method that returns the tokenfactory module's
+  // parameters.
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/celinium/swap/v1beta1/params";
+  }
+
+  rpc PairByTokens(QueryPairByTokensRequest) returns (QueryPairByTokensReponse){
+    option (google.api.http).get = "/celinium/swap/v1beta1/pairByTokens";
+  }
+}
+
+// QueryParamsRequest is the request type for the Query/Params RPC method.
+message QueryParamsRequest {}
+
+// QueryParamsResponse is the response type for the Query/Params RPC method.
+message QueryParamsResponse {
+  // params defines the parameters of the module.
+  Params params = 1 [ (gogoproto.nullable) = false ];
+}
+
+message QueryPairByTokensRequest{
+    string token0 = 1 [ (gogoproto.moretags) = "yaml:\"token0\"" ];
+    string token1 = 2 [ (gogoproto.moretags) = "yaml:\"token1\"" ];
+}
+
+message QueryPairByTokensReponse{
+    string lp_token = 1 [ (gogoproto.moretags) = "yaml:\"lp_token\"" ];
+    string reserve0 = 2 [
+        (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+        (gogoproto.moretags) = "yaml:\"reserve0\"",
+        (gogoproto.nullable) = false
+    ];
+    string reserve1 = 3 [
+        (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+        (gogoproto.moretags) = "yaml:\"reserve1\"",
+        (gogoproto.nullable) = false
+    ];
+    string total_supply = 4 [
+        (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+        (gogoproto.moretags) = "yaml:\"total_supply\"",
+        (gogoproto.nullable) = false
+    ];
+}

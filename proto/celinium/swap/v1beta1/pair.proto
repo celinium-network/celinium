@@ -1,0 +1,26 @@
+syntax = "proto3";
+package celinium.swap.v1beta1;
+
+import "cosmos_proto/cosmos.proto";
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+option go_package = "celinium/x/swap/types";
+
+message Pair {
+    option (gogoproto.equal) = true;
+
+    string account  = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+    
+    cosmos.base.v1beta1.Coin token0 = 2       
+        [(gogoproto.nullable) = false, 
+        (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+    
+    cosmos.base.v1beta1.Coin token1 = 3       
+        [(gogoproto.nullable) = false, 
+        (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+
+    cosmos.base.v1beta1.Coin lp_token = 4       
+        [(gogoproto.nullable) = false, 
+        (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+}
