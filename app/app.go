@@ -514,7 +514,7 @@ func NewApp(
 	ibcFeeModule := ibcfee.NewAppModule(app.IBCFeeKeeper)
 
 	icaModule := ica.NewAppModule(&app.ICAControllerKeeper, &app.ICAHostKeeper)
-	
+
 	icaHostIBCModule := icahost.NewIBCModule(app.ICAHostKeeper)
 	icaHostStack := ibcfee.NewIBCMiddleware(icaHostIBCModule, app.IBCFeeKeeper)
 

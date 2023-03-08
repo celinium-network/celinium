@@ -6,9 +6,11 @@ import "gogoproto/gogo.proto";
 import "cosmos_proto/cosmos.proto";
 import "cosmos/base/v1beta1/coin.proto";
 
+import "celinium/interstaking/delegate.proto";
+
 option go_package = "celinium/x/inter-staking/types";
 
-message DelegationPlan {
+message DelegationStrategy {
     uint32 percentage = 1;
     string validator_address = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];    
 }
@@ -21,18 +23,18 @@ message SourceChainMetadata{
     
     string ibcConnectionId = 2;
     
-    string ibcInterChainAccount = 3;
+    // The inter chain account at control chain
+    string ICAControlAddr = 3;
 
     string stakingDenom = 4;
 
-    repeated DelegationPlan delegate_plan = 5;
+    // The strategy for assigning delegation
+    repeated DelegationStrategy delegate_strategy = 5;
 }
 
-message Validator {
+message SourceChainDelegation {
     option (gogoproto.equal)           = false;
     option (gogoproto.goproto_getters) = false;
 
-    string  validator_address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
-
-    cosmos.base.v1beta1.Coin amount = 2 [(gogoproto.nullable) = false];
+    repeated ICADelegation delegations = 1;
 }

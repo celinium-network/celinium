@@ -52,21 +52,22 @@ This governance process：
 nominate source chain -> nominate source validators -> Wait for a certain amount of delegate amount -> start
 ```
 The metadata info about source chain.
-* SourceChainMetadata `0x11` -> chainId->{ibcClientId, ibcConnectionId, interchainAccount, stakingDenom, []delegatePlan{percentage, validator_address}}
+* SourceChainMetadata `0x11 | SourceChainIdLen(1 byte )| SourceChainId -> ProtocolBuffer(SourceChainMetadata) `
 
-The overall information of the delegation of the source chain.
-* SourceChainDelegation `0x12` -> ChainId-> Valiador{ address, totalDelegateAmount}
+The information of the delegation of the source chain.
+* SourceChainDelegation `0x12 | SourceChainIdLen(1 byte )| SourceChainId -> ProtocolBuffer(ICADelegation)`
 
 ### Delegation
 In a block, the chain may receive multiple delegation/undelegation transactions, and these transactions are all to be called across the chain. Because these delegations are handled uniformly through Chain’s inter-chain accounts. So we can store it first, and then process them after merging at `EndBlock`.
-* Delegate Tasks `0x30` -> chainId->[]DelegateTask{[]valiators{address,deom, amount}}  
-* UnDelegateTask `0x31` -> chainId->[]UnDelegateTask{{}valiators{address, deom, amount}} 
+* Delegation: `0x21 | DelegatorAddrLen(1 byte) | DelegatorAddr | -> ProtocolBuffer(UserDelegation)`
+* DelegationTaskQueue `0x22 | blockHeight -> ProtocolBuffer([]DelegationTask)`
+* UndelegationTaskQueue `0x23 |blockHeight -> ProtocolBuffer([]UnDelegationTask)` 
 
 ### Distribution
 Each cross-chain undelegation will cause the inter-chain account to automatically receive the staking and rewards tokens after the end of the source chain unbound period. Then at this time, these tokens need to be distributed to the batch of users who trigger the undelegation.
 In `EndBlock`, take out the Undelegation that has reached the time requirement, and distribute the tokens.
 
-* DestributeTask `0x41`-> competetime->chainId->{valiator_address, user_address, amount}
+* DestributeQueue `0x31 | format(time) | SourceChainIdLen(1 byte )| SourceChainId | DelegatorAddrLen(1 byte) | DelegatorAddr | -> nil`
 
 ## State Transaction
 

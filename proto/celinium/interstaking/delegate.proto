@@ -9,12 +9,29 @@ import "cosmos/base/v1beta1/coin.proto";
 
 option go_package = "celinium/x/inter-staking/types";
 
-message Delegation {
+message ICADelegation {
     string  validator_address     = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
-    cosmos.base.v1beta1.Coin amount = 2 [(gogoproto.nullable) = false];   
+    cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false];   
 }
 
 message UnDelegation {
     string  validator_address     = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
     cosmos.base.v1beta1.Coin amount = 2 [(gogoproto.nullable) = false];   
+}
+
+message UserDelegation {
+    string chain_id = 1;
+    cosmos.base.v1beta1.Coin amount = 2 [(gogoproto.nullable) = false];   
+}
+
+
+
+message DelegationTask {
+    string chain_id = 1;
+    string delegator    = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+    cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false];   
+}
+
+message DelegationTasks{
+    repeated DelegationTask delegation_tasks = 1 [(gogoproto.nullable) = false];;
 }

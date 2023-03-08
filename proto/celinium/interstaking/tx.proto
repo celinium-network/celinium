@@ -33,7 +33,10 @@ message MsgAddSourceChain{
     string version = 3;
     string stakingDenom = 4;
 
-    repeated DelegationPlan delegate_plan = 5;
+    repeated DelegationStrategy delegate_strategy = 5;
+
+    // authority is the address that controls the module (defaults to x/gov unless overwritten).
+    string authority = 6 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 }
 
 message MsgAddSourceChainResponse {
@@ -49,7 +52,10 @@ message MsgUpdateSourceChainDelegatePlan {
 
     string chain_id = 1;
 
-    repeated DelegationPlan new_plan = 2;
+    repeated DelegationStrategy delegate_strategy = 2;
+
+    // authority is the address that controls the module (defaults to x/gov unless overwritten).
+    string authority = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 }
 
 message MsgUpdateSourceChainDelegatePlanResponse {}
@@ -60,7 +66,7 @@ message MsgDelegate{
 
     string chain_id = 1;
 
-    cosmos.base.v1beta1.Coin amount = 2 [(gogoproto.nullable) = false];   
+    cosmos.base.v1beta1.Coin Coin = 2 [(gogoproto.nullable) = false];   
 
     string signer = 3;
 }
