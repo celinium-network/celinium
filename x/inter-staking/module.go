@@ -122,7 +122,7 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 
 // Route implements module.AppModule
 func (AppModule) Route() sdk.Route {
-	panic("unimplemented")
+	return sdk.Route{}
 }
 
 // EndBlock implements module.EndBlockAppModule

@@ -6,7 +6,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
 	"celinium/x/inter-staking/types"
 )
@@ -27,9 +26,9 @@ func (m msgServer) AddSourceChain(goCtx context.Context, msg *types.MsgAddSource
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// check singer
-	if msg.Authority != m.Keeper.authority {
-		return nil, sdkerrors.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", m.authority, msg.Authority)
-	}
+	// if msg.Authority != m.Keeper.authority {
+	// 	return nil, sdkerrors.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", m.authority, msg.Authority)
+	// }
 
 	if len(msg.DelegateStrategy) == 0 {
 		return nil, sdkerrors.Wrapf(types.ErrMismatchParameter, "the delegate plan should be set")

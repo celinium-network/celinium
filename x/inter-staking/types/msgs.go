@@ -7,7 +7,9 @@ import (
 
 var (
 	_ sdk.Msg = &MsgAddSourceChain{}
+	_ sdk.Msg = &MsgUpdateSourceChainDelegatePlan{}
 	_ sdk.Msg = &MsgDelegate{}
+	_ sdk.Msg = &MsgUnDelegate{}
 )
 
 func NewMsgAddSourceChain(
@@ -66,4 +68,49 @@ func (msg MsgDelegate) GetSigners() []sdk.AccAddress {
 	}
 
 	return []sdk.AccAddress{accAddr}
+}
+
+// GetSigners implements types.Msg
+func (msg *MsgUnDelegate) GetSigners() []types.AccAddress {
+	accAddr, err := sdk.AccAddressFromBech32(msg.Signer)
+	if err != nil {
+		panic(err)
+	}
+
+	return []sdk.AccAddress{accAddr}
+}
+
+// ValidateBasic implements types.Msg
+func (*MsgUnDelegate) ValidateBasic() error {
+	return nil
+}
+
+// GetSigners implements types.Msg
+func (msg *MsgUpdateSourceChainDelegatePlan) GetSigners() []types.AccAddress {
+	accAddr, err := sdk.AccAddressFromBech32(msg.Authority)
+	if err != nil {
+		panic(err)
+	}
+
+	return []sdk.AccAddress{accAddr}
+}
+
+// ValidateBasic implements types.Msg
+func (*MsgUpdateSourceChainDelegatePlan) ValidateBasic() error {
+	return nil
+}
+
+// GetSigners implements types.Msg
+func (msg *MsgNotifyUnDelegationDone) GetSigners() []types.AccAddress {
+	accAddr, err := sdk.AccAddressFromBech32(msg.Signer)
+	if err != nil {
+		panic(err)
+	}
+
+	return []sdk.AccAddress{accAddr}
+}
+
+// ValidateBasic implements types.Msg
+func (*MsgNotifyUnDelegationDone) ValidateBasic() error {
+	return nil
 }
