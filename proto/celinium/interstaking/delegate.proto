@@ -20,18 +20,21 @@ message UnDelegation {
 }
 
 message UserDelegation {
-    string chain_id = 1;
     cosmos.base.v1beta1.Coin amount = 2 [(gogoproto.nullable) = false];   
 }
-
-
 
 message DelegationTask {
     string chain_id = 1;
     string delegator    = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
-    cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false];   
+    cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false];
+    // Mark when the task is complete
+    // In the process of using IBC for cross-chain communication, the seqence of 
+    // the channel is used as a signal to obtain the communication progress.
+    // When the corresponding Sequence is obtained in the ACK of the communication process, 
+    // it means that the peer end has completed the processing, and the task can advance to the next stage.
+    uint64 done_singal = 4;  
 }
 
 message DelegationTasks{
-    repeated DelegationTask delegation_tasks = 1 [(gogoproto.nullable) = false];;
+    repeated DelegationTask delegation_tasks = 1 [(gogoproto.nullable) = false];
 }

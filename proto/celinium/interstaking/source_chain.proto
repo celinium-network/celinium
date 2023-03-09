@@ -29,7 +29,7 @@ message SourceChainMetadata{
     string stakingDenom = 4;
 
     // The strategy for assigning delegation
-    repeated DelegationStrategy delegate_strategy = 5;
+    repeated DelegationStrategy delegate_strategy = 5 [(gogoproto.nullable) = false];
 }
 
 message SourceChainDelegation {

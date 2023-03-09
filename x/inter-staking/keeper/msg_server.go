@@ -17,7 +17,7 @@ type msgServer struct {
 	*Keeper
 }
 
-// NewMsgServerImpl creates and returns a new types.MsgServer, fulfilling the intertx Msg service interface
+// NewMsgServerImpl creates and returns a new types.MsgServer, fulfilling the interstaking Msg service interface
 func NewMsgServerImpl(keeper *Keeper) types.MsgServer {
 	return &msgServer{Keeper: keeper}
 }
@@ -53,7 +53,7 @@ func (m msgServer) AddSourceChain(goCtx context.Context, msg *types.MsgAddSource
 	sourceChainMetaData := types.SourceChainMetadata{
 		IbcClientId:      msg.ChainId,
 		IbcConnectionId:  msg.ConnectionId,
-		ICAControl:       icaCtladdr,
+		ICAControlAddr:   icaCtladdr,
 		StakingDenom:     msg.StakingDenom,
 		DelegateStrategy: msg.DelegateStrategy,
 	}
@@ -89,17 +89,17 @@ func (m msgServer) Delegate(goCtx context.Context, msg *types.MsgDelegate) (*typ
 			msg.ChainId, sourceChainMetadata.StakingDenom, msg.Coin.Denom)
 	}
 
-	if err := m.SendCoinsFromDelegatorToICA(ctx, msg.Signer, sourceChainMetadata.ICAControlAddr, sdk.Coins{msg.Coin}); err != nil {
+	if err := m.SendCoinsFromDelegatorToICA(ctx, msg.Delegator, sourceChainMetadata.ICAControlAddr, sdk.Coins{msg.Coin}); err != nil {
 		return nil, err
 	}
 
 	newDelegationTask := types.DelegationTask{
 		ChainId:   msg.ChainId,
-		Delegator: msg.Signer,
+		Delegator: msg.Delegator,
 		Amount:    msg.Coin,
 	}
 
-	m.PushDelegationTaskQueue(&ctx, &newDelegationTask)
+	m.PushDelegationTaskQueue(&ctx, types.PendingDelegationQueueKey, &newDelegationTask)
 
 	// Emit Event
 	return &types.MsgDelegateResponse{}, nil

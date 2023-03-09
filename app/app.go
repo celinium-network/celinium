@@ -128,9 +128,9 @@ import (
 	icahosttypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/host/types"
 	icatypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/types"
 
-	intertx "celinium/x/inter-tx"
-	intertxkeeper "celinium/x/inter-tx/keeper"
-	intertxtypes "celinium/x/inter-tx/types"
+	interstaking "celinium/x/inter-staking"
+	interstakingkeeper "celinium/x/inter-staking/keeper"
+	interstakingtypes "celinium/x/inter-staking/types"
 
 	appparams "celinium/app/params"
 )
@@ -183,8 +183,8 @@ var (
 		transfer.AppModuleBasic{},
 		ica.AppModuleBasic{},
 		vesting.AppModuleBasic{},
-		intertx.AppModuleBasic{},
 		ibcfee.AppModuleBasic{},
+		interstaking.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -249,9 +249,9 @@ type App struct {
 	EvidenceKeeper      evidencekeeper.Keeper
 	TransferKeeper      ibctransferkeeper.Keeper
 	ICAHostKeeper       icahostkeeper.Keeper
-	InterTxKeeper       intertxkeeper.Keeper
 	ICAControllerKeeper icacontrollerkeeper.Keeper
 	IBCFeeKeeper        ibcfeekeeper.Keeper
+	InterStakingKeeper  interstakingkeeper.Keeper
 
 	FeeGrantKeeper feegrantkeeper.Keeper
 	GroupKeeper    groupkeeper.Keeper
@@ -304,8 +304,8 @@ func NewApp(
 		paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey, feegrant.StoreKey, evidencetypes.StoreKey,
 		ibctransfertypes.StoreKey, icahosttypes.StoreKey, capabilitytypes.StoreKey, group.StoreKey,
 		icacontrollertypes.StoreKey,
-		intertxtypes.StoreKey,
 		ibcfeetypes.StoreKey,
+		interstakingtypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -455,7 +455,7 @@ func NewApp(
 	scopedICAControllerKeeper := app.CapabilityKeeper.ScopeToModule(icacontrollertypes.SubModuleName)
 	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
 	scopedICAHostKeeper := app.CapabilityKeeper.ScopeToModule(icahosttypes.SubModuleName)
-	scopedInterTxKeeper := app.CapabilityKeeper.ScopeToModule(intertxtypes.ModuleName)
+	// scopedInterStakingKeeper := app.CapabilityKeeper.ScopeToModule(interstakingtypes.ModuleName)
 
 	// Sealing prevents other modules from creating scoped sub-keepers
 	app.CapabilityKeeper.Seal()
@@ -518,18 +518,26 @@ func NewApp(
 	icaHostIBCModule := icahost.NewIBCModule(app.ICAHostKeeper)
 	icaHostStack := ibcfee.NewIBCMiddleware(icaHostIBCModule, app.IBCFeeKeeper)
 
-	app.InterTxKeeper = intertxkeeper.NewKeeper(appCodec, keys[intertxtypes.StoreKey], app.ICAControllerKeeper, scopedInterTxKeeper)
-	interTxModule := intertx.NewAppModule(appCodec, app.InterTxKeeper)
-	interTxIBCModule := intertx.NewIBCModule(app.InterTxKeeper)
+	app.InterStakingKeeper = interstakingkeeper.NewKeeper(
+		appCodec,
+		keys[interstakingtypes.StoreKey],
+		"",
+		app.AccountKeeper,
+		app.BankKeeper,
+		app.ICAControllerKeeper,
+	)
 
-	icaControllerIBCModule := icacontroller.NewIBCMiddleware(interTxIBCModule, app.ICAControllerKeeper)
-	icaControllerStack := ibcfee.NewIBCMiddleware(icaControllerIBCModule, app.IBCFeeKeeper)
+	interStakingModule := interstaking.NewAppModule(appCodec, app.InterStakingKeeper)
+	interStakingIBCModule := interstaking.NewIBCModule(app.InterStakingKeeper)
+
+	icaControllerStakingIBCModule := icacontroller.NewIBCMiddleware(interStakingIBCModule, app.ICAControllerKeeper)
+	icaControllerStack := ibcfee.NewIBCMiddleware(icaControllerStakingIBCModule, app.IBCFeeKeeper)
 
 	ibcRouter := ibcporttypes.NewRouter()
 	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostStack).
 		AddRoute(icacontrollertypes.SubModuleName, icaControllerStack).
 		AddRoute(ibctransfertypes.ModuleName, transferIBCModule).
-		AddRoute(intertxtypes.ModuleName, icaControllerStack)
+		AddRoute(interstakingtypes.ModuleName, icaControllerStack)
 
 	app.IBCKeeper.SetRouter(ibcRouter)
 
@@ -584,7 +592,7 @@ func NewApp(
 		params.NewAppModule(app.ParamsKeeper),
 		transferModule,
 		icaModule,
-		interTxModule,
+		interStakingModule,
 		ibcFeeModule,
 	)
 
@@ -610,7 +618,7 @@ func NewApp(
 		paramstypes.ModuleName,
 		vestingtypes.ModuleName,
 		ibcfeetypes.ModuleName,
-		intertxtypes.ModuleName,
+		interstakingtypes.ModuleName,
 	)
 
 	app.mm.SetOrderEndBlockers(
@@ -635,7 +643,7 @@ func NewApp(
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		ibcfeetypes.ModuleName,
-		intertxtypes.ModuleName,
+		interstakingtypes.ModuleName,
 	)
 
 	app.mm.SetOrderInitGenesis(
@@ -660,7 +668,7 @@ func NewApp(
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		ibcfeetypes.ModuleName,
-		intertxtypes.ModuleName,
+		interstakingtypes.ModuleName,
 	)
 
 	app.mm.RegisterInvariants(&app.CrisisKeeper)

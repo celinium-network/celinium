@@ -20,6 +20,24 @@ type Keeper struct {
 	icaControllerKeeper icacontrollerkeeper.Keeper
 }
 
+func NewKeeper(
+	cdc codec.Codec,
+	storeKey storetypes.StoreKey,
+	authority string,
+	accountKeeper types.AccountKeeper,
+	bankKeeper types.BankKeeper,
+	icaControllerKeeper icacontrollerkeeper.Keeper,
+) Keeper {
+	return Keeper{
+		storeKey:            storeKey,
+		cdc:                 cdc,
+		authority:           authority,
+		accountKeeper:       accountKeeper,
+		bankKeeper:          bankKeeper,
+		icaControllerKeeper: icaControllerKeeper,
+	}
+}
+
 func (k Keeper) SetSourceChain(ctx sdk.Context, chainID string, sourceChainMetadata *types.SourceChainMetadata) {
 	store := ctx.KVStore(k.storeKey)
 
@@ -74,21 +92,21 @@ func (k Keeper) GetSourceChainDelegation(ctx sdk.Context, chainID string) (deleg
 	return delegation, true
 }
 
-func (k Keeper) PushDelegationTaskQueue(ctx *sdk.Context, delegationTask *types.DelegationTask) {
-	tasks := k.GetDelegationQueueSlice(ctx, uint64(ctx.BlockHeight()))
+func (k Keeper) PushDelegationTaskQueue(ctx *sdk.Context, queueKey []byte, delegationTask *types.DelegationTask) {
+	tasks := k.GetDelegationQueueSlice(ctx, queueKey, uint64(ctx.BlockHeight()))
 
 	height := uint64(ctx.BlockHeight())
 	if len(tasks) == 0 {
-		k.SetDelegationQueueSlice(ctx, []types.DelegationTask{*delegationTask}, height)
+		k.SetDelegationQueueSlice(ctx, queueKey, []types.DelegationTask{*delegationTask}, height)
 	} else {
 		tasks = append(tasks, *delegationTask)
-		k.SetDelegationQueueSlice(ctx, tasks, height)
+		k.SetDelegationQueueSlice(ctx, queueKey, tasks, height)
 	}
 }
 
-func (k Keeper) GetDelegationQueueSlice(ctx *sdk.Context, height uint64) []types.DelegationTask {
+func (k Keeper) GetDelegationQueueSlice(ctx *sdk.Context, queueKey []byte, height uint64) []types.DelegationTask {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.GetDelegateQueueKey(height))
+	bz := store.Get(types.GetDelegateQueueKey(queueKey, height))
 
 	if bz == nil {
 		return []types.DelegationTask{}
@@ -100,8 +118,8 @@ func (k Keeper) GetDelegationQueueSlice(ctx *sdk.Context, height uint64) []types
 	return tasks.DelegationTasks
 }
 
-func (k Keeper) SetDelegationQueueSlice(ctx *sdk.Context, tasks []types.DelegationTask, height uint64) {
+func (k Keeper) SetDelegationQueueSlice(ctx *sdk.Context, queueKey []byte, tasks []types.DelegationTask, height uint64) {
 	store := ctx.KVStore(k.storeKey)
 	bz := k.cdc.MustMarshal(&types.DelegationTasks{DelegationTasks: tasks})
-	store.Set(types.GetDelegateQueueKey(height), bz)
+	store.Set(types.GetDelegateQueueKey(queueKey, height), bz)
 }

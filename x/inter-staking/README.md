@@ -16,8 +16,8 @@ One solution to this problem is to reuse a POS system of a well-functioning chai
                                   |                                       |
                                   |   2. Receive TokenA at ChainB         |
                                   |                                       |
-                                  |   3.Transfer TokenA to ChainB's       |
-                                  |     interchain account at ChainA      |
+                                  |   3. Transfer TokenA to ChainB's      |
+                                  |     interchain account at ChainB -----|->(hook actions: transfer )     
                                   |                                       |
                                   |   4. Mint BTokenA (1:1 ratio)         |
                                   |      to UserA account at ChainB       |
@@ -59,7 +59,7 @@ The information of the delegation of the source chain.
 
 ### Delegation
 In a block, the chain may receive multiple delegation/undelegation transactions, and these transactions are all to be called across the chain. Because these delegations are handled uniformly through Chain’s inter-chain accounts. So we can store it first, and then process them after merging at `EndBlock`.
-* Delegation: `0x21 | DelegatorAddrLen(1 byte) | DelegatorAddr | -> ProtocolBuffer(UserDelegation)`
+* Delegation: `0x21 | DelegatorAddrLen(1 byte) | DelegatorAddr | SourceChainIdLen(1 byte )| SourceChainId -> ProtocolBuffer(UserDelegation)`
 * DelegationTaskQueue `0x22 | blockHeight -> ProtocolBuffer([]DelegationTask)`
 * UndelegationTaskQueue `0x23 |blockHeight -> ProtocolBuffer([]UnDelegationTask)` 
 
@@ -77,11 +77,17 @@ Every delegate/undelegate will change `SourceChainDelegation`.
 
 At the same time, the staking strategy on the source chain can be changed through governance. Including the selection of the source chain validator to obtain the proportion of user staking.
 
-### Delegate/Undelegate
-Delegate/Undelegate is a cross chain transaction, trigger Hook on success response.
-The related tasks can only be terminated when they receive a successful reply from the cross-chain transaction.
-If a failed reply is received, the token should be refund.
-Every terminated undelegate task will generate a distribution task.
+### Delegate
+When the user initiates the delegation, his assets are on the upper Control at this time, the whole delegation process is like this:
+```
+a. Transfer source chain native token to ICA, then a delegation task push into pending task queue.
+b. ICA begin transfer source chain native token back, then move the delegation task in preparing task queue.
+c. Control chain receive transfer successful signal, move the delegation to preparing queue.
+d. ICA begin staking in source chain, then move then delegation task from preparing queue to ongoing queue.
+e. Control chain receive staking successful signal, move the delegation from ongoingqueue, store delegator's info.
+```
+
+### Undelegate
 
 ### Distribution
 Only after the source chain completes undelegate, the control chain can get back the principal and rewards. Obviously the control chain itself cannot receive this signal. Then the relayer must be used to pass some information and proofs to complete the process.
