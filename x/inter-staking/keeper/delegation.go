@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"strings"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
@@ -8,6 +9,7 @@ import (
 	"cosmossdk.io/math"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	icatypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/types"
@@ -15,6 +17,38 @@ import (
 
 	"celinium/x/inter-staking/types"
 )
+
+func (k Keeper) Delegate(ctx sdk.Context, chainID string, coin sdk.Coin, delegator string) error {
+	sourceChainMetadata, found := k.GetSourceChain(ctx, chainID)
+	if !found {
+		return sdkerrors.Wrapf(types.ErrUnknownSourceChain, "chainID: %s", chainID)
+	}
+
+	// check wheather the ica of source chain in control endpoint is available.
+	if !k.SourceChainAvaiable(ctx, sourceChainMetadata.IbcConnectionId, sourceChainMetadata.ICAControlAddr) {
+		return sdkerrors.Wrapf(types.ErrUnknownSourceChain, "chainID: %s", chainID)
+	}
+
+	// Check wheather the coin is the native token of the source chain.
+	if strings.Compare(coin.Denom, sourceChainMetadata.StakingDenom) != 0 {
+		return sdkerrors.Wrapf(types.ErrMismatchSourceCoin, "chainID: %s, expected: %s, get:",
+			chainID, sourceChainMetadata.StakingDenom, coin.Denom)
+	}
+
+	if err := k.SendCoinsFromDelegatorToICA(ctx, delegator, sourceChainMetadata.ICAControlAddr, sdk.Coins{coin}); err != nil {
+		return err
+	}
+
+	newDelegationTask := types.DelegationTask{
+		ChainId:   chainID,
+		Delegator: delegator,
+		Amount:    coin,
+	}
+
+	k.PushDelegationTaskQueue(&ctx, types.PendingDelegationQueueKey, &newDelegationTask)
+
+	return nil
+}
 
 func (k Keeper) SendCoinsFromDelegatorToICA(ctx sdk.Context, delegatorAddr string, icaCtlAddr string, coins sdk.Coins) error {
 	delegatorAccount := sdk.MustAccAddressFromBech32(delegatorAddr)

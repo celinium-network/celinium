@@ -36,5 +36,5 @@ func GenerateSourceChainControlAccount(ctx sdk.Context, chainID string, connecti
 	buf = append(buf, header.AppHash...)
 	buf = append(buf, header.DataHash...)
 
-	return authtypes.NewEmptyModuleAccount(string(buf), "")
+	return authtypes.NewEmptyModuleAccount(string(buf), authtypes.Staking)
 }
