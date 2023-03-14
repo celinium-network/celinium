@@ -16,17 +16,19 @@ func NewMsgAddSourceChain(
 	chainID string,
 	connectionID string,
 	version string,
-	stakingDenom string,
+	sourceChainDenom string,
+	sourceChainTraceDenom string,
 	strategy []DelegationStrategy,
 	authority string,
 ) *MsgAddSourceChain {
 	return &MsgAddSourceChain{
-		ChainId:          chainID,
-		ConnectionId:     connectionID,
-		Version:          version,
-		StakingDenom:     stakingDenom,
-		DelegateStrategy: strategy,
-		Authority:        authority,
+		ChainId:               chainID,
+		ConnectionId:          connectionID,
+		Version:               version,
+		SourceChainDenom:      sourceChainDenom,
+		SourceChainTraceDenom: sourceChainTraceDenom,
+		DelegateStrategy:      strategy,
+		Authority:             authority,
 	}
 }
 

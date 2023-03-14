@@ -26,10 +26,12 @@ message SourceChainMetadata{
     // The inter chain account at control chain
     string ICAControlAddr = 3;
 
-    string stakingDenom = 4;
+    string sourceChainDenom = 4;
+
+    string sourceChainTraceDenom = 5;
 
     // The strategy for assigning delegation
-    repeated DelegationStrategy delegate_strategy = 5 [(gogoproto.nullable) = false];
+    repeated DelegationStrategy delegate_strategy = 6 [(gogoproto.nullable) = false];
 }
 
 message SourceChainDelegation {

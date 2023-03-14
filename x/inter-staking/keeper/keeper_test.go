@@ -2,25 +2,25 @@ package keeper_test
 
 import (
 	"encoding/json"
-	"fmt"
 	"testing"
+	"time"
 
-	"cosmossdk.io/math"
+	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	icatypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/types"
 	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
 	ibccommitmenttypes "github.com/cosmos/ibc-go/v6/modules/core/23-commitment/types"
 	ibchost "github.com/cosmos/ibc-go/v6/modules/core/24-host"
-
 	ibctesting "github.com/cosmos/ibc-go/v6/testing"
 
 	icaapp "celinium/app"
@@ -107,13 +107,14 @@ func (suite *KeeperTestSuite) TestDelegate() {
 	// suite.CrossChainTransferBack(traceCoin, controlChainUserAddress, sourceChainUserAddress)
 	controlChainApp := GetLocalApp(suite.controlChain)
 	controlChainApp.InterStakingKeeper.Delegate(suite.controlChain.GetContext(), suite.sourceChain.ChainID, traceCoin, controlChainUserAddress.String())
+	delegateTimeoutTimestamp := suite.controlChain.GetContext().BlockTime().Add(time.Minute).UnixNano()
+
 	suite.transferPath.EndpointA.UpdateClient()
 	suite.transferPath.EndpointA.UpdateClient()
 
 	/*** relay transfer msg **/
 	backCommitKey := ibchost.PacketCommitmentKey(suite.transferPath.EndpointB.ChannelConfig.PortID, suite.transferPath.EndpointB.ChannelID, 1)
 	backproof, backheight := suite.controlChain.QueryProof(backCommitKey)
-	fmt.Println(backproof, backheight)
 	backProofType := ibccommitmenttypes.MerkleProof{}
 	backProofType.Unmarshal(backproof)
 
@@ -157,9 +158,66 @@ func (suite *KeeperTestSuite) TestDelegate() {
 	// check balance
 	afrerResp, err := sourceChainApp.BankKeeper.Balance(suite.sourceChain.GetContext(), banktypes.NewQueryBalanceRequest(sdk.MustAccAddressFromBech32(hostAddr), coin.Denom))
 	suite.Require().NoError(err)
-	suite.Equal(afrerResp.Balance.Amount.Sub(beforeResp.Balance.Amount), packetData.Amount)
+	suite.Equal(afrerResp.Balance.Amount.Sub(beforeResp.Balance.Amount).String(), packetData.Amount)
 
-	// relay staking tx
+	/*** relay staking tx after transfer ***/
+	// In fact, the relayer should assemble the transfer back tx and
+	// staking tx into an sdk.Msg array and send it through a transaction.
+	suite.interStakingPath.EndpointA.UpdateClient()
+	suite.interStakingPath.EndpointA.UpdateClient()
+
+	stakingMsgs := make([]proto.Message, 0)
+
+	valAddress, err := sdk.ValAddressFromBech32(sourceChainMetadata.DelegateStrategy[0].ValidatorAddress)
+	suite.Require().NoError(err)
+
+	stakingMsgs = append(stakingMsgs, stakingtypes.NewMsgDelegate(
+		sdk.MustAccAddressFromBech32(hostAddr),
+		valAddress,
+		coin,
+	))
+
+	data, err := icatypes.SerializeCosmosTx(controlChainApp.AppCodec(), stakingMsgs)
+	suite.Require().NoError(err)
+
+	icaPacket := icatypes.InterchainAccountPacketData{
+		Type: icatypes.EXECUTE_TX,
+		Data: data,
+	}
+
+	icaChannelPacket := channeltypes.Packet{
+		Sequence:           1,
+		SourcePort:         suite.interStakingPath.EndpointB.ChannelConfig.PortID,
+		SourceChannel:      suite.interStakingPath.EndpointB.ChannelID,
+		DestinationPort:    suite.interStakingPath.EndpointA.ChannelConfig.PortID,
+		DestinationChannel: suite.interStakingPath.EndpointA.ChannelID,
+		Data:               icaPacket.GetBytes(),
+		TimeoutHeight:      clienttypes.ZeroHeight(),
+		TimeoutTimestamp:   uint64(delegateTimeoutTimestamp),
+	}
+
+	icaCommitKey := ibchost.PacketCommitmentKey(suite.interStakingPath.EndpointB.ChannelConfig.PortID, suite.interStakingPath.EndpointB.ChannelID, 1)
+	icaproof, icaheight := suite.controlChain.QueryProof(icaCommitKey)
+	icaProofType := ibccommitmenttypes.MerkleProof{}
+	icaProofType.Unmarshal(icaproof)
+
+	icaMsgRecvPacket := channeltypes.MsgRecvPacket{
+		Packet:          icaChannelPacket,
+		ProofCommitment: icaproof,
+		ProofHeight:     icaheight,
+		Signer:          controlChainUserAddress.String(),
+	}
+
+	_, found := sourceChainApp.StakingKeeper.GetDelegation(suite.sourceChain.GetContext(), sdk.MustAccAddressFromBech32(hostAddr), valAddress)
+	suite.Require().False(found)
+
+	_, err = sourceChainApp.IBCKeeper.RecvPacket(suite.sourceChain.GetContext(), &icaMsgRecvPacket)
+	suite.Require().NoError(err)
+	// check delegations of hostAddr
+
+	_, found = sourceChainApp.StakingKeeper.GetDelegation(suite.sourceChain.GetContext(), sdk.MustAccAddressFromBech32(hostAddr), valAddress)
+	suite.Require().True(found)
+	// how check shares of delegation
 }
 
 func mintCoin(chain *ibctesting.TestChain, to sdk.AccAddress, coin sdk.Coin) {
@@ -334,7 +392,7 @@ func SetupInterStakingPath(path *ibctesting.Path, traceCoinDenom string) error {
 	strategy := []types.DelegationStrategy{
 		{
 			Percentage:       100,
-			ValidatorAddress: chainA.Vals.Validators[0].Address.String(),
+			ValidatorAddress: sdk.ValAddress(chainA.Vals.Validators[0].Address).String(),
 		},
 	}
 
@@ -347,6 +405,7 @@ func SetupInterStakingPath(path *ibctesting.Path, traceCoinDenom string) error {
 		AddSourceChain(
 			chainB.GetContext(),
 			strategy,
+			params.DefaultBondDenom,
 			traceCoinDenom,
 			chainA.ChainID,
 			path.EndpointB.ConnectionID,

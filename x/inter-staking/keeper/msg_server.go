@@ -28,7 +28,7 @@ func (m msgServer) AddSourceChain(goCtx context.Context, msg *types.MsgAddSource
 	// 	return nil, sdkerrors.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", m.authority, msg.Authority)
 	// }
 
-	icaCtlAddr, err := m.Keeper.AddSourceChain(ctx, msg.DelegateStrategy, msg.StakingDenom, msg.ChainId, msg.ConnectionId, msg.Version)
+	icaCtlAddr, err := m.Keeper.AddSourceChain(ctx, msg.DelegateStrategy, msg.SourceChainDenom, msg.SourceChainTraceDenom, msg.ChainId, msg.ConnectionId, msg.Version)
 	if err != nil {
 		return nil, err
 	}

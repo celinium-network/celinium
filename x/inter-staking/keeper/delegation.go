@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -33,9 +32,9 @@ func (k Keeper) Delegate(ctx sdk.Context, chainID string, coin sdk.Coin, delegat
 	}
 
 	// Check wheather the coin is the native token of the source chain.
-	if strings.Compare(coin.Denom, sourceChainMetadata.StakingDenom) != 0 {
+	if strings.Compare(coin.Denom, sourceChainMetadata.SourceChainTraceDenom) != 0 {
 		return sdkerrors.Wrapf(types.ErrMismatchSourceCoin, "chainID: %s, expected: %s, get:",
-			chainID, sourceChainMetadata.StakingDenom, coin.Denom)
+			chainID, sourceChainMetadata.SourceChainTraceDenom, coin.Denom)
 	}
 
 	if err := k.SendCoinsFromDelegatorToICA(ctx, delegator, sourceChainMetadata.ICAControlAddr, sdk.Coins{coin}); err != nil {
@@ -123,6 +122,7 @@ func (k Keeper) ProcessPendingDelegationTask(ctx sdk.Context, maxTask int32) err
 		stragegyLen := len(metadata.DelegateStrategy)
 
 		hostAddr, _ := k.icaControllerKeeper.GetInterchainAccountAddress(ctx, metadata.IbcConnectionId, portID)
+		hostAddress := sdk.MustAccAddressFromBech32(hostAddr)
 
 		totalCoin := chainDelegation[chainID]
 
@@ -131,7 +131,7 @@ func (k Keeper) ProcessPendingDelegationTask(ctx sdk.Context, maxTask int32) err
 		transferMsg := transfertypes.NewMsgTransfer(
 			transfertypes.PortID,
 			"channel-0",
-			sdk.NewCoin(metadata.StakingDenom, totalCoin.Amount),
+			sdk.NewCoin(metadata.SourceChainTraceDenom, totalCoin.Amount),
 			metadata.ICAControlAddr,
 			hostAddr,
 			clienttypes.NewHeight(0, 10000),
@@ -139,8 +139,7 @@ func (k Keeper) ProcessPendingDelegationTask(ctx sdk.Context, maxTask int32) err
 			"",
 		)
 
-		resp, err := k.ibcTransferKeeper.Transfer(ctx, transferMsg)
-		fmt.Println(resp, err)
+		k.ibcTransferKeeper.Transfer(ctx, transferMsg)
 
 		stakingMsgs := make([]proto.Message, 0)
 
@@ -150,18 +149,28 @@ func (k Keeper) ProcessPendingDelegationTask(ctx sdk.Context, maxTask int32) err
 			stakingAmount := totalCoin.Amount.Mul(percentage).BigInt()
 			stakingAmount.Div(stakingAmount, types.PercentageDenominator.BigInt())
 			usedAmount.Add(math.NewIntFromBigInt(stakingAmount))
+
+			valAddress, err := sdk.ValAddressFromBech32(metadata.DelegateStrategy[i].ValidatorAddress)
+			if err != nil {
+				return err
+			}
+
 			stakingMsgs = append(stakingMsgs, stakingtypes.NewMsgDelegate(
-				sdk.AccAddress(metadata.ICAControlAddr),
-				sdk.ValAddress(metadata.DelegateStrategy[i].ValidatorAddress),
-				sdk.NewCoin(totalCoin.Denom, math.NewIntFromBigInt(stakingAmount)),
+				hostAddress,
+				valAddress,
+				sdk.NewCoin(metadata.SourceChainDenom, math.NewIntFromBigInt(stakingAmount)),
 			))
 		}
 
 		if !usedAmount.Equal(totalCoin.Amount) {
+			valAddress, err := sdk.ValAddressFromBech32(metadata.DelegateStrategy[stragegyLen-1].ValidatorAddress)
+			if err != nil {
+				return err
+			}
 			stakingMsgs = append(stakingMsgs, stakingtypes.NewMsgDelegate(
-				sdk.AccAddress(metadata.ICAControlAddr),
-				sdk.ValAddress(metadata.DelegateStrategy[stragegyLen-1].ValidatorAddress),
-				sdk.NewCoin(totalCoin.Denom, totalCoin.Amount.Sub(usedAmount)),
+				hostAddress,
+				valAddress,
+				sdk.NewCoin(metadata.SourceChainDenom, totalCoin.Amount.Sub(usedAmount)),
 			))
 		}
 
