@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -13,6 +14,8 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	icatypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/types"
+	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
+	clienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
 
 	"celinium/x/inter-staking/types"
@@ -118,9 +121,29 @@ func (k Keeper) ProcessPendingDelegationTask(ctx sdk.Context, maxTask int32) err
 		portID, _ := icatypes.NewControllerPortID(metadata.ICAControlAddr)
 
 		stragegyLen := len(metadata.DelegateStrategy)
-		stakingMsgs := make([]proto.Message, 0)
+
+		hostAddr, _ := k.icaControllerKeeper.GetInterchainAccountAddress(ctx, metadata.IbcConnectionId, portID)
 
 		totalCoin := chainDelegation[chainID]
+
+		// create transfer back msg
+		// mock data just for test.
+		transferMsg := transfertypes.NewMsgTransfer(
+			transfertypes.PortID,
+			"channel-0",
+			sdk.NewCoin(metadata.StakingDenom, totalCoin.Amount),
+			metadata.ICAControlAddr,
+			hostAddr,
+			clienttypes.NewHeight(0, 10000),
+			0,
+			"",
+		)
+
+		resp, err := k.ibcTransferKeeper.Transfer(ctx, transferMsg)
+		fmt.Println(resp, err)
+
+		stakingMsgs := make([]proto.Message, 0)
+
 		usedAmount := math.NewInt(0)
 		for i := 0; i < stragegyLen-2; i++ {
 			percentage := math.NewIntFromUint64(uint64(metadata.DelegateStrategy[i].Percentage))

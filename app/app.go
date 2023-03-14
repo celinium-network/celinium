@@ -198,6 +198,7 @@ var (
 		govtypes.ModuleName:            {authtypes.Burner},
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
 		ibcfeetypes.ModuleName:         nil,
+		interstakingtypes.ModuleName:   nil,
 	}
 )
 
@@ -525,6 +526,7 @@ func NewApp(
 		app.AccountKeeper,
 		app.BankKeeper,
 		app.ICAControllerKeeper,
+		app.TransferKeeper,
 	)
 
 	interStakingModule := interstaking.NewAppModule(appCodec, app.InterStakingKeeper)

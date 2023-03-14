@@ -5,6 +5,7 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	icacontrollerkeeper "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/controller/keeper"
+	ibctransferkeeper "github.com/cosmos/ibc-go/v6/modules/apps/transfer/keeper"
 
 	"celinium/x/inter-staking/types"
 )
@@ -18,6 +19,7 @@ type Keeper struct {
 	accountKeeper       types.AccountKeeper
 	bankKeeper          types.BankKeeper
 	icaControllerKeeper icacontrollerkeeper.Keeper
+	ibcTransferKeeper   ibctransferkeeper.Keeper
 }
 
 func NewKeeper(
@@ -27,6 +29,7 @@ func NewKeeper(
 	accountKeeper types.AccountKeeper,
 	bankKeeper types.BankKeeper,
 	icaControllerKeeper icacontrollerkeeper.Keeper,
+	ibcTransferKeeper ibctransferkeeper.Keeper,
 ) Keeper {
 	return Keeper{
 		storeKey:            storeKey,
@@ -35,6 +38,7 @@ func NewKeeper(
 		accountKeeper:       accountKeeper,
 		bankKeeper:          bankKeeper,
 		icaControllerKeeper: icaControllerKeeper,
+		ibcTransferKeeper:   ibcTransferKeeper,
 	}
 }
 
@@ -51,7 +55,9 @@ func (k Keeper) GetSourceChain(ctx sdk.Context, chainID string) (sourceChainMeta
 		return nil, false
 	}
 
-	err := types.UnMarshalProtoType(k.cdc, bz, sourceChainMetadata)
+	sourceChainMetadata = &types.SourceChainMetadata{}
+
+	err := k.cdc.Unmarshal(bz, sourceChainMetadata)
 	if err != nil {
 		return nil, false
 	}

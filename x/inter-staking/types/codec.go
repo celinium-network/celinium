@@ -16,6 +16,7 @@ var (
 func RegisterCodec(cdc *codec.LegacyAmino) {
 	cdc.RegisterConcrete(&MsgAddSourceChain{}, "interstaking/MsgAddSourceChain", nil)
 	cdc.RegisterConcrete(&MsgDelegate{}, "interstaking/MsgDelegate", nil)
+	cdc.RegisterConcrete(&SourceChainMetadata{}, "interstaking/SourceChainMetadata", nil)
 }
 
 func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
