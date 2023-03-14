@@ -34,7 +34,7 @@ func GetTxCmd() *cobra.Command {
 func getAddSourceChainCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:  "add source chain",
-		Args: cobra.ExactArgs(4),
+		Args: cobra.ExactArgs(5),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -47,7 +47,9 @@ func getAddSourceChainCmd() *cobra.Command {
 
 			connectionID := args[1]
 
-			stakingDenom := args[2]
+			sourceChainDenom := args[2]
+
+			sourceChainTraceDenom := args[3]
 
 			var strgtegy []types.DelegationStrategy
 
@@ -59,7 +61,8 @@ func getAddSourceChainCmd() *cobra.Command {
 				chainID,
 				connectionID,
 				"",
-				stakingDenom,
+				sourceChainDenom,
+				sourceChainTraceDenom,
 				strgtegy,
 				signer,
 			)

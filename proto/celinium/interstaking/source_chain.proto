@@ -23,13 +23,17 @@ message SourceChainMetadata{
     
     string ibcConnectionId = 2;
     
-    // The inter chain account at control chain
-    string ICAControlAddr = 3;
+    string ibcTransferChannelId = 3;
 
-    string stakingDenom = 4;
+    // The inter chain account at control chain
+    string ICAControlAddr = 4;
+
+    string sourceChainDenom = 5;
+
+    string sourceChainTraceDenom = 6;
 
     // The strategy for assigning delegation
-    repeated DelegationStrategy delegate_strategy = 5 [(gogoproto.nullable) = false];
+    repeated DelegationStrategy delegate_strategy = 7 [(gogoproto.nullable) = false];
 }
 
 message SourceChainDelegation {

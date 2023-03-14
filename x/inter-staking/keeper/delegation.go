@@ -1,21 +1,24 @@
 package keeper
 
 import (
+	"math"
 	"strings"
 	"time"
 
+	"celinium/x/inter-staking/types"
+
 	"github.com/gogo/protobuf/proto"
 
-	"cosmossdk.io/math"
+	sdkmath "cosmossdk.io/math"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	icatypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/types"
+	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
+	clienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
-
-	"celinium/x/inter-staking/types"
 )
 
 func (k Keeper) Delegate(ctx sdk.Context, chainID string, coin sdk.Coin, delegator string) error {
@@ -30,9 +33,9 @@ func (k Keeper) Delegate(ctx sdk.Context, chainID string, coin sdk.Coin, delegat
 	}
 
 	// Check wheather the coin is the native token of the source chain.
-	if strings.Compare(coin.Denom, sourceChainMetadata.StakingDenom) != 0 {
+	if strings.Compare(coin.Denom, sourceChainMetadata.SourceChainTraceDenom) != 0 {
 		return sdkerrors.Wrapf(types.ErrMismatchSourceCoin, "chainID: %s, expected: %s, get:",
-			chainID, sourceChainMetadata.StakingDenom, coin.Denom)
+			chainID, sourceChainMetadata.SourceChainTraceDenom, coin.Denom)
 	}
 
 	if err := k.SendCoinsFromDelegatorToICA(ctx, delegator, sourceChainMetadata.ICAControlAddr, sdk.Coins{coin}); err != nil {
@@ -45,7 +48,7 @@ func (k Keeper) Delegate(ctx sdk.Context, chainID string, coin sdk.Coin, delegat
 		Amount:    coin,
 	}
 
-	k.PushDelegationTaskQueue(&ctx, types.PendingDelegationQueueKey, &newDelegationTask)
+	k.PushDelegationTaskQueue(&ctx, types.PendingDelegationQueueKey, uint64(ctx.BlockHeight()), &newDelegationTask)
 
 	return nil
 }
@@ -118,27 +121,57 @@ func (k Keeper) ProcessPendingDelegationTask(ctx sdk.Context, maxTask int32) err
 		portID, _ := icatypes.NewControllerPortID(metadata.ICAControlAddr)
 
 		stragegyLen := len(metadata.DelegateStrategy)
-		stakingMsgs := make([]proto.Message, 0)
+
+		hostAddr, _ := k.icaControllerKeeper.GetInterchainAccountAddress(ctx, metadata.IbcConnectionId, portID)
+		hostAddress := sdk.MustAccAddressFromBech32(hostAddr)
 
 		totalCoin := chainDelegation[chainID]
-		usedAmount := math.NewInt(0)
+
+		// never timeout ?
+		timeoutHeight := clienttypes.NewHeight(math.MaxUint64, math.MaxUint64)
+		transferMsg := transfertypes.NewMsgTransfer(
+			transfertypes.PortID,
+			metadata.IbcTransferChannelId,
+			sdk.NewCoin(metadata.SourceChainTraceDenom, totalCoin.Amount),
+			metadata.ICAControlAddr,
+			hostAddr,
+			timeoutHeight,
+			0,
+			"",
+		)
+
+		k.ibcTransferKeeper.Transfer(ctx, transferMsg)
+
+		stakingMsgs := make([]proto.Message, 0)
+
+		usedAmount := sdkmath.NewInt(0)
 		for i := 0; i < stragegyLen-2; i++ {
-			percentage := math.NewIntFromUint64(uint64(metadata.DelegateStrategy[i].Percentage))
+			percentage := sdkmath.NewIntFromUint64(uint64(metadata.DelegateStrategy[i].Percentage))
 			stakingAmount := totalCoin.Amount.Mul(percentage).BigInt()
 			stakingAmount.Div(stakingAmount, types.PercentageDenominator.BigInt())
-			usedAmount.Add(math.NewIntFromBigInt(stakingAmount))
+			usedAmount.Add(sdkmath.NewIntFromBigInt(stakingAmount))
+
+			valAddress, err := sdk.ValAddressFromBech32(metadata.DelegateStrategy[i].ValidatorAddress)
+			if err != nil {
+				return err
+			}
+
 			stakingMsgs = append(stakingMsgs, stakingtypes.NewMsgDelegate(
-				sdk.AccAddress(metadata.ICAControlAddr),
-				sdk.ValAddress(metadata.DelegateStrategy[i].ValidatorAddress),
-				sdk.NewCoin(totalCoin.Denom, math.NewIntFromBigInt(stakingAmount)),
+				hostAddress,
+				valAddress,
+				sdk.NewCoin(metadata.SourceChainDenom, sdkmath.NewIntFromBigInt(stakingAmount)),
 			))
 		}
 
 		if !usedAmount.Equal(totalCoin.Amount) {
+			valAddress, err := sdk.ValAddressFromBech32(metadata.DelegateStrategy[stragegyLen-1].ValidatorAddress)
+			if err != nil {
+				return err
+			}
 			stakingMsgs = append(stakingMsgs, stakingtypes.NewMsgDelegate(
-				sdk.AccAddress(metadata.ICAControlAddr),
-				sdk.ValAddress(metadata.DelegateStrategy[stragegyLen-1].ValidatorAddress),
-				sdk.NewCoin(totalCoin.Denom, totalCoin.Amount.Sub(usedAmount)),
+				hostAddress,
+				valAddress,
+				sdk.NewCoin(metadata.SourceChainDenom, totalCoin.Amount.Sub(usedAmount)),
 			))
 		}
 
@@ -162,14 +195,25 @@ func (k Keeper) ProcessPendingDelegationTask(ctx sdk.Context, maxTask int32) err
 
 		for i := 0; i < useTaskLen; i++ {
 			preparingDelegationTask := userDelegations[chainID][i]
-			preparingDelegationTask.DoneSingal = sequence
-			k.PushDelegationTaskQueue(&ctx, types.PreparingDelegationQueueKey, &preparingDelegationTask)
+			k.PushDelegationTaskQueue(&ctx, types.PreparingDelegationQueueKey, sequence, &preparingDelegationTask)
 		}
 	}
 
 	return nil
 }
 
-func (k Keeper) HandleTransferAcknowledgementPacket(packet *channeltypes.Packet) {
-	// advence delegation task from preparing to prepared
+func (k Keeper) OnAcknowledgement(ctx sdk.Context, packet *channeltypes.Packet) {
+	// remove delegation from preparing queue
+	preparingDelegationTasks := k.GetDelegationQueueSlice(&ctx, types.PreparingDelegationQueueKey, packet.Sequence)
+	if len(preparingDelegationTasks) == 0 {
+		return
+	}
+
+	for _, task := range preparingDelegationTasks {
+		k.SetDelegationForDelegator(&ctx, task)
+	}
+
+	// remove from preparing delegation queue
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.GetDelegateQueueKey(types.PreparingDelegationQueueKey, packet.Sequence))
 }
