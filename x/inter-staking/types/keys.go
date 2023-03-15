@@ -74,6 +74,11 @@ func GetDelegateQueueKey(queueKey []byte, height uint64) []byte {
 	return bz
 }
 
+func GetDelegationKey(delegator string, chainID string) []byte {
+	// append maybe expensive. use copy ?
+	return append(DelegationKey, append(lengthPrefix([]byte(delegator)), lengthPrefix([]byte(chainID))...)...)
+}
+
 func ParseDelegateQueueKey(bz []byte) (uint64, error) {
 	prefixL := len(PendingDelegationQueueKey)
 

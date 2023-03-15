@@ -47,7 +47,7 @@ func (im IBCModule) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes
 
 			err := proto.Unmarshal(msgResp.Value, delegateResponse)
 			if err == nil {
-				im.keeper.OnAcknowledgement(&packet)
+				im.keeper.OnAcknowledgement(ctx, &packet)
 			}
 		}
 	} else {

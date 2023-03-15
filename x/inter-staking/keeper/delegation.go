@@ -47,7 +47,7 @@ func (k Keeper) Delegate(ctx sdk.Context, chainID string, coin sdk.Coin, delegat
 		Amount:    coin,
 	}
 
-	k.PushDelegationTaskQueue(&ctx, types.PendingDelegationQueueKey, &newDelegationTask)
+	k.PushDelegationTaskQueue(&ctx, types.PendingDelegationQueueKey, uint64(ctx.BlockHeight()), &newDelegationTask)
 
 	return nil
 }
@@ -194,16 +194,25 @@ func (k Keeper) ProcessPendingDelegationTask(ctx sdk.Context, maxTask int32) err
 
 		for i := 0; i < useTaskLen; i++ {
 			preparingDelegationTask := userDelegations[chainID][i]
-			preparingDelegationTask.DoneSingal = sequence
-			k.PushDelegationTaskQueue(&ctx, types.PreparingDelegationQueueKey, &preparingDelegationTask)
+			k.PushDelegationTaskQueue(&ctx, types.PreparingDelegationQueueKey, sequence, &preparingDelegationTask)
 		}
 	}
 
 	return nil
 }
 
-func (k Keeper) OnAcknowledgement(packet *channeltypes.Packet) {
+func (k Keeper) OnAcknowledgement(ctx sdk.Context, packet *channeltypes.Packet) {
 	// remove delegation from preparing queue
-	
-	// generate final delegation
+	preparingDelegationTasks := k.GetDelegationQueueSlice(&ctx, types.PreparingDelegationQueueKey, packet.Sequence)
+	if len(preparingDelegationTasks) == 0 {
+		return
+	}
+
+	for _, task := range preparingDelegationTasks {
+		k.SetDelegationForDelegator(&ctx, task)
+	}
+
+	// remove from preparing delegation queue
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.GetDelegateQueueKey(types.PreparingDelegationQueueKey, packet.Sequence))
 }

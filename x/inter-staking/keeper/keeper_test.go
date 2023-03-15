@@ -252,6 +252,10 @@ func (suite *KeeperTestSuite) TestDelegate() {
 
 	_, err = controlChainApp.IBCKeeper.Acknowledgement(suite.controlChain.GetContext(), &ackMsg)
 	suite.Require().NoError(err)
+
+	// check delegator's delegation
+	delegationCoin := controlChainApp.InterStakingKeeper.GetDelegation(suite.controlChain.GetContext(), controlChainUserAddress.String(), suite.sourceChain.ChainID)
+	suite.Equal(delegationCoin.Amount, math.NewIntFromUint64(1000))
 }
 
 func mintCoin(chain *ibctesting.TestChain, to sdk.AccAddress, coin sdk.Coin) {
@@ -484,14 +488,4 @@ func GetLocalApp(chain *ibctesting.TestChain) *icaapp.App {
 	}
 
 	return app
-}
-
-func assembleChannelVersion(ctlConnID, hostConnID string) string {
-	return string(icatypes.ModuleCdc.MustMarshalJSON(&icatypes.Metadata{
-		Version:                icatypes.Version,
-		ControllerConnectionId: ctlConnID,
-		HostConnectionId:       hostConnID,
-		Encoding:               icatypes.EncodingProtobuf,
-		TxType:                 icatypes.TxTypeSDKMultiMsg,
-	}))
 }
