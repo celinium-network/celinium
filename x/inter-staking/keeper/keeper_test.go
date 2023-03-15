@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
 
@@ -211,13 +212,46 @@ func (suite *KeeperTestSuite) TestDelegate() {
 	_, found := sourceChainApp.StakingKeeper.GetDelegation(suite.sourceChain.GetContext(), sdk.MustAccAddressFromBech32(hostAddr), valAddress)
 	suite.Require().False(found)
 
-	_, err = sourceChainApp.IBCKeeper.RecvPacket(suite.sourceChain.GetContext(), &icaMsgRecvPacket)
+	recvContext := suite.sourceChain.GetContext()
+	_, err = sourceChainApp.IBCKeeper.RecvPacket(recvContext, &icaMsgRecvPacket)
 	suite.Require().NoError(err)
+	sourceChainRecvEvents := recvContext.EventManager().Events()
+
 	// check delegations of hostAddr
 
 	_, found = sourceChainApp.StakingKeeper.GetDelegation(suite.sourceChain.GetContext(), sdk.MustAccAddressFromBech32(hostAddr), valAddress)
 	suite.Require().True(found)
 	// how check shares of delegation
+
+	/*control chain Acknowledgement*/
+	// move delegation from pending queue, generate delegation for user.
+	suite.interStakingPath.EndpointB.UpdateClient()
+	suite.interStakingPath.EndpointB.UpdateClient()
+
+	key := ibchost.PacketAcknowledgementKey(icaMsgRecvPacket.Packet.GetDestPort(),
+		icaMsgRecvPacket.Packet.GetDestChannel(),
+		icaMsgRecvPacket.Packet.GetSequence())
+
+	ackproof, ackheight := suite.sourceChain.QueryProof(key)
+	ackProofType := ibccommitmenttypes.MerkleProof{}
+	ackProofType.Unmarshal(ackproof)
+	fmt.Println(ackheight)
+
+	// get acknowledgement from event
+
+	ackFromEvent, err := ibctesting.ParseAckFromEvents(sourceChainRecvEvents)
+	suite.Require().NoError(err)
+
+	ackMsg := channeltypes.MsgAcknowledgement{
+		Packet:          icaMsgRecvPacket.Packet,
+		Acknowledgement: ackFromEvent,
+		ProofAcked:      ackproof,
+		ProofHeight:     ackheight,
+		Signer:          controlChainUserAddress.String(),
+	}
+
+	_, err = controlChainApp.IBCKeeper.Acknowledgement(suite.controlChain.GetContext(), &ackMsg)
+	suite.Require().NoError(err)
 }
 
 func mintCoin(chain *ibctesting.TestChain, to sdk.AccAddress, coin sdk.Coin) {

@@ -4,6 +4,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
+	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	icacontrollerkeeper "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/controller/keeper"
 	ibctransferkeeper "github.com/cosmos/ibc-go/v6/modules/apps/transfer/keeper"
 
@@ -20,6 +22,7 @@ type Keeper struct {
 	bankKeeper          types.BankKeeper
 	icaControllerKeeper icacontrollerkeeper.Keeper
 	ibcTransferKeeper   ibctransferkeeper.Keeper
+	scopedKeeper        capabilitykeeper.ScopedKeeper
 }
 
 func NewKeeper(
@@ -30,6 +33,7 @@ func NewKeeper(
 	bankKeeper types.BankKeeper,
 	icaControllerKeeper icacontrollerkeeper.Keeper,
 	ibcTransferKeeper ibctransferkeeper.Keeper,
+	scopedKeeper capabilitykeeper.ScopedKeeper,
 ) Keeper {
 	return Keeper{
 		storeKey:            storeKey,
@@ -39,7 +43,13 @@ func NewKeeper(
 		bankKeeper:          bankKeeper,
 		icaControllerKeeper: icaControllerKeeper,
 		ibcTransferKeeper:   ibcTransferKeeper,
+		scopedKeeper:        scopedKeeper,
 	}
+}
+
+// ClaimCapability claims the channel capability passed via the OnOpenChanInit callback
+func (k *Keeper) ClaimCapability(ctx sdk.Context, cap *capabilitytypes.Capability, name string) error {
+	return k.scopedKeeper.ClaimCapability(ctx, cap, name)
 }
 
 func (k Keeper) SetSourceChain(ctx sdk.Context, chainID string, sourceChainMetadata *types.SourceChainMetadata) {

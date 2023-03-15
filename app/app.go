@@ -258,9 +258,10 @@ type App struct {
 	GroupKeeper    groupkeeper.Keeper
 
 	// make scoped keepers public for test purposes
-	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
-	ScopedTransferKeeper capabilitykeeper.ScopedKeeper
-	ScopedICAHostKeeper  capabilitykeeper.ScopedKeeper
+	ScopedIBCKeeper          capabilitykeeper.ScopedKeeper
+	ScopedTransferKeeper     capabilitykeeper.ScopedKeeper
+	ScopedICAHostKeeper      capabilitykeeper.ScopedKeeper
+	ScopedInterStakingKeeper capabilitykeeper.ScopedKeeper
 
 	// mm is the module manager
 	mm *module.Manager
@@ -456,7 +457,7 @@ func NewApp(
 	scopedICAControllerKeeper := app.CapabilityKeeper.ScopeToModule(icacontrollertypes.SubModuleName)
 	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
 	scopedICAHostKeeper := app.CapabilityKeeper.ScopeToModule(icahosttypes.SubModuleName)
-	// scopedInterStakingKeeper := app.CapabilityKeeper.ScopeToModule(interstakingtypes.ModuleName)
+	scopedInterStakingKeeper := app.CapabilityKeeper.ScopeToModule(interstakingtypes.ModuleName)
 
 	// Sealing prevents other modules from creating scoped sub-keepers
 	app.CapabilityKeeper.Seal()
@@ -527,6 +528,7 @@ func NewApp(
 		app.BankKeeper,
 		app.ICAControllerKeeper,
 		app.TransferKeeper,
+		scopedInterStakingKeeper,
 	)
 
 	interStakingModule := interstaking.NewAppModule(appCodec, app.InterStakingKeeper)
@@ -545,6 +547,7 @@ func NewApp(
 
 	app.ScopedIBCKeeper = scopedIBCKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
+	app.ScopedInterStakingKeeper = scopedInterStakingKeeper
 
 	/** gov keeper **/
 	govRouter := govv1beta1.NewRouter()

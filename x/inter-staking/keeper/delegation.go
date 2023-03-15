@@ -202,6 +202,8 @@ func (k Keeper) ProcessPendingDelegationTask(ctx sdk.Context, maxTask int32) err
 	return nil
 }
 
-func (k Keeper) HandleTransferAcknowledgementPacket(packet *channeltypes.Packet) {
-	// advence delegation task from preparing to prepared
+func (k Keeper) OnAcknowledgement(packet *channeltypes.Packet) {
+	// remove delegation from preparing queue
+	
+	// generate final delegation
 }
