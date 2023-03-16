@@ -18,7 +18,16 @@ func (k Keeper) SourceChainAvaiable(ctx sdk.Context, connectionID string, icaCtl
 	return found
 }
 
-func (k Keeper) AddSourceChain(ctx sdk.Context, strategies []types.DelegationStrategy, sourceDenom, sourceTraceDenom, chainID, connectionID, version string) (string, error) {
+func (k Keeper) AddSourceChain(
+	ctx sdk.Context,
+	strategies []types.DelegationStrategy,
+	sourceDenom,
+	sourceTraceDenom,
+	chainID,
+	connectionID,
+	channelID,
+	version string,
+) (string, error) {
 	if len(strategies) == 0 {
 		return "", sdkerrors.Wrapf(types.ErrMismatchParameter, "the delegate plan should be set")
 	}
@@ -41,6 +50,7 @@ func (k Keeper) AddSourceChain(ctx sdk.Context, strategies []types.DelegationStr
 	sourceChainMetaData := types.SourceChainMetadata{
 		IbcClientId:           chainID,
 		IbcConnectionId:       connectionID,
+		IbcTransferChannelId:  channelID,
 		ICAControlAddr:        icaCtladdr,
 		SourceChainDenom:      sourceDenom,
 		SourceChainTraceDenom: sourceTraceDenom,

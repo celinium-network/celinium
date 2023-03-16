@@ -526,6 +526,7 @@ func NewApp(
 		"",
 		app.AccountKeeper,
 		app.BankKeeper,
+		app.IBCKeeper.ClientKeeper,
 		app.ICAControllerKeeper,
 		app.TransferKeeper,
 		scopedInterStakingKeeper,

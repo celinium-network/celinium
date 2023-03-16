@@ -8,6 +8,7 @@ import (
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	icacontrollerkeeper "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/controller/keeper"
 	ibctransferkeeper "github.com/cosmos/ibc-go/v6/modules/apps/transfer/keeper"
+	ibcclientkeeper "github.com/cosmos/ibc-go/v6/modules/core/02-client/keeper"
 
 	"celinium/x/inter-staking/types"
 )
@@ -22,6 +23,7 @@ type Keeper struct {
 	bankKeeper          types.BankKeeper
 	icaControllerKeeper icacontrollerkeeper.Keeper
 	ibcTransferKeeper   ibctransferkeeper.Keeper
+	ibcClientKeeper     ibcclientkeeper.Keeper
 	scopedKeeper        capabilitykeeper.ScopedKeeper
 }
 
@@ -31,6 +33,7 @@ func NewKeeper(
 	authority string,
 	accountKeeper types.AccountKeeper,
 	bankKeeper types.BankKeeper,
+	ibcClientKeeper ibcclientkeeper.Keeper,
 	icaControllerKeeper icacontrollerkeeper.Keeper,
 	ibcTransferKeeper ibctransferkeeper.Keeper,
 	scopedKeeper capabilitykeeper.ScopedKeeper,
@@ -43,6 +46,7 @@ func NewKeeper(
 		bankKeeper:          bankKeeper,
 		icaControllerKeeper: icaControllerKeeper,
 		ibcTransferKeeper:   ibcTransferKeeper,
+		ibcClientKeeper:     ibcClientKeeper,
 		scopedKeeper:        scopedKeeper,
 	}
 }

@@ -126,15 +126,15 @@ func (k Keeper) ProcessPendingDelegationTask(ctx sdk.Context, maxTask int32) err
 
 		totalCoin := chainDelegation[chainID]
 
-		// create transfer back msg
-		// mock data just for test.
+		// timeout should be task parameter or never timeout?
+		timeoutHeight := clienttypes.NewHeight(0, 1000000)
 		transferMsg := transfertypes.NewMsgTransfer(
 			transfertypes.PortID,
-			"channel-0",
+			metadata.IbcTransferChannelId,
 			sdk.NewCoin(metadata.SourceChainTraceDenom, totalCoin.Amount),
 			metadata.ICAControlAddr,
 			hostAddr,
-			clienttypes.NewHeight(0, 10000),
+			timeoutHeight,
 			0,
 			"",
 		)
