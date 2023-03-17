@@ -5,7 +5,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -45,12 +44,10 @@ func (im IBCModule) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes
 		for _, msgResp := range txMsgData.GetMsgResponses() {
 			// im.keeper.Logger(ctx).Info("msg response in ICS-27 packet", "response", msgResp.GoString(), "typeURL", msgResp.GetTypeUrl())
 			delegateResponse := &stakingtypes.MsgDelegateResponse{}
-			transferResponse := &banktypes.MsgSendResponse{}
 
-			if err := proto.Unmarshal(msgResp.Value, delegateResponse); err == nil {
-			} else if err := proto.Unmarshal(msgResp.Value, transferResponse); err == nil {
-				im.keeper.HandleTransferAcknowledgementPacket(&packet)
-			} else {
+			err := proto.Unmarshal(msgResp.Value, delegateResponse)
+			if err == nil {
+				im.keeper.OnAcknowledgement(ctx, &packet)
 			}
 		}
 	} else {

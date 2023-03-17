@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"celinium/app/params"
+
 	"cosmossdk.io/math"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -37,8 +39,6 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
-	"celinium/app/params"
 )
 
 // DefaultConsensusParams defines the default Tendermint consensus params used in

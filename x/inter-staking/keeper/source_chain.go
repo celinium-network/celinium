@@ -1,11 +1,11 @@
 package keeper
 
 import (
+	"celinium/x/inter-staking/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	icatypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/types"
-
-	"celinium/x/inter-staking/types"
 )
 
 // SourceChainAvaiable whether SourceChain is available.
@@ -18,7 +18,16 @@ func (k Keeper) SourceChainAvaiable(ctx sdk.Context, connectionID string, icaCtl
 	return found
 }
 
-func (k Keeper) AddSourceChain(ctx sdk.Context, strategies []types.DelegationStrategy, denom, chainID, connectionID, version string) (string, error) {
+func (k Keeper) AddSourceChain(
+	ctx sdk.Context,
+	strategies []types.DelegationStrategy,
+	sourceDenom,
+	sourceTraceDenom,
+	chainID,
+	connectionID,
+	channelID,
+	version string,
+) (string, error) {
 	if len(strategies) == 0 {
 		return "", sdkerrors.Wrapf(types.ErrMismatchParameter, "the delegate plan should be set")
 	}
@@ -39,11 +48,13 @@ func (k Keeper) AddSourceChain(ctx sdk.Context, strategies []types.DelegationStr
 	}
 
 	sourceChainMetaData := types.SourceChainMetadata{
-		IbcClientId:      chainID,
-		IbcConnectionId:  connectionID,
-		ICAControlAddr:   icaCtladdr,
-		StakingDenom:     denom,
-		DelegateStrategy: strategies,
+		IbcClientId:           chainID,
+		IbcConnectionId:       connectionID,
+		IbcTransferChannelId:  channelID,
+		ICAControlAddr:        icaCtladdr,
+		SourceChainDenom:      sourceDenom,
+		SourceChainTraceDenom: sourceTraceDenom,
+		DelegateStrategy:      strategies,
 	}
 
 	k.SetSourceChain(ctx, chainID, &sourceChainMetaData)

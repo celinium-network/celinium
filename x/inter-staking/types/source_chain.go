@@ -19,7 +19,7 @@ func MustMarshalProtoType(cdc codec.BinaryCodec, t codec.ProtoMarshaler) []byte 
 }
 
 func UnMarshalProtoType(cdc codec.BinaryCodec, bz []byte, t codec.ProtoMarshaler) error {
-	return cdc.UnmarshalInterface(bz, t)
+	return cdc.Unmarshal(bz, t)
 }
 
 func MustUnMarshalProtoType(cdc codec.BinaryCodec, bz []byte, t codec.ProtoMarshaler) {

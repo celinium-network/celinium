@@ -4,43 +4,23 @@ import (
 	"encoding/json"
 	"testing"
 
+	icaapp "celinium/app"
+	"celinium/app/params"
+
+	"celinium/x/inter-staking/types"
+
 	"cosmossdk.io/math"
-	"github.com/stretchr/testify/suite"
-
-	"github.com/tendermint/tendermint/libs/log"
-	dbm "github.com/tendermint/tm-db"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-
 	icatypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/types"
 	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
 	ibccommitmenttypes "github.com/cosmos/ibc-go/v6/modules/core/23-commitment/types"
 	ibchost "github.com/cosmos/ibc-go/v6/modules/core/24-host"
-
 	ibctesting "github.com/cosmos/ibc-go/v6/testing"
-
-	icaapp "celinium/app"
-	"celinium/app/params"
-	"celinium/x/inter-staking/types"
-)
-
-var (
-	// TestOwnerAddress defines a reusable bech32 address for testing purposes
-	TestOwnerAddress = "cosmos17dtl0mjt3t77kpuhg2edqzjpszulwhgzuj9ljs"
-
-	// TestPortID defines a reusable port identifier for testing purposes
-	TestPortID, _ = icatypes.NewControllerPortID(TestOwnerAddress)
-
-	// TestVersion defines a reusable interchainaccounts version string for testing purposes
-	// TestVersion = string(icatypes.ModuleCdc.MustMarshalJSON(&icatypes.Metadata{
-	// 	Version:                icatypes.Version,
-	// 	ControllerConnectionId: ibctesting.FirstConnectionID,
-	// 	HostConnectionId:       ibctesting.FirstConnectionID,
-	// 	Encoding:               icatypes.EncodingProtobuf,
-	// 	TxType:                 icatypes.TxTypeSDKMultiMsg,
-	// }))
+	"github.com/stretchr/testify/suite"
+	abcitypes "github.com/tendermint/tendermint/abci/types"
+	"github.com/tendermint/tendermint/libs/log"
+	dbm "github.com/tendermint/tm-db"
 )
 
 func init() {
@@ -83,42 +63,124 @@ func (suite *KeeperTestSuite) SetupSuite() {
 	suite.transferPath = NewTransferPath(suite.sourceChain, suite.controlChain)
 	suite.coordinator.Setup(suite.transferPath)
 
-	suite.interStakingPath = NewICAPath(suite.controlChain, suite.sourceChain)
+	suite.interStakingPath = NewICAPath(suite.sourceChain, suite.controlChain)
 	suite.coordinator.SetupConnections(suite.interStakingPath)
 }
 
-func (suite *KeeperTestSuite) TestKeeperAddSourceChain() {
-	err := SetupInterStakingPath(suite.interStakingPath)
-	suite.Require().NoError(err)
+func (suite *KeeperTestSuite) InterChainDelegate(
+	ctlChain *ibctesting.TestChain, sourceChainID string, delegator sdk.AccAddress, coin sdk.Coin,
+) []channeltypes.MsgRecvPacket {
+	ctlChainApp := GetLocalApp(ctlChain)
+
+	ctlChainCtx := ctlChain.GetContext()
+	err := ctlChainApp.InterStakingKeeper.
+		Delegate(
+			ctlChainCtx,
+			sourceChainID,
+			coin,
+			delegator.String(),
+		)
+	suite.NoError(err)
+
+	res := ctlChainApp.EndBlock(abcitypes.RequestEndBlock{
+		Height: ctlChainCtx.BlockHeight(),
+	})
+
+	sendPackets := parsePacketFromABCIEvents(res.Events)
+
+	suite.coordinator.CommitBlock(suite.controlChain)
+
+	var recvMsgs []channeltypes.MsgRecvPacket
+	for _, p := range sendPackets {
+
+		if p.DestinationPort == transfertypes.PortID {
+			suite.transferPath.EndpointA.UpdateClient()
+		} else {
+			suite.interStakingPath.EndpointA.UpdateClient()
+		}
+
+		commitKey := ibchost.PacketCommitmentKey(p.SourcePort, p.SourceChannel, p.Sequence)
+		proof, height := ctlChain.QueryProof(commitKey)
+		backProofType := ibccommitmenttypes.MerkleProof{}
+		backProofType.Unmarshal(proof)
+		recvMsgs = append(recvMsgs, channeltypes.MsgRecvPacket{
+			Packet:          p,
+			ProofCommitment: proof,
+			ProofHeight:     height,
+			Signer:          delegator.String(),
+		})
+	}
+
+	return recvMsgs
 }
 
 func (suite *KeeperTestSuite) TestDelegate() {
+	var err error
 	amount := math.NewIntFromUint64(1000)
 
 	coin := sdk.NewCoin(params.DefaultBondDenom, amount)
 	sourceChainUserAddress := suite.sourceChain.SenderAccount.GetAddress()
 	controlChainUserAddress := suite.controlChain.SenderAccount.GetAddress()
+	sourceChainApp := GetLocalApp(suite.sourceChain)
+	ctlChainApp := GetLocalApp(suite.controlChain)
 
 	mintCoin(suite.sourceChain, sourceChainUserAddress, coin)
-
-	sourceChainApp := GetLocalApp(suite.sourceChain)
-
-	resp, err := sourceChainApp.BankKeeper.Balance(suite.sourceChain.GetContext(), banktypes.NewQueryBalanceRequest(sourceChainUserAddress, coin.Denom))
-	suite.Require().NoError(err)
-	suite.Equal(*resp.Balance, coin)
-
-	suite.CrossChainTransferForward(coin, sourceChainUserAddress, controlChainUserAddress)
-
-	resp, err = sourceChainApp.BankKeeper.Balance(suite.sourceChain.GetContext(), banktypes.NewQueryBalanceRequest(sourceChainUserAddress, coin.Denom))
-	suite.Require().NoError(err)
-	suite.Equal(resp.Balance.Amount, math.ZeroInt())
+	suite.CrossChainTransfer(coin, sourceChainUserAddress, controlChainUserAddress)
 
 	traceCoin := sdk.NewCoin(firstIBCCoinDenom(suite.controlChain), coin.Amount)
-	suite.CrossChainTransferBack(traceCoin, controlChainUserAddress, sourceChainUserAddress)
+	SetupInterStakingPath(suite.interStakingPath, traceCoin.Denom)
 
-	resp, err = sourceChainApp.BankKeeper.Balance(suite.sourceChain.GetContext(), banktypes.NewQueryBalanceRequest(sourceChainUserAddress, coin.Denom))
+	sourceChainMetadata, _ := ctlChainApp.InterStakingKeeper.GetSourceChain(suite.controlChain.GetContext(), suite.sourceChain.ChainID)
+	portID, _ := icatypes.NewControllerPortID(sourceChainMetadata.ICAControlAddr)
+	hostAddr, _ := ctlChainApp.ICAControllerKeeper.GetInterchainAccountAddress(suite.controlChain.GetContext(), sourceChainMetadata.IbcConnectionId, portID)
+	valAddress, err := sdk.ValAddressFromBech32(sourceChainMetadata.DelegateStrategy[0].ValidatorAddress)
 	suite.Require().NoError(err)
-	suite.Equal(*resp.Balance, coin)
+
+	assembledRecvMsgs := suite.InterChainDelegate(suite.controlChain, suite.sourceChain.ChainID, controlChainUserAddress, traceCoin)
+
+	var interstakingPathevents sdk.Events
+	for i := 0; i < len(assembledRecvMsgs); i++ {
+		ctx := suite.sourceChain.GetContext()
+		_, err = sourceChainApp.IBCKeeper.RecvPacket(ctx, &assembledRecvMsgs[i])
+		suite.Require().NoError(err)
+		if assembledRecvMsgs[i].Packet.SourceChannel == suite.interStakingPath.EndpointA.ChannelID {
+			interstakingPathevents = append(interstakingPathevents, ctx.EventManager().Events()...)
+		}
+	}
+
+	_, found := sourceChainApp.StakingKeeper.GetDelegation(suite.sourceChain.GetContext(), sdk.MustAccAddressFromBech32(hostAddr), valAddress)
+	suite.True(found)
+
+	suite.sourceChain.NextBlock()
+	suite.interStakingPath.EndpointB.UpdateClient()
+
+	icaMsgRecvPacket := assembledRecvMsgs[1]
+
+	key := ibchost.PacketAcknowledgementKey(icaMsgRecvPacket.Packet.GetDestPort(),
+		icaMsgRecvPacket.Packet.GetDestChannel(),
+		icaMsgRecvPacket.Packet.GetSequence())
+
+	ackproof, ackheight := suite.sourceChain.QueryProof(key)
+	ackProofType := ibccommitmenttypes.MerkleProof{}
+	ackProofType.Unmarshal(ackproof)
+
+	ackFromEvent, err := ibctesting.ParseAckFromEvents(interstakingPathevents)
+	suite.Require().NoError(err)
+
+	ackMsg := channeltypes.MsgAcknowledgement{
+		Packet:          icaMsgRecvPacket.Packet,
+		Acknowledgement: ackFromEvent,
+		ProofAcked:      ackproof,
+		ProofHeight:     ackheight,
+		Signer:          controlChainUserAddress.String(),
+	}
+
+	_, err = ctlChainApp.IBCKeeper.Acknowledgement(suite.controlChain.GetContext(), &ackMsg)
+	suite.Require().NoError(err)
+
+	// check delegator's delegation
+	delegationCoin := ctlChainApp.InterStakingKeeper.GetDelegation(suite.controlChain.GetContext(), controlChainUserAddress.String(), suite.sourceChain.ChainID)
+	suite.Equal(delegationCoin.Amount, amount)
 }
 
 func mintCoin(chain *ibctesting.TestChain, to sdk.AccAddress, coin sdk.Coin) {
@@ -143,8 +205,8 @@ func firstIBCCoinDenom(chain *ibctesting.TestChain) string {
 	return traces[0].IBCDenom()
 }
 
-// CrossChainTransferForward transfer coin from source chain to control chain
-func (suite *KeeperTestSuite) CrossChainTransferForward(coin sdk.Coin, from sdk.Address, to sdk.Address) {
+// CrossChainTransfer transfer coin from source chain to control chain
+func (suite *KeeperTestSuite) CrossChainTransfer(coin sdk.Coin, from sdk.Address, to sdk.Address) {
 	// sourceChainApp := GetLocalApp(suite.sourceChain)
 	controlChainApp := GetLocalApp(suite.controlChain)
 
@@ -174,27 +236,11 @@ func (suite *KeeperTestSuite) CrossChainTransferForward(coin sdk.Coin, from sdk.
 	commitKey := ibchost.PacketCommitmentKey(suite.transferPath.EndpointA.ChannelConfig.PortID, suite.transferPath.EndpointA.ChannelID, resp.Sequence)
 	proof, height := suite.sourceChain.QueryProof(commitKey)
 
-	packetData := transfertypes.FungibleTokenPacketData{
-		Denom:    transferMsg.Token.Denom,
-		Amount:   transferMsg.Token.Amount.String(),
-		Sender:   transferMsg.Sender,
-		Receiver: transferMsg.Receiver,
-		Memo:     transferMsg.Memo,
-	}
-
-	channelPacket := channeltypes.Packet{
-		Sequence:           resp.Sequence,
-		SourcePort:         transferMsg.SourcePort,
-		SourceChannel:      transferMsg.SourceChannel,
-		DestinationPort:    suite.transferPath.EndpointB.ChannelConfig.PortID,
-		DestinationChannel: suite.transferPath.EndpointB.ChannelID,
-		Data:               packetData.GetBytes(),
-		TimeoutHeight:      transferMsg.TimeoutHeight,
-		TimeoutTimestamp:   transferMsg.TimeoutTimestamp,
-	}
+	packet, err := ibctesting.ParsePacketFromEvents(res.GetEvents())
+	suite.Require().NoError(err)
 
 	msgRecvPacket := channeltypes.MsgRecvPacket{
-		Packet:          channelPacket,
+		Packet:          packet,
 		ProofCommitment: proof,
 		ProofHeight:     height,
 		Signer:          transferMsg.Sender,
@@ -202,64 +248,6 @@ func (suite *KeeperTestSuite) CrossChainTransferForward(coin sdk.Coin, from sdk.
 
 	// control chain recv cross chain transfer packet.
 	_, err = controlChainApp.IBCKeeper.RecvPacket(suite.controlChain.GetContext(), &msgRecvPacket)
-	suite.Require().NoError(err)
-}
-
-// CrossChainTransferBack transfer coin from control to source chain
-func (suite *KeeperTestSuite) CrossChainTransferBack(coin sdk.Coin, from sdk.Address, to sdk.Address) {
-	sourceChainApp := GetLocalApp(suite.sourceChain)
-	controlChainApp := GetLocalApp(suite.controlChain)
-
-	transferBackMsg := transfertypes.NewMsgTransfer(
-		suite.transferPath.EndpointB.ChannelConfig.PortID,
-		suite.transferPath.EndpointB.ChannelID,
-		coin,
-		from.String(),
-		to.String(),
-		suite.controlChain.GetTimeoutHeight(),
-		0,
-		"",
-	)
-	transferBackRes, err := suite.controlChain.SendMsgs(transferBackMsg)
-	suite.Require().NoError(err)
-	suite.transferPath.EndpointA.UpdateClient()
-
-	backResp := transfertypes.MsgTransferResponse{}
-	backResp.Unmarshal(transferBackRes.MsgResponses[0].Value)
-	backCommitKey := ibchost.PacketCommitmentKey(suite.transferPath.EndpointB.ChannelConfig.PortID, suite.transferPath.EndpointB.ChannelID, backResp.Sequence)
-	backproof, backheight := suite.controlChain.QueryProof(backCommitKey)
-	backProofType := ibccommitmenttypes.MerkleProof{}
-	backProofType.Unmarshal(backproof)
-
-	fullDenomPath, err := controlChainApp.TransferKeeper.DenomPathFromHash(suite.controlChain.GetContext(), transferBackMsg.Token.Denom)
-	suite.Require().NoError(err)
-	backpacketData := transfertypes.FungibleTokenPacketData{
-		Denom:    fullDenomPath,
-		Amount:   transferBackMsg.Token.Amount.String(),
-		Sender:   transferBackMsg.Sender,
-		Receiver: transferBackMsg.Receiver,
-		Memo:     transferBackMsg.Memo,
-	}
-
-	backChannelPacket := channeltypes.Packet{
-		Sequence:           backResp.Sequence,
-		SourcePort:         transferBackMsg.SourcePort,
-		SourceChannel:      transferBackMsg.SourceChannel,
-		DestinationPort:    suite.transferPath.EndpointA.ChannelConfig.PortID,
-		DestinationChannel: suite.transferPath.EndpointA.ChannelID,
-		Data:               backpacketData.GetBytes(),
-		TimeoutHeight:      transferBackMsg.TimeoutHeight,
-		TimeoutTimestamp:   transferBackMsg.TimeoutTimestamp,
-	}
-
-	backMsgRecvPacket := channeltypes.MsgRecvPacket{
-		Packet:          backChannelPacket,
-		ProofCommitment: backproof,
-		ProofHeight:     backheight,
-		Signer:          transferBackMsg.Sender,
-	}
-
-	_, err = sourceChainApp.IBCKeeper.RecvPacket(suite.sourceChain.GetContext(), &backMsgRecvPacket)
 	suite.Require().NoError(err)
 }
 
@@ -286,14 +274,14 @@ func NewTransferPath(chainA, chainB *ibctesting.TestChain) *ibctesting.Path {
 // SetupInterStakingPath establishes interstaking relationship.
 // ChainA as source chain.
 // ChainB as Host chain.
-func SetupInterStakingPath(path *ibctesting.Path) error {
-	chainB := path.EndpointB.Chain
+func SetupInterStakingPath(path *ibctesting.Path, traceCoinDenom string) error {
 	chainA := path.EndpointA.Chain
+	chainB := path.EndpointB.Chain
 
 	strategy := []types.DelegationStrategy{
 		{
 			Percentage:       100,
-			ValidatorAddress: chainA.Vals.Validators[0].Address.String(),
+			ValidatorAddress: sdk.ValAddress(chainA.Vals.Validators[0].Address).String(),
 		},
 	}
 
@@ -307,8 +295,10 @@ func SetupInterStakingPath(path *ibctesting.Path) error {
 			chainB.GetContext(),
 			strategy,
 			params.DefaultBondDenom,
+			traceCoinDenom,
 			chainA.ChainID,
 			path.EndpointB.ConnectionID,
+			"channel-0",
 			"",
 		); err != nil {
 		return err
@@ -352,12 +342,19 @@ func GetLocalApp(chain *ibctesting.TestChain) *icaapp.App {
 	return app
 }
 
-func assembleChannelVersion(ctlConnID, hostConnID string) string {
-	return string(icatypes.ModuleCdc.MustMarshalJSON(&icatypes.Metadata{
-		Version:                icatypes.Version,
-		ControllerConnectionId: ctlConnID,
-		HostConnectionId:       hostConnID,
-		Encoding:               icatypes.EncodingProtobuf,
-		TxType:                 icatypes.TxTypeSDKMultiMsg,
-	}))
+func parsePacketFromABCIEvents(abciEvents []abcitypes.Event) []channeltypes.Packet {
+	packets := make([]channeltypes.Packet, 0)
+	for _, ev := range abciEvents {
+		events := sdk.Events{sdk.Event{
+			Type:       ev.Type,
+			Attributes: ev.Attributes,
+		}}
+		p, err := ibctesting.ParsePacketFromEvents(events)
+		if err != nil {
+			continue
+		}
+		packets = append(packets, p)
+	}
+
+	return packets
 }
