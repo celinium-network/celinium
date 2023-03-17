@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"celinium/x/inter-staking/types"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -9,8 +11,6 @@ import (
 	icacontrollerkeeper "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/controller/keeper"
 	ibctransferkeeper "github.com/cosmos/ibc-go/v6/modules/apps/transfer/keeper"
 	ibcclientkeeper "github.com/cosmos/ibc-go/v6/modules/core/02-client/keeper"
-
-	"celinium/x/inter-staking/types"
 )
 
 // Keeper of the x/inter-staking store

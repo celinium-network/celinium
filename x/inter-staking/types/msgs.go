@@ -2,7 +2,6 @@ package types
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	types "github.com/cosmos/cosmos-sdk/types"
 )
 
 var (
@@ -48,7 +47,7 @@ func (msg MsgAddSourceChain) ValidateBasic() error {
 
 func NewMsgDelegate(
 	chainID string,
-	coin types.Coin,
+	coin sdk.Coin,
 	delegator string,
 ) *MsgDelegate {
 	return &MsgDelegate{
@@ -73,7 +72,7 @@ func (msg MsgDelegate) GetSigners() []sdk.AccAddress {
 }
 
 // GetSigners implements types.Msg
-func (msg *MsgUnDelegate) GetSigners() []types.AccAddress {
+func (msg *MsgUnDelegate) GetSigners() []sdk.AccAddress {
 	accAddr, err := sdk.AccAddressFromBech32(msg.Signer)
 	if err != nil {
 		panic(err)
@@ -88,7 +87,7 @@ func (*MsgUnDelegate) ValidateBasic() error {
 }
 
 // GetSigners implements types.Msg
-func (msg *MsgUpdateSourceChainDelegatePlan) GetSigners() []types.AccAddress {
+func (msg *MsgUpdateSourceChainDelegatePlan) GetSigners() []sdk.AccAddress {
 	accAddr, err := sdk.AccAddressFromBech32(msg.Authority)
 	if err != nil {
 		panic(err)
@@ -103,7 +102,7 @@ func (*MsgUpdateSourceChainDelegatePlan) ValidateBasic() error {
 }
 
 // GetSigners implements types.Msg
-func (msg *MsgNotifyUnDelegationDone) GetSigners() []types.AccAddress {
+func (msg *MsgNotifyUnDelegationDone) GetSigners() []sdk.AccAddress {
 	accAddr, err := sdk.AccAddressFromBech32(msg.Signer)
 	if err != nil {
 		panic(err)

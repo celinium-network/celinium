@@ -2,15 +2,12 @@ package keeper_test
 
 import (
 	"encoding/json"
-	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/suite"
+	icaapp "celinium/app"
+	"celinium/app/params"
 
-	abcitypes "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
-
-	dbm "github.com/tendermint/tm-db"
+	"celinium/x/inter-staking/types"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -20,18 +17,10 @@ import (
 	ibccommitmenttypes "github.com/cosmos/ibc-go/v6/modules/core/23-commitment/types"
 	ibchost "github.com/cosmos/ibc-go/v6/modules/core/24-host"
 	ibctesting "github.com/cosmos/ibc-go/v6/testing"
-
-	icaapp "celinium/app"
-	"celinium/app/params"
-	"celinium/x/inter-staking/types"
-)
-
-var (
-	// TestOwnerAddress defines a reusable bech32 address for testing purposes
-	TestOwnerAddress = "cosmos17dtl0mjt3t77kpuhg2edqzjpszulwhgzuj9ljs"
-
-	// TestPortID defines a reusable port identifier for testing purposes
-	TestPortID, _ = icatypes.NewControllerPortID(TestOwnerAddress)
+	"github.com/stretchr/testify/suite"
+	abcitypes "github.com/tendermint/tendermint/abci/types"
+	"github.com/tendermint/tendermint/libs/log"
+	dbm "github.com/tendermint/tm-db"
 )
 
 func init() {
@@ -98,7 +87,6 @@ func (suite *KeeperTestSuite) InterChainDelegate(
 	})
 
 	sendPackets := parsePacketFromABCIEvents(res.Events)
-	fmt.Println(sendPackets)
 
 	suite.coordinator.CommitBlock(suite.controlChain)
 
@@ -137,7 +125,7 @@ func (suite *KeeperTestSuite) TestDelegate() {
 	ctlChainApp := GetLocalApp(suite.controlChain)
 
 	mintCoin(suite.sourceChain, sourceChainUserAddress, coin)
-	suite.CrossChainTransferForward(coin, sourceChainUserAddress, controlChainUserAddress)
+	suite.CrossChainTransfer(coin, sourceChainUserAddress, controlChainUserAddress)
 
 	traceCoin := sdk.NewCoin(firstIBCCoinDenom(suite.controlChain), coin.Amount)
 	SetupInterStakingPath(suite.interStakingPath, traceCoin.Denom)
@@ -150,13 +138,13 @@ func (suite *KeeperTestSuite) TestDelegate() {
 
 	assembledRecvMsgs := suite.InterChainDelegate(suite.controlChain, suite.sourceChain.ChainID, controlChainUserAddress, traceCoin)
 
-	var events sdk.Events
+	var interstakingPathevents sdk.Events
 	for i := 0; i < len(assembledRecvMsgs); i++ {
 		ctx := suite.sourceChain.GetContext()
 		_, err = sourceChainApp.IBCKeeper.RecvPacket(ctx, &assembledRecvMsgs[i])
 		suite.Require().NoError(err)
-		if i != 0 {
-			events = append(events, ctx.EventManager().Events()...)
+		if assembledRecvMsgs[i].Packet.SourceChannel == suite.interStakingPath.EndpointA.ChannelID {
+			interstakingPathevents = append(interstakingPathevents, ctx.EventManager().Events()...)
 		}
 	}
 
@@ -175,11 +163,8 @@ func (suite *KeeperTestSuite) TestDelegate() {
 	ackproof, ackheight := suite.sourceChain.QueryProof(key)
 	ackProofType := ibccommitmenttypes.MerkleProof{}
 	ackProofType.Unmarshal(ackproof)
-	fmt.Println(ackheight)
 
-	// get acknowledgement from event
-
-	ackFromEvent, err := ibctesting.ParseAckFromEvents(events)
+	ackFromEvent, err := ibctesting.ParseAckFromEvents(interstakingPathevents)
 	suite.Require().NoError(err)
 
 	ackMsg := channeltypes.MsgAcknowledgement{
@@ -220,8 +205,8 @@ func firstIBCCoinDenom(chain *ibctesting.TestChain) string {
 	return traces[0].IBCDenom()
 }
 
-// CrossChainTransferForward transfer coin from source chain to control chain
-func (suite *KeeperTestSuite) CrossChainTransferForward(coin sdk.Coin, from sdk.Address, to sdk.Address) {
+// CrossChainTransfer transfer coin from source chain to control chain
+func (suite *KeeperTestSuite) CrossChainTransfer(coin sdk.Coin, from sdk.Address, to sdk.Address) {
 	// sourceChainApp := GetLocalApp(suite.sourceChain)
 	controlChainApp := GetLocalApp(suite.controlChain)
 
@@ -263,45 +248,6 @@ func (suite *KeeperTestSuite) CrossChainTransferForward(coin sdk.Coin, from sdk.
 
 	// control chain recv cross chain transfer packet.
 	_, err = controlChainApp.IBCKeeper.RecvPacket(suite.controlChain.GetContext(), &msgRecvPacket)
-	suite.Require().NoError(err)
-}
-
-// CrossChainTransferBack transfer coin from control to source chain
-func (suite *KeeperTestSuite) CrossChainTransferBack(coin sdk.Coin, from sdk.Address, to sdk.Address) {
-	sourceChainApp := GetLocalApp(suite.sourceChain)
-
-	transferBackMsg := transfertypes.NewMsgTransfer(
-		suite.transferPath.EndpointB.ChannelConfig.PortID,
-		suite.transferPath.EndpointB.ChannelID,
-		coin,
-		from.String(),
-		to.String(),
-		suite.controlChain.GetTimeoutHeight(),
-		0,
-		"",
-	)
-
-	resp, err := suite.controlChain.SendMsgs(transferBackMsg)
-	suite.Require().NoError(err)
-	suite.transferPath.EndpointA.UpdateClient()
-
-	backResp := transfertypes.MsgTransferResponse{}
-	backResp.Unmarshal(resp.MsgResponses[0].Value)
-
-	backCommitKey := ibchost.PacketCommitmentKey(suite.transferPath.EndpointB.ChannelConfig.PortID, suite.transferPath.EndpointB.ChannelID, backResp.Sequence)
-	backproof, backheight := suite.controlChain.QueryProof(backCommitKey)
-
-	packet, err := ibctesting.ParsePacketFromEvents(resp.GetEvents())
-	suite.Require().NoError(err)
-
-	backMsgRecvPacket := channeltypes.MsgRecvPacket{
-		Packet:          packet,
-		ProofCommitment: backproof,
-		ProofHeight:     backheight,
-		Signer:          transferBackMsg.Sender,
-	}
-
-	_, err = sourceChainApp.IBCKeeper.RecvPacket(suite.sourceChain.GetContext(), &backMsgRecvPacket)
 	suite.Require().NoError(err)
 }
 

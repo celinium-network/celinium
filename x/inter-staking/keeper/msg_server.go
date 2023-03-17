@@ -1,11 +1,11 @@
 package keeper
 
 import (
+	"celinium/x/inter-staking/types"
+
 	context "context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	"celinium/x/inter-staking/types"
 )
 
 var _ types.MsgServer = msgServer{}

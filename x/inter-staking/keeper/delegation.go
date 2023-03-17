@@ -1,12 +1,15 @@
 package keeper
 
 import (
+	"math"
 	"strings"
 	"time"
 
+	"celinium/x/inter-staking/types"
+
 	"github.com/gogo/protobuf/proto"
 
-	"cosmossdk.io/math"
+	sdkmath "cosmossdk.io/math"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -16,8 +19,6 @@ import (
 	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
-
-	"celinium/x/inter-staking/types"
 )
 
 func (k Keeper) Delegate(ctx sdk.Context, chainID string, coin sdk.Coin, delegator string) error {
@@ -126,8 +127,8 @@ func (k Keeper) ProcessPendingDelegationTask(ctx sdk.Context, maxTask int32) err
 
 		totalCoin := chainDelegation[chainID]
 
-		// timeout should be task parameter or never timeout?
-		timeoutHeight := clienttypes.NewHeight(0, 1000000)
+		// never timeout ?
+		timeoutHeight := clienttypes.NewHeight(math.MaxUint64, math.MaxUint64)
 		transferMsg := transfertypes.NewMsgTransfer(
 			transfertypes.PortID,
 			metadata.IbcTransferChannelId,
@@ -143,12 +144,12 @@ func (k Keeper) ProcessPendingDelegationTask(ctx sdk.Context, maxTask int32) err
 
 		stakingMsgs := make([]proto.Message, 0)
 
-		usedAmount := math.NewInt(0)
+		usedAmount := sdkmath.NewInt(0)
 		for i := 0; i < stragegyLen-2; i++ {
-			percentage := math.NewIntFromUint64(uint64(metadata.DelegateStrategy[i].Percentage))
+			percentage := sdkmath.NewIntFromUint64(uint64(metadata.DelegateStrategy[i].Percentage))
 			stakingAmount := totalCoin.Amount.Mul(percentage).BigInt()
 			stakingAmount.Div(stakingAmount, types.PercentageDenominator.BigInt())
-			usedAmount.Add(math.NewIntFromBigInt(stakingAmount))
+			usedAmount.Add(sdkmath.NewIntFromBigInt(stakingAmount))
 
 			valAddress, err := sdk.ValAddressFromBech32(metadata.DelegateStrategy[i].ValidatorAddress)
 			if err != nil {
@@ -158,7 +159,7 @@ func (k Keeper) ProcessPendingDelegationTask(ctx sdk.Context, maxTask int32) err
 			stakingMsgs = append(stakingMsgs, stakingtypes.NewMsgDelegate(
 				hostAddress,
 				valAddress,
-				sdk.NewCoin(metadata.SourceChainDenom, math.NewIntFromBigInt(stakingAmount)),
+				sdk.NewCoin(metadata.SourceChainDenom, sdkmath.NewIntFromBigInt(stakingAmount)),
 			))
 		}
 

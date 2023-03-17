@@ -1,11 +1,11 @@
 package keeper
 
 import (
+	"celinium/x/inter-staking/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	icatypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/types"
-
-	"celinium/x/inter-staking/types"
 )
 
 // SourceChainAvaiable whether SourceChain is available.
