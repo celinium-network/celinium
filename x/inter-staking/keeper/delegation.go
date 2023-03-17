@@ -202,7 +202,7 @@ func (k Keeper) ProcessPendingDelegationTask(ctx sdk.Context, maxTask int32) err
 	return nil
 }
 
-func (k Keeper) OnAcknowledgement(ctx sdk.Context, packet *channeltypes.Packet) {
+func (k Keeper) OnDelegateAcknowledgement(ctx sdk.Context, packet *channeltypes.Packet) {
 	// remove delegation from preparing queue
 	preparingDelegationTasks := k.GetDelegationQueueSlice(&ctx, types.PreparingDelegationQueueKey, packet.Sequence)
 	if len(preparingDelegationTasks) == 0 {
@@ -210,10 +210,24 @@ func (k Keeper) OnAcknowledgement(ctx sdk.Context, packet *channeltypes.Packet) 
 	}
 
 	for _, task := range preparingDelegationTasks {
-		k.SetDelegationForDelegator(&ctx, task)
+		k.SetDelegation(&ctx, task.Delegator, task.ChainId, task.Amount)
 	}
 
 	// remove from preparing delegation queue
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.GetDelegateQueueKey(types.PreparingDelegationQueueKey, packet.Sequence))
+}
+
+func (k Keeper) OnUndelegateAcknowledgement(ctx sdk.Context, packet *channeltypes.Packet, resp *stakingtypes.MsgUndelegateResponse) {
+	pendingUndelegation := k.GetDelegationQueueSlice(&ctx, types.PendingUndelegationQueueKey, packet.Sequence)
+	if len(pendingUndelegation) == 0 {
+		return
+	}
+
+	for _, t := range pendingUndelegation {
+		k.SetPreparingUndelegation(ctx, resp.CompletionTime, packet.Sequence, t.ChainId, t.Delegator)
+	}
+
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.GetDelegateQueueKey(types.PreparingDelegationQueueKey, packet.Sequence))
 }

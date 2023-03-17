@@ -10,4 +10,5 @@ var (
 	ErrMismatchParameter      = sdkerrors.Register(ModuleName, 4, "parameters in msg has error")
 	ErrUnavailableSourceChain = sdkerrors.Register(ModuleName, 5, "unavailable source chain")
 	ErrMismatchSourceCoin     = sdkerrors.Register(ModuleName, 6, "mismatch source chain coin")
+	ErrInsufficientDelegation = sdkerrors.Register(ModuleName, 7, "insufficient delegation amount")
 )

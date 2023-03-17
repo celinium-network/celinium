@@ -3,6 +3,7 @@ package types
 import (
 	"bytes"
 	fmt "fmt"
+	"time"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -34,12 +35,14 @@ var (
 	// Done: The delegation is successful.
 	PendingDelegationQueueKey   = []byte{0x21} // key for a pending delegation queue
 	PreparingDelegationQueueKey = []byte{0x22} // key for a prepare delegation queue
-	PreparedDelegationQueueKey  = []byte{0x23} // key for a prepare delegation queue
-	OngingDelegationQueueKey    = []byte{0x24} // key for a Ongoing delegation queue
-	DelegationKey               = []byte{0x25} // key for a user delegation
+	// PreparedDelegationQueueKey  = []byte{0x23} // key for a prepare delegation queue
+	// OngingDelegationQueueKey    = []byte{0x24} // key for a Ongoing delegation queue
+	DelegationKey = []byte{0x25} // key for a user delegation
 
-	UndelegationQueueKey = []byte{0x23} // key for undelegation queue
-	DistributionQueueKey = []byte{0x41} // key for distribution queue
+	PendingUndelegationQueueKey   = []byte{0x31} // {key, sequence} -> {chainID, delegator, amount} send ica msg
+	PreparingUndelegationQueueKey = []byte{0x32} // {key, completionTime,sequence} -> {chainID, delegator} ack, get complete time
+	//  completionTime -> UnbondingDelegation and proof,
+	DistributionQueueKey = []byte{0x33} // {key, completionTIme,sequence} -> {chainID, delegator, distributedAmount}
 )
 
 var PercentageDenominator = math.NewIntFromUint64(100)
@@ -89,4 +92,13 @@ func ParseDelegateQueueKey(bz []byte) (uint64, error) {
 	height := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
 
 	return height, nil
+}
+
+func GetPreparingUndelegationKey(completeTime time.Time, sequence uint64) []byte {
+	// PreparingUndelegationQueueKey + timeBzLen + timeBz + sequence
+	return append(PreparingUndelegationQueueKey,
+		append(
+			lengthPrefix(
+				sdk.FormatTimeBytes(completeTime)),
+			sdk.Uint64ToBigEndian(sequence)...)...)
 }
