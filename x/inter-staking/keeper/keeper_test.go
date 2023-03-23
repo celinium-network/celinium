@@ -2,7 +2,9 @@ package keeper_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
+	"time"
 
 	icaapp "celinium/app"
 	"celinium/app/params"
@@ -11,12 +13,16 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	icatypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/types"
 	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
+	clienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v6/modules/core/23-commitment/types"
 	ibccommitmenttypes "github.com/cosmos/ibc-go/v6/modules/core/23-commitment/types"
 	ibchost "github.com/cosmos/ibc-go/v6/modules/core/24-host"
 	ibctesting "github.com/cosmos/ibc-go/v6/testing"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	abcitypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/log"
@@ -25,6 +31,7 @@ import (
 
 func init() {
 	ibctesting.DefaultTestingAppInit = SetupTestingApp
+	icaapp.DefaultUnbondingTime = time.Minute * 5
 }
 
 func SetupTestingApp() (ibctesting.TestingApp, map[string]json.RawMessage) {
@@ -173,8 +180,6 @@ func (suite *KeeperTestSuite) TestDelegate() {
 		undelegateRecvMsg.Packet.GetSequence())
 
 	undelegateAckproof, undelegateheight := suite.sourceChain.QueryProof(undelegateAckkey)
-	xbackProofType := ibccommitmenttypes.MerkleProof{}
-	xbackProofType.Unmarshal(undelegateAckproof)
 
 	undelegateAckFromEvent, err := ibctesting.ParseAckFromEvents(undelegateEvents)
 	suite.Require().NoError(err)
@@ -189,6 +194,100 @@ func (suite *KeeperTestSuite) TestDelegate() {
 
 	_, err = ctlChainApp.IBCKeeper.Acknowledgement(suite.controlChain.GetContext(), &undelegateAckMsg)
 	suite.Require().NoError(err)
+
+	/* proof and balance */
+	// staking/keeper::GetUnbondingDelegation
+	// UnbondingDelegation & proof,
+
+	// advance to source chain done undelegate
+
+	hostAddress := sdk.MustAccAddressFromBech32(hostAddr)
+	udbKey := stakingtypes.GetUBDKey(hostAddress, valAddress)
+
+	suite.coordinator.IncrementTime()
+	suite.coordinator.CommitBlock(suite.sourceChain)
+	suite.interStakingPath.EndpointB.UpdateClient()
+
+	ubdQueue, found := sourceChainApp.StakingKeeper.GetUnbondingDelegation(suite.sourceChain.GetContext(), hostAddress, valAddress)
+	ubdproof, height := QueryProofAtHeight(suite.sourceChain, stakingtypes.StoreKey, udbKey, suite.sourceChain.App.LastBlockHeight())
+	fmt.Println(ubdQueue, found, height)
+
+	xbackProofType := ibccommitmenttypes.MerkleProof{}
+	xbackProofType.Unmarshal(ubdproof)
+
+	err = ctlChainApp.InterStakingKeeper.SubmitSourceChainUnbondingDelegation(
+		suite.controlChain.GetContext(),
+		suite.interStakingPath.EndpointA.Chain.ChainID,
+		suite.interStakingPath.EndpointA.ClientID,
+		[][]byte{ubdproof},
+		height,
+		[]stakingtypes.UnbondingDelegation{ubdQueue},
+	)
+	suite.Require().NoError(err)
+	fmt.Printf("~~ ubd queue %s \n", ubdQueue.Entries[0].CompletionTime.Format("2006.01.02 15:04:05"))
+
+	for i := 0; i < 30; i++ {
+		// suite.transferPath.EndpointB.UpdateClient()
+		// suite.transferPath.EndpointA.UpdateClient()
+
+		suite.interStakingPath.EndpointB.UpdateClient()
+		suite.interStakingPath.EndpointA.UpdateClient()
+	}
+
+	// suite.transferPath.EndpointB.UpdateClient()
+	suite.interStakingPath.EndpointB.UpdateClient()
+
+	ubdQueue, found = sourceChainApp.StakingKeeper.GetUnbondingDelegation(suite.sourceChain.GetContext(), hostAddress, valAddress)
+	ubdproof, height = QueryProofAtHeight(suite.sourceChain, stakingtypes.StoreKey, udbKey, suite.sourceChain.App.LastBlockHeight())
+	fmt.Println(ubdQueue, found, height)
+
+	xbackProofType = ibccommitmenttypes.MerkleProof{}
+	xbackProofType.Unmarshal(ubdproof)
+
+	ctlChainCtx = suite.controlChain.GetContext()
+
+	err = ctlChainApp.InterStakingKeeper.SubmitSourceChainDVPairNotExist(
+		ctlChainCtx,
+		suite.interStakingPath.EndpointA.Chain.ChainID,
+		suite.interStakingPath.EndpointA.ClientID,
+		[][]byte{ubdproof},
+		height,
+		[]stakingtypes.DVPair{{
+			DelegatorAddress: hostAddr,
+			ValidatorAddress: valAddress.String(),
+		}},
+	)
+	suite.Require().NoError(err)
+
+	suite.coordinator.CommitBlock(suite.controlChain)
+	suite.interStakingPath.EndpointA.UpdateClient()
+
+	sp, err := ibctesting.ParsePacketFromEvents(ctlChainCtx.EventManager().Events())
+	suite.Require().NoError(err)
+	commitKey = ibchost.PacketCommitmentKey(sp.SourcePort, sp.SourceChannel, sp.Sequence)
+
+	proof, height = suite.controlChain.QueryProof(commitKey)
+	backProofType = ibccommitmenttypes.MerkleProof{}
+	backProofType.Unmarshal(proof)
+	recvMsg := channeltypes.MsgRecvPacket{
+		Packet:          sp,
+		ProofCommitment: proof,
+		ProofHeight:     height,
+		Signer:          controlChainUserAddress.String(),
+	}
+
+	suite.interStakingPath.EndpointA.UpdateClient()
+	balanceBefore := sourceChainApp.BankKeeper.GetBalance(suite.sourceChain.GetContext(), controlChainUserAddress, params.DefaultBondDenom)
+
+	_, err = sourceChainApp.IBCKeeper.RecvPacket(suite.sourceChain.GetContext(), &recvMsg)
+	suite.Require().NoError(err)
+	// should check balance...
+
+	balanceAfter := sourceChainApp.BankKeeper.GetBalance(suite.sourceChain.GetContext(), controlChainUserAddress, params.DefaultBondDenom)
+
+	if balanceAfter.Amount.LT(balanceBefore.Amount) {
+		panic("check balance failed after undelegate completely")
+	}
 }
 
 func (suite *KeeperTestSuite) InterChainDelegate(
@@ -313,6 +412,13 @@ func NewICAPath(chainA, chainB *ibctesting.TestChain) *ibctesting.Path {
 	path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
 	path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
 
+	tmConfig := ibctesting.NewTendermintConfig()
+	tmConfig.UnbondingPeriod = icaapp.DefaultUnbondingTime
+	tmConfig.TrustingPeriod = icaapp.DefaultUnbondingTime - time.Second
+
+	path.EndpointA.ClientConfig = tmConfig
+	path.EndpointB.ClientConfig = tmConfig
+
 	return path
 }
 
@@ -322,6 +428,13 @@ func NewTransferPath(chainA, chainB *ibctesting.TestChain) *ibctesting.Path {
 	path.EndpointB.ChannelConfig.PortID = ibctesting.TransferPort
 	path.EndpointA.ChannelConfig.Version = transfertypes.Version
 	path.EndpointB.ChannelConfig.Version = transfertypes.Version
+
+	tmConfig := ibctesting.NewTendermintConfig()
+	tmConfig.UnbondingPeriod = icaapp.DefaultUnbondingTime
+	tmConfig.TrustingPeriod = icaapp.DefaultUnbondingTime - time.Second
+
+	path.EndpointA.ClientConfig = tmConfig
+	path.EndpointB.ClientConfig = tmConfig
 
 	return path
 }
@@ -412,4 +525,26 @@ func parsePacketFromABCIEvents(abciEvents []abcitypes.Event) []channeltypes.Pack
 	}
 
 	return packets
+}
+
+func QueryProofAtHeight(chain *ibctesting.TestChain, storePrefix string, key []byte, height int64) ([]byte, clienttypes.Height) {
+	res := chain.App.Query(abcitypes.RequestQuery{
+		Path:   fmt.Sprintf("store/%s/key", storePrefix),
+		Height: height - 1,
+		Data:   key,
+		Prove:  true,
+	})
+
+	merkleProof, err := commitmenttypes.ConvertProofs(res.ProofOps)
+	require.NoError(chain.T, err)
+
+	proof, err := chain.App.AppCodec().Marshal(&merkleProof)
+	require.NoError(chain.T, err)
+
+	revision := clienttypes.ParseChainID(chain.ChainID)
+
+	// proof height + 1 is returned as the proof created corresponds to the height the proof
+	// was created in the IAVL tree. Tendermint and subsequently the clients that rely on it
+	// have heights 1 above the IAVL tree. Thus we return proof height + 1
+	return proof, clienttypes.NewHeight(revision, uint64(res.Height)+1)
 }

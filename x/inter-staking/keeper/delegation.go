@@ -217,17 +217,3 @@ func (k Keeper) OnDelegateAcknowledgement(ctx sdk.Context, packet *channeltypes.
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.GetDelegateQueueKey(types.PreparingDelegationQueueKey, packet.Sequence))
 }
-
-func (k Keeper) OnUndelegateAcknowledgement(ctx sdk.Context, packet *channeltypes.Packet, resp *stakingtypes.MsgUndelegateResponse) {
-	pendingUndelegation := k.GetDelegationQueueSlice(&ctx, types.PendingUndelegationQueueKey, packet.Sequence)
-	if len(pendingUndelegation) == 0 {
-		return
-	}
-
-	for _, t := range pendingUndelegation {
-		k.SetPreparingUndelegation(ctx, resp.CompletionTime, packet.Sequence, t.ChainId, t.Delegator)
-	}
-
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.GetDelegateQueueKey(types.PreparingDelegationQueueKey, packet.Sequence))
-}

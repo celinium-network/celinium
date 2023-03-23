@@ -43,6 +43,8 @@ var (
 	PreparingUndelegationQueueKey = []byte{0x32} // {key, completionTime,sequence} -> {chainID, delegator} ack, get complete time
 	//  completionTime -> UnbondingDelegation and proof,
 	DistributionQueueKey = []byte{0x33} // {key, completionTIme,sequence} -> {chainID, delegator, distributedAmount}
+
+	SourceChainUnbondingQueueKey = []byte{0x41}
 )
 
 var PercentageDenominator = math.NewIntFromUint64(100)
@@ -101,4 +103,8 @@ func GetPreparingUndelegationKey(completeTime time.Time, sequence uint64) []byte
 			lengthPrefix(
 				sdk.FormatTimeBytes(completeTime)),
 			sdk.Uint64ToBigEndian(sequence)...)...)
+}
+
+func GetSourceChainUnbondingDelegationsKey(chainID, clientID string) []byte {
+	return append(SourceChainUnbondingQueueKey, []byte(chainID+clientID)...)
 }

@@ -19,6 +19,9 @@ import (
 
 // bankModule defines a custom wrapper around the x/bank module's AppModuleBasic
 // implementation to provide custom default genesis state.
+
+var DefaultUnbondingTime = stakingtypes.DefaultUnbondingTime
+
 type bankModule struct {
 	bank.AppModuleBasic
 }
@@ -40,6 +43,7 @@ type stakingModule struct {
 func (stakingModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 	stakingParams := stakingtypes.DefaultParams()
 	stakingParams.BondDenom = params.DefaultBondDenom
+	stakingParams.UnbondingTime = DefaultUnbondingTime
 
 	return cdc.MustMarshalJSON(&stakingtypes.GenesisState{
 		Params: stakingParams,

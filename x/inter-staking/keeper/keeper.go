@@ -189,3 +189,29 @@ func (k Keeper) SetPreparingUndelegation(ctx sdk.Context, completeTime time.Time
 
 	store.Set(key, bz)
 }
+
+func (k Keeper) GetSourceChainUnbondingDelegations(ctx sdk.Context, chainID, clientID string) *types.SourceChainUnbondingQueue {
+	store := ctx.KVStore(k.storeKey)
+
+	key := types.GetSourceChainUnbondingDelegationsKey(chainID, clientID)
+	if !store.Has(key) {
+		return nil
+	}
+
+	bz := store.Get(key)
+
+	var ubd types.SourceChainUnbondingQueue
+
+	err := k.cdc.Unmarshal(bz, &ubd)
+	if err != nil {
+		panic(err)
+	}
+
+	return &ubd
+}
+
+func (k Keeper) SetSourceChainUnbondingDelegations(ctx sdk.Context, ubd types.SourceChainUnbondingQueue) {
+	bz := k.cdc.MustMarshal(&ubd)
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.GetSourceChainUnbondingDelegationsKey(ubd.ChainID, ubd.ClientID), bz)
+}
