@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"math"
 	"time"
 
 	"celinium/x/inter-staking/types"
@@ -9,9 +10,9 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	icatypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/types"
+	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v6/modules/core/23-commitment/types"
@@ -343,25 +344,35 @@ func (k Keeper) VerifyUnboundingDelegation(
 
 	path := commitmenttypes.NewMerklePath(append([]string{stakingtypes.StoreKey}, string(key))...)
 
-	if unbondDelegation == nil {
-		err = merkleProof.VerifyNonMembership(tmTargetClient.ProofSpecs, consensusState.GetRoot(), path)
-	} else {
-		err = merkleProof.VerifyMembership(tmTargetClient.ProofSpecs, consensusState.GetRoot(), path, bz)
+	if err = merkleProof.VerifyMembership(tmTargetClient.ProofSpecs, consensusState.GetRoot(), path, bz); err != nil {
+		return err
 	}
-	return err
+
+	return nil
 }
 
 func (k Keeper) Distribute(ctx sdk.Context, chainID string, amount sdk.Coin, metadata *types.SourceChainMetadata, receiver string) error {
-	recvAddr := sdk.MustAccAddressFromBech32(receiver)
 	portID, _ := icatypes.NewControllerPortID(metadata.ICAControlAddr)
 
 	hostAddr, _ := k.icaControllerKeeper.GetInterchainAccountAddress(ctx, metadata.IbcConnectionId, portID)
-	hostAddress := sdk.MustAccAddressFromBech32(hostAddr)
 
-	sendMsg := banktypes.NewMsgSend(hostAddress, recvAddr, sdk.Coins{amount})
-	data, err := icatypes.SerializeCosmosTx(k.cdc, []proto.Message{sendMsg})
+	timeoutHeight := clienttypes.NewHeight(math.MaxUint64, math.MaxUint64)
+	transferMsg := transfertypes.NewMsgTransfer(
+		transfertypes.PortID,
+		metadata.IbcTransferChannelId,
+		amount,
+		hostAddr,
+		receiver,
+		timeoutHeight,
+		0,
+		"",
+	)
+
+	protoMsg := make([]proto.Message, 0)
+	protoMsg = append(protoMsg, transferMsg)
+	data, err := icatypes.SerializeCosmosTx(k.cdc, protoMsg)
 	if err != nil {
-		return err
+		return nil
 	}
 
 	packetData := icatypes.InterchainAccountPacketData{

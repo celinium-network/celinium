@@ -195,12 +195,6 @@ func (suite *KeeperTestSuite) TestDelegate() {
 	_, err = ctlChainApp.IBCKeeper.Acknowledgement(suite.controlChain.GetContext(), &undelegateAckMsg)
 	suite.Require().NoError(err)
 
-	/* proof and balance */
-	// staking/keeper::GetUnbondingDelegation
-	// UnbondingDelegation & proof,
-
-	// advance to source chain done undelegate
-
 	hostAddress := sdk.MustAccAddressFromBech32(hostAddr)
 	udbKey := stakingtypes.GetUBDKey(hostAddress, valAddress)
 
@@ -208,9 +202,8 @@ func (suite *KeeperTestSuite) TestDelegate() {
 	suite.coordinator.CommitBlock(suite.sourceChain)
 	suite.interStakingPath.EndpointB.UpdateClient()
 
-	ubdQueue, found := sourceChainApp.StakingKeeper.GetUnbondingDelegation(suite.sourceChain.GetContext(), hostAddress, valAddress)
+	ubdQueue, _ := sourceChainApp.StakingKeeper.GetUnbondingDelegation(suite.sourceChain.GetContext(), hostAddress, valAddress)
 	ubdproof, height := QueryProofAtHeight(suite.sourceChain, stakingtypes.StoreKey, udbKey, suite.sourceChain.App.LastBlockHeight())
-	fmt.Println(ubdQueue, found, height)
 
 	xbackProofType := ibccommitmenttypes.MerkleProof{}
 	xbackProofType.Unmarshal(ubdproof)
@@ -224,22 +217,18 @@ func (suite *KeeperTestSuite) TestDelegate() {
 		[]stakingtypes.UnbondingDelegation{ubdQueue},
 	)
 	suite.Require().NoError(err)
-	fmt.Printf("~~ ubd queue %s \n", ubdQueue.Entries[0].CompletionTime.Format("2006.01.02 15:04:05"))
 
 	for i := 0; i < 30; i++ {
-		// suite.transferPath.EndpointB.UpdateClient()
-		// suite.transferPath.EndpointA.UpdateClient()
-
 		suite.interStakingPath.EndpointB.UpdateClient()
 		suite.interStakingPath.EndpointA.UpdateClient()
+		suite.transferPath.EndpointB.UpdateClient()
+		suite.transferPath.EndpointA.UpdateClient()
 	}
 
-	// suite.transferPath.EndpointB.UpdateClient()
 	suite.interStakingPath.EndpointB.UpdateClient()
 
-	ubdQueue, found = sourceChainApp.StakingKeeper.GetUnbondingDelegation(suite.sourceChain.GetContext(), hostAddress, valAddress)
+	// _, found = sourceChainApp.StakingKeeper.GetUnbondingDelegation(suite.sourceChain.GetContext(), hostAddress, valAddress)
 	ubdproof, height = QueryProofAtHeight(suite.sourceChain, stakingtypes.StoreKey, udbKey, suite.sourceChain.App.LastBlockHeight())
-	fmt.Println(ubdQueue, found, height)
 
 	xbackProofType = ibccommitmenttypes.MerkleProof{}
 	xbackProofType.Unmarshal(ubdproof)
@@ -279,11 +268,40 @@ func (suite *KeeperTestSuite) TestDelegate() {
 	suite.interStakingPath.EndpointA.UpdateClient()
 	balanceBefore := sourceChainApp.BankKeeper.GetBalance(suite.sourceChain.GetContext(), controlChainUserAddress, params.DefaultBondDenom)
 
-	_, err = sourceChainApp.IBCKeeper.RecvPacket(suite.sourceChain.GetContext(), &recvMsg)
-	suite.Require().NoError(err)
-	// should check balance...
+	suite.coordinator.CommitBlock(suite.sourceChain)
+	suite.transferPath.EndpointB.UpdateClient()
 
-	balanceAfter := sourceChainApp.BankKeeper.GetBalance(suite.sourceChain.GetContext(), controlChainUserAddress, params.DefaultBondDenom)
+	sourceChainCtx := suite.sourceChain.GetContext()
+
+	_, err = sourceChainApp.IBCKeeper.RecvPacket(sourceChainCtx, &recvMsg)
+	suite.Require().NoError(err)
+
+	p2, err := ibctesting.ParsePacketFromEvents(sourceChainCtx.EventManager().Events())
+	suite.Require().NoError(err)
+
+	suite.coordinator.CommitBlock(suite.sourceChain)
+	// suite.transferPath.EndpointB.UpdateClient()
+	// err = suite.transferPath.EndpointB.UpdateClient()
+	// suite.Require().NoError(err)
+	suite.transferPath.EndpointB.UpdateClient()
+
+	commitKey2 := ibchost.PacketCommitmentKey(p2.SourcePort, p2.SourceChannel, p2.Sequence)
+
+	proof, height = suite.sourceChain.QueryProof(commitKey2)
+	backProofType = ibccommitmenttypes.MerkleProof{}
+	backProofType.Unmarshal(proof)
+	recvMsg2 := channeltypes.MsgRecvPacket{
+		Packet:          p2,
+		ProofCommitment: proof,
+		ProofHeight:     height,
+		Signer:          controlChainUserAddress.String(),
+	}
+	suite.transferPath.EndpointB.UpdateClient()
+
+	_, err = ctlChainApp.IBCKeeper.RecvPacket(suite.controlChain.GetContext(), &recvMsg2)
+	suite.Require().NoError(err)
+
+	balanceAfter := ctlChainApp.BankKeeper.GetBalance(suite.controlChain.GetContext(), controlChainUserAddress, traceCoin.Denom)
 
 	if balanceAfter.Amount.LT(balanceBefore.Amount) {
 		panic("check balance failed after undelegate completely")
