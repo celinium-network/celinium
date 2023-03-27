@@ -128,6 +128,10 @@ import (
 	icahosttypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/host/types"
 	icatypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/types"
 
+	epochs "celinium/x/epochs"
+	epochskeeper "celinium/x/epochs/keeper"
+	epochstypes "celinium/x/epochs/types"
+
 	interstaking "celinium/x/inter-staking"
 	interstakingkeeper "celinium/x/inter-staking/keeper"
 	interstakingtypes "celinium/x/inter-staking/types"
@@ -185,6 +189,7 @@ var (
 		vesting.AppModuleBasic{},
 		ibcfee.AppModuleBasic{},
 		interstaking.AppModuleBasic{},
+		epochs.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -253,6 +258,7 @@ type App struct {
 	ICAControllerKeeper icacontrollerkeeper.Keeper
 	IBCFeeKeeper        ibcfeekeeper.Keeper
 	InterStakingKeeper  interstakingkeeper.Keeper
+	EpochsKeeper        epochskeeper.Keeper
 
 	FeeGrantKeeper feegrantkeeper.Keeper
 	GroupKeeper    groupkeeper.Keeper
@@ -308,6 +314,7 @@ func NewApp(
 		icacontrollertypes.StoreKey,
 		ibcfeetypes.StoreKey,
 		interstakingtypes.StoreKey,
+		epochstypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -451,6 +458,8 @@ func NewApp(
 	)
 	// If evidence needs to be handled for the app, set routes in router here and seal
 	app.EvidenceKeeper = *evidenceKeeper
+
+	app.EpochsKeeper = *epochskeeper.NewKeeper(appCodec, keys[epochstypes.StoreKey])
 
 	// grant capabilities for the ibc/ibc-transfer/interchain-accounts modules
 	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibchost.ModuleName)
@@ -600,6 +609,7 @@ func NewApp(
 		icaModule,
 		interStakingModule,
 		ibcFeeModule,
+		epochs.NewAppModule(appCodec, app.EpochsKeeper),
 	)
 
 	app.mm.SetOrderBeginBlockers(
@@ -625,6 +635,7 @@ func NewApp(
 		vestingtypes.ModuleName,
 		ibcfeetypes.ModuleName,
 		interstakingtypes.ModuleName,
+		epochstypes.ModuleName,
 	)
 
 	app.mm.SetOrderEndBlockers(
@@ -650,6 +661,7 @@ func NewApp(
 		vestingtypes.ModuleName,
 		ibcfeetypes.ModuleName,
 		interstakingtypes.ModuleName,
+		epochstypes.ModuleName,
 	)
 
 	app.mm.SetOrderInitGenesis(
@@ -675,6 +687,7 @@ func NewApp(
 		vestingtypes.ModuleName,
 		ibcfeetypes.ModuleName,
 		interstakingtypes.ModuleName,
+		epochstypes.ModuleName,
 	)
 
 	app.mm.RegisterInvariants(&app.CrisisKeeper)
@@ -700,6 +713,7 @@ func NewApp(
 		ibc.NewAppModule(app.IBCKeeper),
 		transferModule,
 		ibcFeeModule,
+		//epochs.NewAppModule(appCodec, app.EpochsKeeper),
 	)
 	app.sm.RegisterStoreDecoders()
 

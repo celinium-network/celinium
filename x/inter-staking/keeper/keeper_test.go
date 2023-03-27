@@ -29,6 +29,8 @@ import (
 	dbm "github.com/tendermint/tm-db"
 )
 
+var globalT *testing.T
+
 func init() {
 	ibctesting.DefaultTestingAppInit = SetupTestingApp
 	icaapp.DefaultUnbondingTime = time.Minute * 5
@@ -59,10 +61,11 @@ type KeeperTestSuite struct {
 }
 
 func TestKeeperTest(t *testing.T) {
+	globalT = t
 	suite.Run(t, new(KeeperTestSuite))
 }
 
-func (suite *KeeperTestSuite) SetupSuite() {
+func (suite *KeeperTestSuite) SetupTest() {
 	suite.coordinator = ibctesting.NewCoordinator(suite.T(), 2)
 	suite.sourceChain = suite.coordinator.GetChain(ibctesting.GetChainID(1))
 	suite.controlChain = suite.coordinator.GetChain(ibctesting.GetChainID(2))
