@@ -202,7 +202,7 @@ func (k Keeper) ProcessPendingDelegationTask(ctx sdk.Context, maxTask int32) err
 	return nil
 }
 
-func (k Keeper) OnAcknowledgement(ctx sdk.Context, packet *channeltypes.Packet) {
+func (k Keeper) OnDelegateAcknowledgement(ctx sdk.Context, packet *channeltypes.Packet) {
 	// remove delegation from preparing queue
 	preparingDelegationTasks := k.GetDelegationQueueSlice(&ctx, types.PreparingDelegationQueueKey, packet.Sequence)
 	if len(preparingDelegationTasks) == 0 {
@@ -210,7 +210,7 @@ func (k Keeper) OnAcknowledgement(ctx sdk.Context, packet *channeltypes.Packet) 
 	}
 
 	for _, task := range preparingDelegationTasks {
-		k.SetDelegationForDelegator(&ctx, task)
+		k.SetDelegation(&ctx, task.Delegator, task.ChainId, task.Amount)
 	}
 
 	// remove from preparing delegation queue

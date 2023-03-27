@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"time"
+
 	"celinium/x/inter-staking/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -143,22 +145,23 @@ func (k Keeper) SetDelegationQueueSlice(ctx *sdk.Context, queueKey []byte, tasks
 	store.Set(types.GetDelegateQueueKey(queueKey, sequence), bz)
 }
 
-func (k Keeper) SetDelegationForDelegator(ctx *sdk.Context, task types.DelegationTask) {
+func (k Keeper) SetDelegation(ctx *sdk.Context, delegator string, chainID string, amount sdk.Coin) {
 	store := ctx.KVStore(k.storeKey)
-	bz := k.cdc.MustMarshal(&task.Amount)
+	bz := k.cdc.MustMarshal(&amount)
 
-	if amountBz := store.Get(types.GetDelegationKey(task.Delegator, task.ChainId)); amountBz != nil {
+	delegationKey := types.GetDelegationKey(delegator, chainID)
+	if amountBz := store.Get(delegationKey); amountBz != nil {
 		var coin sdk.Coin
 
 		k.cdc.MustUnmarshal(amountBz, &coin)
-		coin.Amount.Add(task.Amount.Amount)
+		coin.Amount.Add(amount.Amount)
 		bz := k.cdc.MustMarshal(&coin)
 
-		store.Set(types.GetDelegationKey(task.Delegator, task.ChainId), bz)
+		store.Set(delegationKey, bz)
 		return
 	}
 
-	store.Set(types.GetDelegationKey(task.Delegator, task.ChainId), bz)
+	store.Set(delegationKey, bz)
 }
 
 func (k Keeper) GetDelegation(ctx sdk.Context, delegator string, chainID string) sdk.Coin {
@@ -169,4 +172,46 @@ func (k Keeper) GetDelegation(ctx sdk.Context, delegator string, chainID string)
 	k.cdc.MustUnmarshal(bz, &coin)
 
 	return coin
+}
+
+func (k Keeper) SetPreparingUndelegation(ctx sdk.Context, completeTime time.Time, sequence uint64, chainID string, delegator string) {
+	store := ctx.KVStore(k.storeKey)
+	key := types.GetPreparingUndelegationKey(completeTime, sequence)
+
+	// use anthother type ??
+	undelegation := types.DelegationTask{
+		ChainId:   chainID,
+		Delegator: delegator,
+		Amount:    sdk.Coin{},
+	}
+
+	bz := k.cdc.MustMarshal(&undelegation)
+
+	store.Set(key, bz)
+}
+
+func (k Keeper) GetSourceChainUnbondingDelegations(ctx sdk.Context, chainID, clientID string) *types.SourceChainUnbondingQueue {
+	store := ctx.KVStore(k.storeKey)
+
+	key := types.GetSourceChainUnbondingDelegationsKey(chainID, clientID)
+	if !store.Has(key) {
+		return nil
+	}
+
+	bz := store.Get(key)
+
+	var ubd types.SourceChainUnbondingQueue
+
+	err := k.cdc.Unmarshal(bz, &ubd)
+	if err != nil {
+		panic(err)
+	}
+
+	return &ubd
+}
+
+func (k Keeper) SetSourceChainUnbondingDelegations(ctx sdk.Context, ubd types.SourceChainUnbondingQueue) {
+	bz := k.cdc.MustMarshal(&ubd)
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.GetSourceChainUnbondingDelegationsKey(ubd.ChainID, ubd.ClientID), bz)
 }

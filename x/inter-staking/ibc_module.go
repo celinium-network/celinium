@@ -1,6 +1,8 @@
 package interstaking
 
 import (
+	"strings"
+
 	proto "github.com/gogo/protobuf/proto"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -42,12 +44,19 @@ func (im IBCModule) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes
 
 	if len(txMsgData.Data) == 0 {
 		for _, msgResp := range txMsgData.GetMsgResponses() {
-			// im.keeper.Logger(ctx).Info("msg response in ICS-27 packet", "response", msgResp.GoString(), "typeURL", msgResp.GetTypeUrl())
-			delegateResponse := &stakingtypes.MsgDelegateResponse{}
-
-			err := proto.Unmarshal(msgResp.Value, delegateResponse)
-			if err == nil {
-				im.keeper.OnAcknowledgement(ctx, &packet)
+			// better match function ??
+			if strings.Contains(msgResp.TypeUrl, "MsgDelegateResponse") {
+				delegateResponse := &stakingtypes.MsgDelegateResponse{}
+				err := proto.Unmarshal(msgResp.Value, delegateResponse)
+				if err == nil && delegateResponse != nil {
+					im.keeper.OnDelegateAcknowledgement(ctx, &packet)
+				}
+			} else if strings.Contains(msgResp.TypeUrl, "MsgUndelegateResponse") {
+				undelegateResponse := &stakingtypes.MsgUndelegateResponse{}
+				err := proto.Unmarshal(msgResp.Value, undelegateResponse)
+				if err == nil {
+					im.keeper.OnUndelegateAcknowledgement(ctx, &packet, undelegateResponse)
+				}
 			}
 		}
 	} else {

@@ -5,6 +5,7 @@ package celinlim.interstaking;
 import "gogoproto/gogo.proto";
 import "cosmos_proto/cosmos.proto";
 import "cosmos/base/v1beta1/coin.proto";
+import "cosmos/staking/v1beta1/staking.proto";
 
 
 option go_package = "celinium/x/inter-staking/types";
@@ -31,4 +32,11 @@ message DelegationTask {
 
 message DelegationTasks{
     repeated DelegationTask delegation_tasks = 1 [(gogoproto.nullable) = false];
+}
+
+message SourceChainUnbondingQueue{
+    string  chainID     = 1;
+    string  clientID    = 2;
+    uint64  last_height = 3;
+    repeated cosmos.staking.v1beta1.UnbondingDelegation unbondingDelegations = 4[(gogoproto.nullable) = false];
 }
