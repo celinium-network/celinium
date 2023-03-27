@@ -1,14 +1,18 @@
-/*
-Often in the SDK, we would like to run certain code every-so often. The
-purpose of `epochs` module is to allow other modules to set that they
-would like to be signaled once every period. So another module can
-specify it wants to execute code once a week, starting at UTC-time = x.
-`epochs` creates a generalized epoch interface to other modules so that
-they can easily be signalled upon such events.
-  - Contains functionality for querying epoch.
-  - Events for BeginBlock and EndBlock.
-  - Initialization for epoch-related infos.
-*/
+// Copyright 2022 Evmos Foundation
+// This file is part of the Evmos Network packages.
+//
+// Evmos is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// The Evmos packages are distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with the Evmos packages. If not, see https://github.com/evmos/evmos/blob/main/LICENSE
 
 package epochs
 
@@ -16,10 +20,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
+
+	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
+
 	abci "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -28,9 +36,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 
-	"github.com/osmosis-labs/osmosis/x/epochs/client/cli"
-	"github.com/osmosis-labs/osmosis/x/epochs/keeper"
-	"github.com/osmosis-labs/osmosis/x/epochs/types"
+	"celinium/x/epochs/client/cli"
+	"celinium/x/epochs/keeper"
+	"celinium/x/epochs/types"
 )
 
 var (
@@ -42,31 +50,34 @@ var (
 // AppModuleBasic
 // ----------------------------------------------------------------------------
 
-// AppModuleBasic implements the AppModuleBasic interface for the capability module.
-type AppModuleBasic struct{}
-
-func NewAppModuleBasic() AppModuleBasic {
-	return AppModuleBasic{}
+// AppModuleBasic implements the AppModuleBasic interface for the epochs module.
+type AppModuleBasic struct {
+	cdc codec.Codec
 }
 
-// Name returns the capability module's name.
+// NewAppModuleBasic return a new AppModuleBasic
+func NewAppModuleBasic(cdc codec.Codec) AppModuleBasic {
+	return AppModuleBasic{cdc: cdc}
+}
+
+// Name returns the epochs module's name.
 func (AppModuleBasic) Name() string {
 	return types.ModuleName
 }
 
-// RegisterLegacyAminoCodec registers the module's Amino codec that properly handles protobuf types with Any's.
-func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {}
+// RegisterLegacyAminoCodec registers a legacy amino codec
+func (AppModuleBasic) RegisterLegacyAminoCodec(_ *codec.LegacyAmino) {}
 
-// RegisterInterfaces registers the module's interface types.
-func (a AppModuleBasic) RegisterInterfaces(reg cdctypes.InterfaceRegistry) {}
+// RegisterInterfaces registers the module's interface types
+func (AppModuleBasic) RegisterInterfaces(_ cdctypes.InterfaceRegistry) {}
 
-// DefaultGenesis returns the capability module's default genesis state.
+// DefaultGenesis returns the epochs module's default genesis state.
 func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
-	return cdc.MustMarshalJSON(types.DefaultGenesis())
+	return cdc.MustMarshalJSON(types.DefaultGenesisState())
 }
 
-// ValidateGenesis performs genesis state validation for the capability module.
-func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncodingConfig, bz json.RawMessage) error {
+// ValidateGenesis performs genesis state validation for the epochs module.
+func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingConfig, bz json.RawMessage) error {
 	var genState types.GenesisState
 	if err := cdc.UnmarshalJSON(bz, &genState); err != nil {
 		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
@@ -74,20 +85,23 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 	return genState.Validate()
 }
 
-// RegisterRESTRoutes registers the capability module's REST service handlers.
-func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Router) {}
+// RegisterRESTRoutes registers the epochs module's REST service handlers.
+func (AppModuleBasic) RegisterRESTRoutes(_ client.Context, _ *mux.Router) {}
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-	types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx)) //nolint:errcheck
+	err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
+	if err != nil {
+		panic(err)
+	}
 }
 
-// GetTxCmd returns the capability module's root tx command.
-func (a AppModuleBasic) GetTxCmd() *cobra.Command {
+// GetTxCmd returns the epochs module's root tx command.
+func (AppModuleBasic) GetTxCmd() *cobra.Command {
 	return nil
 }
 
-// GetQueryCmd returns the capability module's root query command.
+// GetQueryCmd returns the epochs module's root query command.
 func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 	return cli.GetQueryCmd()
 }
@@ -96,76 +110,105 @@ func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 // AppModule
 // ----------------------------------------------------------------------------
 
-// AppModule implements the AppModule interface for the capability module.
+// AppModule implements the AppModule interface for the epochs module.
 type AppModule struct {
 	AppModuleBasic
 
 	keeper keeper.Keeper
 }
 
-func NewAppModule(keeper keeper.Keeper) AppModule {
+// NewAppModule return a new AppModule
+func NewAppModule(cdc codec.Codec, keeper keeper.Keeper) AppModule {
 	return AppModule{
-		AppModuleBasic: NewAppModuleBasic(),
+		AppModuleBasic: NewAppModuleBasic(cdc),
 		keeper:         keeper,
 	}
 }
 
-// Name returns the capability module's name.
+// Name returns the epochs module's name.
 func (am AppModule) Name() string {
 	return am.AppModuleBasic.Name()
 }
 
-// Route returns the capability module's message routing key.
-func (am AppModule) Route() sdk.Route {
-	return sdk.Route{}
+// NewHandler returns nil inflation module doesn't expose tx gRPC endpoints
+func (am AppModule) NewHandler() sdk.Handler {
+	return nil
 }
 
-// QuerierRoute returns the capability module's query routing key.
-func (AppModule) QuerierRoute() string { return types.QuerierRoute }
+// Route returns the epochs module's message routing key.
+func (am AppModule) Route() sdk.Route {
+	return sdk.NewRoute(types.RouterKey, am.NewHandler())
+}
 
-// LegacyQuerierHandler returns the x/epochs module's Querier.
-func (am AppModule) LegacyQuerierHandler(legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
-	return func(sdk.Context, []string, abci.RequestQuery) ([]byte, error) {
-		return nil, fmt.Errorf("legacy querier not supported for the x/%s module", types.ModuleName)
-	}
+// QuerierRoute returns the epochs module's query routing key.
+func (AppModule) QuerierRoute() string { return "" }
+
+// LegacyQuerierHandler returns the epochs module's Querier.
+func (am AppModule) LegacyQuerierHandler(_ *codec.LegacyAmino) sdk.Querier {
+	return nil
 }
 
 // RegisterServices registers a GRPC query service to respond to the
 // module-specific GRPC queries.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	types.RegisterQueryServer(cfg.QueryServer(), keeper.NewQuerier(am.keeper))
+	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 }
 
-// RegisterInvariants registers the capability module's invariants.
+// RegisterInvariants registers the epochs module's invariants.
 func (am AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {}
 
-// InitGenesis performs the capability module's genesis initialization It returns
+// InitGenesis performs the epochs module's genesis initialization It returns
 // no validator updates.
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, gs json.RawMessage) []abci.ValidatorUpdate {
 	var genState types.GenesisState
 	// Initialize global index to index in genesis state
 	cdc.MustUnmarshalJSON(gs, &genState)
 
-	am.keeper.InitGenesis(ctx, genState)
-
+	InitGenesis(ctx, am.keeper, genState)
 	return []abci.ValidatorUpdate{}
 }
 
-// ExportGenesis returns the capability module's exported genesis state as raw JSON bytes.
+// ExportGenesis returns the epochs module's exported genesis state as raw JSON bytes.
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
-	genState := am.keeper.ExportGenesis(ctx)
+	genState := ExportGenesis(ctx, am.keeper)
 	return cdc.MustMarshalJSON(genState)
 }
 
-// BeginBlock executes all ABCI BeginBlock logic respective to the capability module.
+// BeginBlock executes all ABCI BeginBlock logic respective to the epochs module.
 func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 	am.keeper.BeginBlocker(ctx)
 }
 
-// EndBlock executes all ABCI EndBlock logic respective to the capability module. It
+// EndBlock executes all ABCI EndBlock logic respective to the epochs module. It
 // returns no validator updates.
-func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
+func (am AppModule) EndBlock(_ sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
 	return []abci.ValidatorUpdate{}
+}
+
+// ___________________________________________________________________________
+
+// AppModuleSimulation functions
+
+// GenerateGenesisState creates a randomized GenState of theepochs module.
+func (AppModule) GenerateGenesisState(_ *module.SimulationState) {}
+
+// ProposalContents doesn't return any content functions for governance proposals.
+func (AppModule) ProposalContents(_ module.SimulationState) []simtypes.WeightedProposalContent {
+	return []simtypes.WeightedProposalContent{}
+}
+
+// RandomizedParams creates randomizedepochs param changes for the simulator.
+func (AppModule) RandomizedParams(_ *rand.Rand) []simtypes.ParamChange {
+	return []simtypes.ParamChange{}
+}
+
+// RegisterStoreDecoder registers a decoder for supply module's types
+func (am AppModule) RegisterStoreDecoder(_ sdk.StoreDecoderRegistry) {
+}
+
+// WeightedOperations returns the all the gov module operations with their respective weights.
+func (am AppModule) WeightedOperations(_ module.SimulationState) []simtypes.WeightedOperation {
+	return []simtypes.WeightedOperation{}
 }
 
 // ConsensusVersion implements AppModule/ConsensusVersion.

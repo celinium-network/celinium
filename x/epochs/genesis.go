@@ -14,46 +14,36 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the Evmos packages. If not, see https://github.com/evmos/evmos/blob/main/LICENSE
 
-package keeper
+package epochs
 
 import (
-	"fmt"
+	"time"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/tendermint/tendermint/libs/log"
 
+	"celinium/x/epochs/keeper"
 	"celinium/x/epochs/types"
 )
 
-// Keeper of this module maintains collections of epochs and hooks.
-type Keeper struct {
-	cdc      codec.Codec
-	storeKey storetypes.StoreKey
-	hooks    types.EpochHooks
-}
+// InitGenesis initializes the epochs module's state from a provided genesis
+// state.
+func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) {
+	// set epoch info from genesis
+	for _, epoch := range genState.Epochs {
+		// Initialize empty epoch values via Cosmos SDK
+		if epoch.StartTime.Equal(time.Time{}) || epoch.StartTime.IsZero() {
+			epoch.StartTime = ctx.BlockTime()
+		}
 
-// NewKeeper returns a new instance of epochs Keeper
-func NewKeeper(cdc codec.Codec, storeKey storetypes.StoreKey) *Keeper {
-	return &Keeper{
-		cdc:      cdc,
-		storeKey: storeKey,
+		epoch.CurrentEpochStartHeight = ctx.BlockHeight()
+
+		k.SetEpochInfo(ctx, epoch)
 	}
 }
 
-// SetHooks set the epoch hooks
-func (k *Keeper) SetHooks(eh types.EpochHooks) *Keeper {
-	if k.hooks != nil {
-		panic("cannot set epochs hooks twice")
+// ExportGenesis returns the epochs module's exported genesis.
+func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
+	return &types.GenesisState{
+		Epochs: k.AllEpochInfos(ctx),
 	}
-
-	k.hooks = eh
-
-	return k
-}
-
-// Logger returns a module-specific logger.
-func (k Keeper) Logger(ctx sdk.Context) log.Logger {
-	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }

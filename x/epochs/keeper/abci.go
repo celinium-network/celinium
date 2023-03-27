@@ -1,63 +1,78 @@
+// Copyright 2022 Evmos Foundation
+// This file is part of the Evmos Network packages.
+//
+// Evmos is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// The Evmos packages are distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with the Evmos packages. If not, see https://github.com/evmos/evmos/blob/main/LICENSE
+
 package keeper
 
 import (
-	"fmt"
+	"strconv"
 	"time"
-
-	"github.com/osmosis-labs/osmosis/x/epochs/types"
 
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"celinium/x/epochs/types"
 )
 
-// BeginBlocker of epochs module.
+// BeginBlocker of epochs module
 func (k Keeper) BeginBlocker(ctx sdk.Context) {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyBeginBlocker)
-	k.IterateEpochInfo(ctx, func(index int64, epochInfo types.EpochInfo) (stop bool) {
-		logger := k.Logger(ctx)
 
-		// If blocktime < initial epoch start time, return
-		if ctx.BlockTime().Before(epochInfo.StartTime) {
-			return
-		}
-		// if epoch counting hasn't started, signal we need to start.
-		shouldInitialEpochStart := !epochInfo.EpochCountingStarted
+	logger := k.Logger(ctx)
+
+	k.IterateEpochInfo(ctx, func(_ int64, epochInfo types.EpochInfo) (stop bool) {
+		// Has it not started, and is the block time > initial epoch start time
+		shouldInitialEpochStart := !epochInfo.EpochCountingStarted && !epochInfo.StartTime.After(ctx.BlockTime())
 
 		epochEndTime := epochInfo.CurrentEpochStartTime.Add(epochInfo.Duration)
-		shouldEpochStart := (ctx.BlockTime().After(epochEndTime)) || shouldInitialEpochStart
+		shouldEpochEnd := ctx.BlockTime().After(epochEndTime) && !shouldInitialEpochStart && !epochInfo.StartTime.After(ctx.BlockTime())
 
-		if !shouldEpochStart {
-			return false
-		}
 		epochInfo.CurrentEpochStartHeight = ctx.BlockHeight()
 
-		if shouldInitialEpochStart {
-			epochInfo.EpochCountingStarted = true
-			epochInfo.CurrentEpoch = 1
-			epochInfo.CurrentEpochStartTime = epochInfo.StartTime
-			logger.Info(fmt.Sprintf("Starting new epoch with identifier %s epoch number %d", epochInfo.Identifier, epochInfo.CurrentEpoch))
-		} else {
+		switch {
+		case shouldInitialEpochStart:
+			epochInfo.StartInitialEpoch()
+
+			logger.Info("starting epoch", "identifier", epochInfo.Identifier)
+		case shouldEpochEnd:
+			epochInfo.EndEpoch()
+
+			logger.Info("ending epoch", "identifier", epochInfo.Identifier)
+
 			ctx.EventManager().EmitEvent(
 				sdk.NewEvent(
 					types.EventTypeEpochEnd,
-					sdk.NewAttribute(types.AttributeEpochNumber, fmt.Sprintf("%d", epochInfo.CurrentEpoch)),
+					sdk.NewAttribute(types.AttributeEpochNumber, strconv.FormatInt(epochInfo.CurrentEpoch, 10)),
 				),
 			)
 			k.AfterEpochEnd(ctx, epochInfo.Identifier, epochInfo.CurrentEpoch)
-			epochInfo.CurrentEpoch += 1
-			epochInfo.CurrentEpochStartTime = epochInfo.CurrentEpochStartTime.Add(epochInfo.Duration)
-			logger.Info(fmt.Sprintf("Starting epoch with identifier %s epoch number %d", epochInfo.Identifier, epochInfo.CurrentEpoch))
+		default:
+			// continue
+			return false
 		}
 
-		// emit new epoch start event, set epoch info, and run BeforeEpochStart hook
+		k.SetEpochInfo(ctx, epochInfo)
+
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
 				types.EventTypeEpochStart,
-				sdk.NewAttribute(types.AttributeEpochNumber, fmt.Sprintf("%d", epochInfo.CurrentEpoch)),
-				sdk.NewAttribute(types.AttributeEpochStartTime, fmt.Sprintf("%d", epochInfo.CurrentEpochStartTime.Unix())),
+				sdk.NewAttribute(types.AttributeEpochNumber, strconv.FormatInt(epochInfo.CurrentEpoch, 10)),
+				sdk.NewAttribute(types.AttributeEpochStartTime, strconv.FormatInt(epochInfo.CurrentEpochStartTime.Unix(), 10)),
 			),
 		)
-		k.setEpochInfo(ctx, epochInfo)
+
 		k.BeforeEpochStart(ctx, epochInfo.Identifier, epochInfo.CurrentEpoch)
 
 		return false
