@@ -1,0 +1,182 @@
+syntax = "proto3";
+
+package celinium.liquidstake.v1;
+
+import "gogoproto/gogo.proto";
+import "cosmos_proto/cosmos.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "celinium/liquid-stake/v1/source_chain.proto";
+
+option go_package = "celinium/x/liquid-stake/types";
+
+// Msg defines the liquid stake Msg service.
+service Msg{
+    // Register a new source chain for liquid stake. At least one correct Validator information must be provided    
+    rpc RegisterSourceChain(MsgRegisterSourceChain) returns(MsgRegisterSourceChainResponse);
+
+    // Edit the weight of validators for a source chain. Add this validators if they don't exist.
+    rpc EditValidators(MsgEditVadlidators) returns (MsgEditValidatorsResponse);
+
+    // Rebalance the amount of delegation funds according to the weight of Validators.
+    // Note that this cannot be instant.
+    rpc RebalanceValidator(MsgRebalanceValidators) returns(RebalanceValidatorsResponse);
+
+    // Delegate define a method for performing a cross chain delegation of coins.
+    rpc Delegate(MsgDelegate) returns(MsgDelegateResponse);
+
+    // Undelegate defines a method for performing an cross chain undelegation from dest chain to source chain.
+    rpc Undelegate(MsgUndelegate) returns(MsgUndelegateResponse);
+
+    // Reinvest defines a method for reinvestment which use the reward form delegate.
+    rpc Reinvest(MsgReinvest) returns(MsgReinvestResponse);
+
+    // Claim define a method for user claim the reward of delegation.
+    rpc Claim(MsgClaim) returns(MsgClaimResponse);
+}
+
+// MsgRegisterSourceChain define the message for registering a source chain in the LiquidStake module.
+message MsgRegisterSourceChain{
+    // The chain id of registered source chain.
+    string ChainID = 1;
+    
+    // The ibc connection id. It will be used for creating interchain account.
+    string connectionID = 2;
+
+    // ibc transfer channel id
+    string trasnferChannelID = 3;
+ 
+    // Validators at the start
+    repeated Validator validators  = 4;
+
+    // The denom of source chain native token.
+    string nativeDenom = 5;
+
+    // The denom of derivative token generate by liquid stake
+    string derivativeDenom = 6;
+
+    // The caller of this transaction. It needs to have certain permissions
+    string caller = 7;
+}
+
+// MsgRegisterSourceChainResponse define the MsgRegisterSourceChain response type.
+message MsgRegisterSourceChainResponse{
+
+}
+
+// MsgEditValidators define the message to update the validator set of a source chain
+// Validators can be added, removed or updated with new information
+message MsgEditVadlidators {
+    // The chain id of source chain.
+    string ChainID = 1;
+
+    // The edited validators.
+    repeated Validator validators  = 2;
+
+    // The caller of this transaction.
+    string caller = 3;
+}
+
+// MsgEditValidatorsResponse define the MsgEditVadlidators response type.
+message MsgEditValidatorsResponse{
+
+}
+
+// MsgRebalanceValidators define the message to rebalance the amount of delegation funds 
+// according to the weight of validators.
+message MsgRebalanceValidators{
+    // The chain id of source chain.
+    string ChainID = 1;
+
+    // The caller of this transaction. It does not need permission,
+    // but should limit the calling frequency
+    string caller = 2;
+}
+
+// RebalanceValidatorsResponse define the MsgRebalanceValidators response type.
+message RebalanceValidatorsResponse{
+    
+}
+
+// MsgDelegate define the message to do liquid stake.
+message MsgDelegate{
+    // The chain ID of the source chain to delegate.
+    string chainID = 1;
+
+    // The amount to delegate in string format, encoded as cosmos.Int.
+    string amount = 2[
+        (cosmos_proto.scalar)  = "cosmos.Int",
+        (gogoproto.customtype) = "Int",
+        (gogoproto.nullable)   = false];
+
+
+    // The delegator address.
+    string delegator = 3;    
+}
+
+// MsgDelegateResponse define the MsgDelegate response type.
+message MsgDelegateResponse{
+
+}
+
+// MsgUndelegate define the message to performing liquid staking redeem.
+message MsgUndelegate{
+    // The chain ID of the source chain to redeem from.
+    string chainID = 1;
+    // The amount to redeem in string format, encoded as cosmos.Int.
+    string amount = 2[
+        (cosmos_proto.scalar)  = "cosmos.Int",
+        (gogoproto.customtype) = "Int",
+        (gogoproto.nullable)   = false];
+
+    // The receiver address for the redeemed tokens.
+    string receiver = 3;
+    // The delegator address.
+    string delegator = 4;
+}
+
+// MsgUndelegateResponce define the MsgUndelegate response type.
+message MsgUndelegateResponse{
+
+}
+
+// MsgReinvest define the message to perforing reinvestment.
+message MsgReinvest {
+    // The chain ID of the source chain to reinvest in.
+    string chainId = 1;
+    // The delegation epoch.
+    uint64 epoch = 2;
+    // The funds to reinvest
+    cosmos.base.v1beta1.Coin funds = 3;
+    // The Merkle proof of the funds.
+    string fundsProof = 4;
+    // The height at which the Merkle proof is stored.
+    uint64 proofHeight = 5;
+    // The caller of the transaction.
+    string caller = 6;
+}
+
+// MsgReinvestResponse defines the response type for the MsgReinvest message.
+message MsgReinvestResponse {
+    
+}
+
+// MsgClaim defines a message for performing a liquid staking claim.
+message MsgClaim{
+    // The chain ID of the source chain to claim from.
+    string ChainId = 1;
+
+    // The delegator address.
+    string delegator = 2;
+
+    // The epoch number to claim.
+    uint64 epoch = 3;
+
+    // The caller of the transaction.
+    string caller = 4;
+}
+
+// MsgClaimResponse defines the response type for the MsgClaim message.
+message MsgClaimResponse{
+    
+}
+
