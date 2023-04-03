@@ -44,11 +44,7 @@ func (s SourceChain) BasicVerify() error {
 		return err
 	}
 
-	if err := sdk.ValidateDenom(s.DerivativeDenom); err != nil {
-		return err
-	}
-
-	return nil
+	return sdk.ValidateDenom(s.DerivativeDenom)
 }
 
 // GenerateAndFillAccount generate the WithdrawAddress/DelegateAddress/UnboudAddress for source chain

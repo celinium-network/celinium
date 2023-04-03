@@ -1,13 +1,13 @@
 package types
 
 import (
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	sdkioerrors "cosmossdk.io/errors"
 )
 
 var (
-	ErrSourceChainExist     = sdkerrors.Register(ModuleName, 1, "source chain already exist")
-	ErrBannedIBCTransfer    = sdkerrors.Register(ModuleName, 2, "ibc transfer is banned")
-	ErrSourceChainParameter = sdkerrors.Register(ModuleName, 3, "add source chain parameter has error")
+	ErrSourceChainExist     = sdkioerrors.Register(ModuleName, 1, "source chain already exist")
+	ErrBannedIBCTransfer    = sdkioerrors.Register(ModuleName, 2, "ibc transfer is banned")
+	ErrSourceChainParameter = sdkioerrors.Register(ModuleName, 3, "add source chain parameter has error")
 	// ErrUnknownSourceChain              = sdkerrors.Register(ModuleName, 3, "unknown source chain")
 	// ErrMismatchParameter               = sdkerrors.Register(ModuleName, 4, "parameters in msg has error")
 	// ErrUnavailableSourceChain          = sdkerrors.Register(ModuleName, 5, "unavailable source chain")
