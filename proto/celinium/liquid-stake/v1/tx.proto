@@ -44,18 +44,21 @@ message MsgRegisterSourceChain{
 
     // ibc transfer channel id
     string trasnferChannelID = 3;
- 
+
+    // validator address prefix of source chain.
+    string bech32ValidatorAddrPrefix = 4;
+
     // Validators at the start
-    repeated Validator validators  = 4;
+    repeated Validator validators  = 5;
 
     // The denom of source chain native token.
-    string nativeDenom = 5;
+    string nativeDenom = 6;
 
     // The denom of derivative token generate by liquid stake
-    string derivativeDenom = 6;
+    string derivativeDenom = 7;
 
     // The caller of this transaction. It needs to have certain permissions
-    string caller = 7;
+    string caller = 8;
 }
 
 // MsgRegisterSourceChainResponse define the MsgRegisterSourceChain response type.
