@@ -25,6 +25,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/simapp"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/version"
 
@@ -128,15 +129,15 @@ import (
 	icahosttypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/host/types"
 	icatypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/types"
 
+	appparams "celinium/app/params"
+
 	epochs "celinium/x/epochs"
 	epochskeeper "celinium/x/epochs/keeper"
 	epochstypes "celinium/x/epochs/types"
 
-	interstaking "celinium/x/inter-staking"
-	interstakingkeeper "celinium/x/inter-staking/keeper"
-	interstakingtypes "celinium/x/inter-staking/types"
-
-	appparams "celinium/app/params"
+	liquidstake "celinium/x/liquid-stake"
+	liquidstakekeeper "celinium/x/liquid-stake/keeper"
+	liquidstaketypes "celinium/x/liquid-stake/types"
 )
 
 const (
@@ -188,8 +189,8 @@ var (
 		ica.AppModuleBasic{},
 		vesting.AppModuleBasic{},
 		ibcfee.AppModuleBasic{},
-		interstaking.AppModuleBasic{},
 		epochs.AppModuleBasic{},
+		liquidstake.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -203,7 +204,6 @@ var (
 		govtypes.ModuleName:            {authtypes.Burner},
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
 		ibcfeetypes.ModuleName:         nil,
-		interstakingtypes.ModuleName:   nil,
 	}
 )
 
@@ -257,17 +257,17 @@ type App struct {
 	ICAHostKeeper       icahostkeeper.Keeper
 	ICAControllerKeeper icacontrollerkeeper.Keeper
 	IBCFeeKeeper        ibcfeekeeper.Keeper
-	InterStakingKeeper  interstakingkeeper.Keeper
 	EpochsKeeper        epochskeeper.Keeper
+	LiquidStakeKeeper   liquidstakekeeper.Keeper
 
 	FeeGrantKeeper feegrantkeeper.Keeper
 	GroupKeeper    groupkeeper.Keeper
 
 	// make scoped keepers public for test purposes
-	ScopedIBCKeeper          capabilitykeeper.ScopedKeeper
-	ScopedTransferKeeper     capabilitykeeper.ScopedKeeper
-	ScopedICAHostKeeper      capabilitykeeper.ScopedKeeper
-	ScopedInterStakingKeeper capabilitykeeper.ScopedKeeper
+	ScopedIBCKeeper        capabilitykeeper.ScopedKeeper
+	ScopedTransferKeeper   capabilitykeeper.ScopedKeeper
+	ScopedICAHostKeeper    capabilitykeeper.ScopedKeeper
+	ScopedLiquiStakeKeeper capabilitykeeper.ScopedKeeper
 
 	// mm is the module manager
 	mm *module.Manager
@@ -313,8 +313,8 @@ func NewApp(
 		ibctransfertypes.StoreKey, icahosttypes.StoreKey, capabilitytypes.StoreKey, group.StoreKey,
 		icacontrollertypes.StoreKey,
 		ibcfeetypes.StoreKey,
-		interstakingtypes.StoreKey,
 		epochstypes.StoreKey,
+		liquidstaketypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -466,7 +466,7 @@ func NewApp(
 	scopedICAControllerKeeper := app.CapabilityKeeper.ScopeToModule(icacontrollertypes.SubModuleName)
 	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
 	scopedICAHostKeeper := app.CapabilityKeeper.ScopeToModule(icahosttypes.SubModuleName)
-	scopedInterStakingKeeper := app.CapabilityKeeper.ScopeToModule(interstakingtypes.ModuleName)
+	scopedLiquiStakeKeeper := app.CapabilityKeeper.ScopeToModule(liquidstaketypes.ModuleName)
 
 	// Sealing prevents other modules from creating scoped sub-keepers
 	app.CapabilityKeeper.Seal()
@@ -529,35 +529,31 @@ func NewApp(
 	icaHostIBCModule := icahost.NewIBCModule(app.ICAHostKeeper)
 	icaHostStack := ibcfee.NewIBCMiddleware(icaHostIBCModule, app.IBCFeeKeeper)
 
-	app.InterStakingKeeper = interstakingkeeper.NewKeeper(
+	app.LiquidStakeKeeper = liquidstakekeeper.NewKeeper(
 		appCodec,
-		keys[interstakingtypes.StoreKey],
-		"",
+		keys[liquidstaketypes.StoreKey],
 		app.AccountKeeper,
-		app.BankKeeper,
 		app.IBCKeeper.ClientKeeper,
 		app.ICAControllerKeeper,
 		app.TransferKeeper,
-		scopedInterStakingKeeper,
 	)
 
-	interStakingModule := interstaking.NewAppModule(appCodec, app.InterStakingKeeper)
-	interStakingIBCModule := interstaking.NewIBCModule(app.InterStakingKeeper)
-
-	icaControllerStakingIBCModule := icacontroller.NewIBCMiddleware(interStakingIBCModule, app.ICAControllerKeeper)
-	icaControllerStack := ibcfee.NewIBCMiddleware(icaControllerStakingIBCModule, app.IBCFeeKeeper)
+	liquidstakeModule := liquidstake.NewAppModule(appCodec, app.LiquidStakeKeeper)
+	liquidstakeIBCModule := liquidstake.NewIBCModule(app.LiquidStakeKeeper)
+	icaCtlLiquidStakeIBCModule := icacontroller.NewIBCMiddleware(liquidstakeIBCModule, app.ICAControllerKeeper)
+	icaControllerStack := ibcfee.NewIBCMiddleware(icaCtlLiquidStakeIBCModule, app.IBCFeeKeeper)
 
 	ibcRouter := ibcporttypes.NewRouter()
 	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostStack).
 		AddRoute(icacontrollertypes.SubModuleName, icaControllerStack).
 		AddRoute(ibctransfertypes.ModuleName, transferIBCModule).
-		AddRoute(interstakingtypes.ModuleName, icaControllerStack)
+		AddRoute(liquidstaketypes.ModuleName, icaControllerStack)
 
 	app.IBCKeeper.SetRouter(ibcRouter)
 
 	app.ScopedIBCKeeper = scopedIBCKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
-	app.ScopedInterStakingKeeper = scopedInterStakingKeeper
+	app.ScopedLiquiStakeKeeper = scopedLiquiStakeKeeper
 
 	/** gov keeper **/
 	govRouter := govv1beta1.NewRouter()
@@ -607,9 +603,9 @@ func NewApp(
 		params.NewAppModule(app.ParamsKeeper),
 		transferModule,
 		icaModule,
-		interStakingModule,
 		ibcFeeModule,
 		epochs.NewAppModule(appCodec, app.EpochsKeeper),
+		liquidstakeModule,
 	)
 
 	app.mm.SetOrderBeginBlockers(
@@ -634,8 +630,8 @@ func NewApp(
 		paramstypes.ModuleName,
 		vestingtypes.ModuleName,
 		ibcfeetypes.ModuleName,
-		interstakingtypes.ModuleName,
 		epochstypes.ModuleName,
+		liquidstaketypes.ModuleName,
 	)
 
 	app.mm.SetOrderEndBlockers(
@@ -660,8 +656,8 @@ func NewApp(
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		ibcfeetypes.ModuleName,
-		interstakingtypes.ModuleName,
 		epochstypes.ModuleName,
+		liquidstaketypes.ModuleName,
 	)
 
 	app.mm.SetOrderInitGenesis(
@@ -686,8 +682,8 @@ func NewApp(
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		ibcfeetypes.ModuleName,
-		interstakingtypes.ModuleName,
 		epochstypes.ModuleName,
+		liquidstaketypes.ModuleName,
 	)
 
 	app.mm.RegisterInvariants(&app.CrisisKeeper)
@@ -713,7 +709,8 @@ func NewApp(
 		ibc.NewAppModule(app.IBCKeeper),
 		transferModule,
 		ibcFeeModule,
-		//epochs.NewAppModule(appCodec, app.EpochsKeeper),
+		epochs.NewAppModule(appCodec, app.EpochsKeeper),
+		// liquidstakeModule,
 	)
 	app.sm.RegisterStoreDecoders()
 

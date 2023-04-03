@@ -14,16 +14,13 @@ var (
 )
 
 func RegisterCodec(cdc *codec.LegacyAmino) {
-	cdc.RegisterConcrete(&MsgAddSourceChain{}, "interstaking/MsgAddSourceChain", nil)
-	cdc.RegisterConcrete(&MsgDelegate{}, "interstaking/MsgDelegate", nil)
-	cdc.RegisterConcrete(&SourceChainMetadata{}, "interstaking/SourceChainMetadata", nil)
+	cdc.RegisterConcrete(&MsgRegisterSourceChain{}, "liquidstake/MsgRegisterSourceChain", nil)
 }
 
 func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 	registry.RegisterImplementations(
 		(*sdk.Msg)(nil),
-		&MsgAddSourceChain{},
-		&MsgDelegate{},
+		&MsgRegisterSourceChain{},
 	)
 }

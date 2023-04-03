@@ -32,36 +32,39 @@ message SourceChain {
 
     // ibc transfer channel id
     string trasnferChannelID = 3;
- 
-    repeated Validator validators  = 4;
+
+    // validator address prefix of source chain.
+    string bech32ValidatorAddrPrefix = 4;
+
+    repeated Validator validators  = 5;
 
     // The address of Interchain account for receiving POS reward
-    string withdrawAddress = 5 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+    string withdrawAddress = 6 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
     // The address of Interchain account for delegation
-    string delegateAddress = 6 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+    string delegateAddress = 7 [(cosmos_proto.scalar) = "cosmos.AddressString"];
  
     // The address of Interchain account for unbound
-    string unboudAddress = 7 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+    string unboudAddress = 8 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
     // Redemption ratio in the current epoch
-    string redemptionratio = 8 [
+    string redemptionratio = 9 [
         (cosmos_proto.scalar)  = "cosmos.Dec",
         (gogoproto.customtype) = "Dec",
         (gogoproto.nullable)   = false
     ];
 
     // The denom of cross chain token.
-    string ibcDenom = 9;
+    string ibcDenom = 10;
 
     // The denom of source chain native token.
-    string nativeDenom = 10;
+    string nativeDenom = 11;
 
     // Derivative token denom generated after liquid stake
-    string derivativeDenom = 11;
+    string derivativeDenom = 12;
 
     // The amount of staked token.
-    string stakedAmount = 12 [
+    string stakedAmount = 13 [
         (cosmos_proto.scalar)  = "cosmos.Int",
         (gogoproto.customtype) = "Int",
         (gogoproto.nullable)   = false
