@@ -11,11 +11,11 @@ const (
 	MinValidatorWeight = uint64(1000)
 	MinValidators      = 1
 
-	// WithdrawAddressSuffix used for generate liquid-stake withdraw address
+	// WithdrawAddressSuffix used for generate liquidstake withdraw address
 	WithdrawAddressSuffix = "withdraw"
-	// DelegationAddressSuffix used for generate liquid-stake delegateion address
+	// DelegationAddressSuffix used for generate liquidstake delegateion address
 	DelegationAddressSuffix = "delegate"
-	// UnboundingAddressSuffix used for generate liquid-stake unbond address
+	// UnboundingAddressSuffix used for generate liquidstake unbond address
 	UnboundAddressSuffix = "unbounding"
 )
 

@@ -1,7 +1,7 @@
 syntax = "proto3";
 package celinium.liquidstake.v1;
 
-option go_package = "celinium/x/liquid-stake/types";
+option go_package = "celinium/x/liquidstake/types";
 
 // As IBC calls are asynchronous and their acknowledgement arrival order cannot be controlled, we need a callback mechanism.
 // Following the IBC communication mechanism, we can save information such as {ibcChannelID+sequence}: IBCCallbackArgs.

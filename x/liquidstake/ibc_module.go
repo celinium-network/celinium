@@ -1,7 +1,7 @@
 package liquidstake
 
 import (
-	"celinium/x/liquid-stake/keeper"
+	"celinium/x/liquidstake/keeper"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"

@@ -19,6 +19,8 @@ const (
 
 // Keys for store prefixes
 var (
+	EpochKey = []byte{0x10}
+
 	// Prefix for source chain
 	SouceChainKeyPrefix = []byte{0x11}
 
@@ -26,7 +28,7 @@ var (
 	DelegationRecordIDKey = []byte{0x20}
 
 	// Prefix for key which used in `{epoch + ChainID}=> DelegationRecordID`
-	EpochToDelegationRecordIDPrefix = []byte{0x21}
+	DelegationRecordIDForEpochPrefix = []byte{0x21}
 
 	// Prefix for DelegationRecord `ID => DelegationRecord`
 	DelegationRecordPrefix = []byte{0x22}
@@ -40,17 +42,17 @@ func GetSourceChainKey(chainID []byte) []byte {
 	return append(SouceChainKeyPrefix, lengthPrefix(chainID)...)
 }
 
-// GetEpochToDelegationRecordIDKey return , `SouceChainKeyPrefix + len(chainID)+chainID`
-func GetEpochToDelegationRecordIDKey(epoch uint64, chainID []byte) []byte {
+// GeChainDelegationRecordIDForEpochKey return , `SouceChainKeyPrefix + len(chainID)+chainID`
+func GeChainDelegationRecordIDForEpochKey(epoch uint64, chainID []byte) []byte {
 	epochBz := sdk.Uint64ToBigEndian(epoch)
 
-	prefixL := len(EpochToDelegationRecordIDPrefix)
+	prefixL := len(DelegationRecordIDForEpochPrefix)
 
 	chainIDWithLength := lengthPrefix(chainID)
 
 	bz := make([]byte, prefixL+8+len(chainIDWithLength))
 
-	copy(bz[:prefixL], EpochToDelegationRecordIDPrefix)
+	copy(bz[:prefixL], DelegationRecordIDForEpochPrefix)
 	copy(bz[prefixL:prefixL+8], epochBz)
 	copy(bz[prefixL+8:], chainIDWithLength)
 

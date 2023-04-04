@@ -3,10 +3,10 @@ package liquidstake
 import (
 	"encoding/json"
 
-	"github.com/spf13/cobra"
+	"celinium/x/liquidstake/keeper"
+	"celinium/x/liquidstake/types"
 
-	"celinium/x/liquid-stake/keeper"
-	"celinium/x/liquid-stake/types"
+	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"

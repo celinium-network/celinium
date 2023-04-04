@@ -7,7 +7,7 @@ import "cosmos_proto/cosmos.proto";
 import "cosmos/base/v1beta1/coin.proto";
 
 
-option go_package = "celinium/x/liquid-stake/types";
+option go_package = "celinium/x/liquidstake/types";
 
 // The record of source chain delegation in a epoch.  
 message DelegationRecord{
@@ -29,6 +29,9 @@ message DelegationRecord{
     //   1）TransferFailed: An error occurred during the process of transferring funds back to the source chain.
     //   2) DelegateFailed: An error occurred during the process of delegating in source chain. 
     uint32  status = 3;
+
+    // The number of created epoch
+    uint64 epochNumber = 4;
 }
 
 // UserUndelegationRecord represents a record of a user's undelegation action.
