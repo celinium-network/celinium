@@ -2,7 +2,9 @@ package types
 
 import (
 	"fmt"
+	"math/big"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
@@ -48,7 +50,7 @@ func (s SourceChain) BasicVerify() error {
 }
 
 // GenerateAndFillAccount generate the WithdrawAddress/DelegateAddress/UnboudAddress for source chain
-// todo!: Add a function parameter to do some work like register, then don't need return values?
+// TODO: Add a function parameter to do some work like register, then don't need return values?
 func (s *SourceChain) GenerateAndFillAccount(ctx sdk.Context) (accounts []*authtypes.ModuleAccount) {
 	header := ctx.BlockHeader()
 
@@ -74,6 +76,32 @@ func (s *SourceChain) GenerateAndFillAccount(ctx sdk.Context) (accounts []*autht
 	accounts = append(accounts, unbondAccount)
 
 	return accounts
+}
+
+func (s SourceChain) AllocateFundsForValidator(amount math.Int) map[string]*big.Int {
+	validatorFunds := make(map[string]*big.Int)
+
+	// TODO weight shoudle math.Int, maybe overflow there?
+	var totalWeight uint64
+	for _, v := range s.Validators {
+		totalWeight += v.Weight
+	}
+
+	for _, v := range s.Validators {
+		dec := math.LegacyNewDec(int64(v.Weight))
+		allocateFundAmount := dec.QuoInt64(int64(totalWeight)).MulInt(amount).BigInt()
+		validatorFunds[v.Address] = allocateFundAmount
+	}
+
+	return validatorFunds
+}
+
+func (s *SourceChain) UpdateWithDelegationRecord(record *DelegationRecord) {
+	s.StakedAmount = s.StakedAmount.Add(record.DelegationCoin.Amount)
+	// TODO update delegation amout for every validators, it't will be used for rebalance.
+	// (1) should not calcaute from weight at now
+	// (2) record at callback'Args
+	// (3) only after successful delegation
 }
 
 func verifyValidatorAddress(address, addrPrefix string) bool {

@@ -5,7 +5,7 @@ package types
 
 import (
 	fmt "fmt"
-	proto "github.com/gogo/protobuf/proto"
+	proto "github.com/cosmos/gogoproto/proto"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -23,27 +23,27 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // As IBC calls are asynchronous and their acknowledgement arrival order cannot be controlled, we need a callback mechanism.
-// Following the IBC communication mechanism, we can save information such as {ibcChannelID+sequence}: IBCCallbackArgs.
+// Following the IBC communication mechanism, we can save information such as {ibcChannelID+sequence}: IBCCallback.
 // When an IBC ACK is received, deserialize the args based on the CallType and execute the corresponding operation.
-type IBCCallbackArgs struct {
+type IBCCallback struct {
 	// The type of the callback operation.
 	CallType uint32 `protobuf:"varint,1,opt,name=callType,proto3" json:"callType,omitempty"`
 	// The arguments of the callback, serialized as a string.
 	Args string `protobuf:"bytes,2,opt,name=args,proto3" json:"args,omitempty"`
 }
 
-func (m *IBCCallbackArgs) Reset()         { *m = IBCCallbackArgs{} }
-func (m *IBCCallbackArgs) String() string { return proto.CompactTextString(m) }
-func (*IBCCallbackArgs) ProtoMessage()    {}
-func (*IBCCallbackArgs) Descriptor() ([]byte, []int) {
-	return fileDescriptor_9089515c17d36a88, []int{0}
+func (m *IBCCallback) Reset()         { *m = IBCCallback{} }
+func (m *IBCCallback) String() string { return proto.CompactTextString(m) }
+func (*IBCCallback) ProtoMessage()    {}
+func (*IBCCallback) Descriptor() ([]byte, []int) {
+	return fileDescriptor_ac472a3659c6833c, []int{0}
 }
-func (m *IBCCallbackArgs) XXX_Unmarshal(b []byte) error {
+func (m *IBCCallback) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *IBCCallbackArgs) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *IBCCallback) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_IBCCallbackArgs.Marshal(b, m, deterministic)
+		return xxx_messageInfo_IBCCallback.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -53,26 +53,26 @@ func (m *IBCCallbackArgs) XXX_Marshal(b []byte, deterministic bool) ([]byte, err
 		return b[:n], nil
 	}
 }
-func (m *IBCCallbackArgs) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_IBCCallbackArgs.Merge(m, src)
+func (m *IBCCallback) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_IBCCallback.Merge(m, src)
 }
-func (m *IBCCallbackArgs) XXX_Size() int {
+func (m *IBCCallback) XXX_Size() int {
 	return m.Size()
 }
-func (m *IBCCallbackArgs) XXX_DiscardUnknown() {
-	xxx_messageInfo_IBCCallbackArgs.DiscardUnknown(m)
+func (m *IBCCallback) XXX_DiscardUnknown() {
+	xxx_messageInfo_IBCCallback.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_IBCCallbackArgs proto.InternalMessageInfo
+var xxx_messageInfo_IBCCallback proto.InternalMessageInfo
 
-func (m *IBCCallbackArgs) GetCallType() uint32 {
+func (m *IBCCallback) GetCallType() uint32 {
 	if m != nil {
 		return m.CallType
 	}
 	return 0
 }
 
-func (m *IBCCallbackArgs) GetArgs() string {
+func (m *IBCCallback) GetArgs() string {
 	if m != nil {
 		return m.Args
 	}
@@ -80,29 +80,29 @@ func (m *IBCCallbackArgs) GetArgs() string {
 }
 
 func init() {
-	proto.RegisterType((*IBCCallbackArgs)(nil), "celinium.liquidstake.v1.IBCCallbackArgs")
+	proto.RegisterType((*IBCCallback)(nil), "celinium.liquidstake.v1.IBCCallback")
 }
 
 func init() {
-	proto.RegisterFile("celinium/liquidstake/v1/callback.proto", fileDescriptor_9089515c17d36a88)
+	proto.RegisterFile("celinium/liquidstake/v1/callback.proto", fileDescriptor_ac472a3659c6833c)
 }
 
-var fileDescriptor_9089515c17d36a88 = []byte{
-	// 172 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x52, 0x4f, 0x4e, 0xcd, 0xc9,
-	0xcc, 0xcb, 0x2c, 0xcd, 0xd5, 0xcf, 0xc9, 0x2c, 0x2c, 0xcd, 0x4c, 0xd1, 0x2d, 0x2e, 0x49, 0xcc,
-	0x4e, 0xd5, 0x2f, 0x33, 0xd4, 0x4f, 0x4e, 0xcc, 0xc9, 0x49, 0x4a, 0x4c, 0xce, 0xd6, 0x2b, 0x28,
-	0xca, 0x2f, 0xc9, 0x17, 0x12, 0x87, 0x29, 0xd4, 0x83, 0x28, 0x04, 0xab, 0xd3, 0x2b, 0x33, 0x54,
-	0x72, 0xe4, 0xe2, 0xf7, 0x74, 0x72, 0x76, 0x86, 0xaa, 0x76, 0x2c, 0x4a, 0x2f, 0x16, 0x92, 0xe2,
-	0xe2, 0x00, 0xe9, 0x0e, 0xa9, 0x2c, 0x48, 0x95, 0x60, 0x54, 0x60, 0xd4, 0xe0, 0x0d, 0x82, 0xf3,
-	0x85, 0x84, 0xb8, 0x58, 0x12, 0x8b, 0xd2, 0x8b, 0x25, 0x98, 0x14, 0x18, 0x35, 0x38, 0x83, 0xc0,
-	0x6c, 0x27, 0xf3, 0x13, 0x8f, 0xe4, 0x18, 0x2f, 0x3c, 0x92, 0x63, 0x7c, 0xf0, 0x48, 0x8e, 0x71,
-	0xc2, 0x63, 0x39, 0x86, 0x0b, 0x8f, 0xe5, 0x18, 0x6e, 0x3c, 0x96, 0x63, 0x88, 0x92, 0x85, 0x3b,
-	0xaf, 0x02, 0xd5, 0x81, 0x25, 0x95, 0x05, 0xa9, 0xc5, 0x49, 0x6c, 0x60, 0xb7, 0x19, 0x03, 0x02,
-	0x00, 0x00, 0xff, 0xff, 0x72, 0xa3, 0xdf, 0x35, 0xc6, 0x00, 0x00, 0x00,
+var fileDescriptor_ac472a3659c6833c = []byte{
+	// 165 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x52, 0x4b, 0x4e, 0xcd, 0xc9,
+	0xcc, 0xcb, 0x2c, 0xcd, 0xd5, 0xcf, 0xc9, 0x2c, 0x2c, 0xcd, 0x4c, 0x29, 0x2e, 0x49, 0xcc, 0x4e,
+	0xd5, 0x2f, 0x33, 0xd4, 0x4f, 0x4e, 0xcc, 0xc9, 0x49, 0x4a, 0x4c, 0xce, 0xd6, 0x2b, 0x28, 0xca,
+	0x2f, 0xc9, 0x17, 0x12, 0x87, 0xa9, 0xd3, 0x43, 0x52, 0xa7, 0x57, 0x66, 0xa8, 0x64, 0xcb, 0xc5,
+	0xed, 0xe9, 0xe4, 0xec, 0x0c, 0x55, 0x2d, 0x24, 0xc5, 0xc5, 0x01, 0xd2, 0x19, 0x52, 0x59, 0x90,
+	0x2a, 0xc1, 0xa8, 0xc0, 0xa8, 0xc1, 0x1b, 0x04, 0xe7, 0x0b, 0x09, 0x71, 0xb1, 0x24, 0x16, 0xa5,
+	0x17, 0x4b, 0x30, 0x29, 0x30, 0x6a, 0x70, 0x06, 0x81, 0xd9, 0x4e, 0x66, 0x27, 0x1e, 0xc9, 0x31,
+	0x5e, 0x78, 0x24, 0xc7, 0xf8, 0xe0, 0x91, 0x1c, 0xe3, 0x84, 0xc7, 0x72, 0x0c, 0x17, 0x1e, 0xcb,
+	0x31, 0xdc, 0x78, 0x2c, 0xc7, 0x10, 0x25, 0x03, 0x77, 0x59, 0x05, 0x8a, 0xdb, 0x4a, 0x2a, 0x0b,
+	0x52, 0x8b, 0x93, 0xd8, 0xc0, 0xce, 0x32, 0x06, 0x04, 0x00, 0x00, 0xff, 0xff, 0x69, 0x97, 0xf9,
+	0xc7, 0xc0, 0x00, 0x00, 0x00,
 }
 
-func (m *IBCCallbackArgs) Marshal() (dAtA []byte, err error) {
+func (m *IBCCallback) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -112,12 +112,12 @@ func (m *IBCCallbackArgs) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *IBCCallbackArgs) MarshalTo(dAtA []byte) (int, error) {
+func (m *IBCCallback) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *IBCCallbackArgs) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *IBCCallback) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -148,7 +148,7 @@ func encodeVarintCallback(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *IBCCallbackArgs) Size() (n int) {
+func (m *IBCCallback) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -170,7 +170,7 @@ func sovCallback(x uint64) (n int) {
 func sozCallback(x uint64) (n int) {
 	return sovCallback(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (m *IBCCallbackArgs) Unmarshal(dAtA []byte) error {
+func (m *IBCCallback) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -193,10 +193,10 @@ func (m *IBCCallbackArgs) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: IBCCallbackArgs: wiretype end group for non-group")
+			return fmt.Errorf("proto: IBCCallback: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: IBCCallbackArgs: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: IBCCallback: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:

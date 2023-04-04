@@ -19,7 +19,7 @@ func (k Keeper) AddSouceChain(ctx sdk.Context, sourceChain *types.SourceChain) e
 	}
 
 	// check source chain ibc transfer.
-	// todo!: Should consider whether to detect?
+	// TODO: Should consider whether to detect?
 	if !k.ibcTransferKeeper.GetSendEnabled(ctx) || !k.ibcTransferKeeper.GetReceiveEnabled(ctx) {
 		return types.ErrBannedIBCTransfer
 	}

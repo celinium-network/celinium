@@ -5,7 +5,7 @@ package celinium.liquidstake.v1;
 import "gogoproto/gogo.proto";
 import "cosmos_proto/cosmos.proto";
 import "cosmos/base/v1beta1/coin.proto";
-import "celinium/liquidstake/v1/sourcechain.proto";
+import "celinium/liquidstake/v1/source_chain.proto";
 
 option go_package = "celinium/x/liquidstake/types";
 

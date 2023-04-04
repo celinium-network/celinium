@@ -33,7 +33,7 @@ var (
 	// Prefix for DelegationRecord `ID => DelegationRecord`
 	DelegationRecordPrefix = []byte{0x22}
 
-	// Prefix for key `{port + channel + sequence} => DelegationRecordID`
+	// Prefix for key `{channel + port + sequence} => DelegationRecordID`
 	IBCDelegationCallbackPrefix = []byte{0x23}
 )
 
@@ -65,16 +65,20 @@ func GetDelegationRecordKey(id uint64) []byte {
 	return append(DelegationRecordPrefix, idBz...)
 }
 
-func GetIBCDelegationCallbackKey(channel uint64, sequence uint64) []byte {
-	channelBz := sdk.Uint64ToBigEndian(channel)
+func GetIBCDelegationCallbackKey(channel []byte, port []byte, sequence uint64) []byte {
+	channelBz := lengthPrefix(channel)
+	portBz := lengthPrefix(port)
 	sequenceBz := sdk.Uint64ToBigEndian(sequence)
 
 	prefixL := len(IBCDelegationCallbackPrefix)
-	bz := make([]byte, +8+8)
+	channelBzL := len(channelBz)
+	portBzL := len(portBz)
 
+	bz := make([]byte, prefixL+channelBzL+portBzL+8)
 	copy(bz[:prefixL], IBCDelegationCallbackPrefix)
-	copy(bz[prefixL:prefixL+8], channelBz)
-	copy(bz[prefixL+8:], sequenceBz)
+	copy(bz[prefixL:prefixL+channelBzL], channelBz)
+	copy(bz[prefixL+channelBzL:prefixL+channelBzL+portBzL], portBz)
+	copy(bz[prefixL+channelBzL+portBzL:], sequenceBz)
 
 	return bz
 }

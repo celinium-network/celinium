@@ -541,7 +541,7 @@ func NewApp(
 	)
 
 	liquidstakeModule := liquidstake.NewAppModule(appCodec, app.LiquidStakeKeeper)
-	liquidstakeIBCModule := liquidstake.NewIBCModule(app.LiquidStakeKeeper)
+	liquidstakeIBCModule := liquidstake.NewIBCModule(app.LiquidStakeKeeper, appCodec)
 	icaCtlLiquidStakeIBCModule := icacontroller.NewIBCMiddleware(liquidstakeIBCModule, app.ICAControllerKeeper)
 	icaControllerStack := ibcfee.NewIBCMiddleware(icaCtlLiquidStakeIBCModule, app.IBCFeeKeeper)
 

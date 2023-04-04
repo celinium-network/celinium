@@ -5,7 +5,7 @@ import (
 )
 
 // epoch identifier for liquid stake.
-// todo! identifier update by gov?
+// TODO identifier update by gov?
 const (
 	DelegationEpochIdentifier   = epochstypes.HourEpochID
 	UndelegationEpochIdentifier = epochstypes.DayEpochID

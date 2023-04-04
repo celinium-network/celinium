@@ -32,6 +32,8 @@ message DelegationRecord{
 
     // The number of created epoch
     uint64 epochNumber = 4;
+
+    string chainID = 5;
 }
 
 // UserUndelegationRecord represents a record of a user's undelegation action.

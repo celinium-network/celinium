@@ -87,9 +87,25 @@ func (k Keeper) IncreaseDelegationRecordID(ctx sdk.Context) {
 	bz := store.Get(types.DelegationRecordIDKey)
 
 	oldID := sdk.BigEndianToUint64(bz)
-	oldID++ // todo! need check overflow?
+	oldID++ // TODO need check overflow?
 
 	store.Set(types.DelegationRecordIDKey, sdk.Uint64ToBigEndian(oldID))
+}
+
+func (k Keeper) GetAllDelegationRecord(ctx sdk.Context) []types.DelegationRecord {
+	store := ctx.KVStore(k.storeKey)
+
+	iterator := storetypes.KVStorePrefixIterator(store, types.DelegationRecordPrefix)
+
+	var records []types.DelegationRecord
+	r := types.DelegationRecord{}
+	for ; iterator.Valid(); iterator.Next() {
+		bz := iterator.Value()
+		k.cdc.MustUnmarshal(bz, &r)
+		records = append(records, r)
+	}
+
+	return records
 }
 
 // checkIBCClient check weather the ibcclient of the specific chain is active

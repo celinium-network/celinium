@@ -2,11 +2,11 @@ package types
 
 // DelegationRecord status
 const (
-	Pending = iota
-	Transferring
-	Transferred
+	DelegationPending = iota
+	DelegationTransferring
+	DelegationTransferred
 	Delegating
-	Done
-	TransferFailed
+	DelegationDone
+	DelegationTransferFailed
 	DelegateFailed
 )

@@ -23,12 +23,19 @@ func (h Hooks) BeforeEpochStart(ctx sdk.Context, epochIdentifier string, epochNu
 		// Create new delegation for current epoch
 		h.k.CreateDepositRecordForEpoch(ctx, epochNumber)
 
-		// h.k.BeginStakeOnSourceChain(ctx, )
+		delegationRecords := h.k.GetAllDelegationRecord(ctx)
+
+		h.k.ProcessDelegationRecord(ctx, uint64(epochNumber), delegationRecords)
 
 		// update rate
 
 		// reinvest
 	} else if epochIdentifier == types.UndelegationEpochIdentifier {
+		// Create new delegation for current epoch
+
+		// distribute unboud token
+
+		// 
 	}
 }
 
