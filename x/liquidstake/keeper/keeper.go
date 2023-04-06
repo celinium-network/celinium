@@ -1,26 +1,27 @@
 package keeper
 
 import (
+	"celinium/x/liquidstake/types"
+
+	sdkerrors "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	icacontrollerkeeper "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/controller/keeper"
 	ibctransferkeeper "github.com/cosmos/ibc-go/v6/modules/apps/transfer/keeper"
 	ibcclientkeeper "github.com/cosmos/ibc-go/v6/modules/core/02-client/keeper"
 	ibcclienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
 	"github.com/cosmos/ibc-go/v6/modules/core/exported"
-
-	"celinium/x/liquid-stake/types"
 )
 
 type Keeper struct {
 	storeKey storetypes.StoreKey
 	cdc      codec.Codec
 
-	accountKeeper types.AccountKeeper
-
+	accountKeeper     types.AccountKeeper
+	bankKeeper        types.BankKeeper
+	epochKeeper       types.EpochKeeper
 	ibcClientKeeper   ibcclientkeeper.Keeper
 	ibcTransferKeeper ibctransferkeeper.Keeper
 	icaCtlKeeper      icacontrollerkeeper.Keeper
@@ -30,6 +31,8 @@ func NewKeeper(
 	cdc codec.Codec,
 	storeKey storetypes.StoreKey,
 	accountKeeper types.AccountKeeper,
+	bankKeeper types.BankKeeper,
+	epochKeeper types.EpochKeeper,
 	ibcClientKeeper ibcclientkeeper.Keeper,
 	icaCtlKeeper icacontrollerkeeper.Keeper,
 	ibcTransferKeeper ibctransferkeeper.Keeper,
@@ -38,6 +41,8 @@ func NewKeeper(
 		storeKey:          storeKey,
 		cdc:               cdc,
 		accountKeeper:     accountKeeper,
+		bankKeeper:        bankKeeper,
+		epochKeeper:       epochKeeper,
 		ibcClientKeeper:   ibcClientKeeper,
 		ibcTransferKeeper: ibcTransferKeeper,
 		icaCtlKeeper:      icaCtlKeeper,
@@ -61,6 +66,48 @@ func (k Keeper) GetSourceChain(ctx sdk.Context, chainID string) (*types.SourceCh
 	return sourceChain, true
 }
 
+func (k Keeper) SetSourceChain(ctx sdk.Context, sourceChain *types.SourceChain) {
+	store := ctx.KVStore(k.storeKey)
+
+	bz := k.cdc.MustMarshal(sourceChain)
+
+	store.Set(types.GetSourceChainKey([]byte(sourceChain.ChainID)), bz)
+}
+
+func (k Keeper) GetDelegationRecordID(ctx sdk.Context) uint64 {
+	store := ctx.KVStore(k.storeKey)
+
+	bz := store.Get(types.DelegationRecordIDKey)
+
+	return sdk.BigEndianToUint64(bz)
+}
+
+func (k Keeper) IncreaseDelegationRecordID(ctx sdk.Context) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.DelegationRecordIDKey)
+
+	oldID := sdk.BigEndianToUint64(bz)
+	oldID++ // TODO need check overflow?
+
+	store.Set(types.DelegationRecordIDKey, sdk.Uint64ToBigEndian(oldID))
+}
+
+func (k Keeper) GetAllDelegationRecord(ctx sdk.Context) []types.DelegationRecord {
+	store := ctx.KVStore(k.storeKey)
+
+	iterator := storetypes.KVStorePrefixIterator(store, types.DelegationRecordPrefix)
+
+	var records []types.DelegationRecord
+	r := types.DelegationRecord{}
+	for ; iterator.Valid(); iterator.Next() {
+		bz := iterator.Value()
+		k.cdc.MustUnmarshal(bz, &r)
+		records = append(records, r)
+	}
+
+	return records
+}
+
 // checkIBCClient check weather the ibcclient of the specific chain is active
 func (k Keeper) checkIBCClient(ctx sdk.Context, chainID string) error {
 	clientState, found := k.ibcClientKeeper.GetClientState(ctx, chainID)
@@ -75,4 +122,20 @@ func (k Keeper) checkIBCClient(ctx sdk.Context, chainID string) error {
 	}
 
 	return nil
+}
+
+// sendCoinsFromAccountToAccount preform send coins form sender to receiver.
+func (k Keeper) sendCoinsFromAccountToAccount(ctx sdk.Context, senderAddr sdk.AccAddress, receiverAddr sdk.AccAddress, amt sdk.Coins) error {
+	if err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, senderAddr, types.ModuleName, amt); err != nil {
+		return err
+	}
+
+	return k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, receiverAddr, amt)
+}
+
+func (k Keeper) mintCoins(ctx sdk.Context, receiverAddr sdk.AccAddress, amt sdk.Coins) error {
+	if err := k.bankKeeper.MintCoins(ctx, types.ModuleName, amt); err != nil {
+		return err
+	}
+	return k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, receiverAddr, amt)
 }

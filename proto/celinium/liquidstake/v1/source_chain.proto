@@ -1,11 +1,10 @@
 syntax = "proto3";
 package celinium.liquidstake.v1;
 
-
 import "gogoproto/gogo.proto";
 import "cosmos_proto/cosmos.proto";
 
-option go_package = "celinium/x/liquid-stake/types";
+option go_package = "celinium/x/liquidstake/types";
 
 message Validator{
     option (gogoproto.equal) = true;

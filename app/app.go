@@ -25,7 +25,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/simapp"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	
+
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/version"
 
@@ -135,9 +135,9 @@ import (
 	epochskeeper "celinium/x/epochs/keeper"
 	epochstypes "celinium/x/epochs/types"
 
-	liquidstake "celinium/x/liquid-stake"
-	liquidstakekeeper "celinium/x/liquid-stake/keeper"
-	liquidstaketypes "celinium/x/liquid-stake/types"
+	liquidstake "celinium/x/liquidstake"
+	liquidstakekeeper "celinium/x/liquidstake/keeper"
+	liquidstaketypes "celinium/x/liquidstake/types"
 )
 
 const (
@@ -533,13 +533,15 @@ func NewApp(
 		appCodec,
 		keys[liquidstaketypes.StoreKey],
 		app.AccountKeeper,
+		app.BankKeeper,
+		app.EpochsKeeper,
 		app.IBCKeeper.ClientKeeper,
 		app.ICAControllerKeeper,
 		app.TransferKeeper,
 	)
 
 	liquidstakeModule := liquidstake.NewAppModule(appCodec, app.LiquidStakeKeeper)
-	liquidstakeIBCModule := liquidstake.NewIBCModule(app.LiquidStakeKeeper)
+	liquidstakeIBCModule := liquidstake.NewIBCModule(app.LiquidStakeKeeper, appCodec)
 	icaCtlLiquidStakeIBCModule := icacontroller.NewIBCMiddleware(liquidstakeIBCModule, app.ICAControllerKeeper)
 	icaControllerStack := ibcfee.NewIBCMiddleware(icaCtlLiquidStakeIBCModule, app.IBCFeeKeeper)
 

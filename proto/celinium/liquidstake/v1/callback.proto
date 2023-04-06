@@ -1,0 +1,34 @@
+syntax = "proto3";
+package celinium.liquidstake.v1;
+
+import "gogoproto/gogo.proto";
+import "celinium/liquidstake/v1/source_chain.proto";
+
+option go_package = "celinium/x/liquidstake/types";
+
+// As IBC calls are asynchronous and their acknowledgement arrival order cannot be controlled, we need a callback mechanism.
+// Following the IBC communication mechanism, we can save information such as {ibcChannelID+sequence}: IBCCallback.
+// When an IBC ACK is received, deserialize the args based on the CallType and execute the corresponding operation.
+message IBCCallback{
+    // The type of the callback operation.
+    uint32 callType = 1;
+    // The arguments of the callback, serialized as a string.
+    string args = 2;
+}
+
+message DelegateCallbackArgs{
+    // Validators with delegate funds
+    repeated Validator validators  = 1 [(gogoproto.nullable)   = false];
+    
+}
+
+message UnbondCallbackArgs{
+    // Validators with unbond funds
+    repeated Validator validators  = 1[(gogoproto.nullable)   = false];
+   
+    // unbond epoch
+    uint64 epoch = 2;
+    
+    // unbond chain ID
+    string chainID = 3;
+}

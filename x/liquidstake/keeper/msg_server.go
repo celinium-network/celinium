@@ -1,9 +1,8 @@
 package keeper
 
 import (
+	"celinium/x/liquidstake/types"
 	ctx "context"
-
-	"celinium/x/liquid-stake/types"
 )
 
 // NewMsgServerImpl creates and returns a new types.MsgServer, fulfilling the interstaking Msg service interface
