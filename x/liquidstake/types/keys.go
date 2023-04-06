@@ -42,7 +42,7 @@ var (
 	// Prefix for key `{chainID + epoch + delegator}` => UnDelegationRecord
 	UndelegationRecrodPrefix = []byte{0x31}
 
-	EpochUnbondingPrefix = []byte{0x32}
+	EpochUnbondingsPrefix = []byte{0x32}
 )
 
 // GetSourceChainKey return key for source chain, `SouceChainKeyPrefix + len(chainID)+chainID`
@@ -97,6 +97,10 @@ func GetUndelegationRecordKey(chainID string, epoch uint64, delegator string) st
 	return string(UndelegationRecrodPrefix) + id
 }
 
+func GetUndelegationRecordKeyFromID(ID string) string {
+	return string(UndelegationRecrodPrefix) + ID
+}
+
 func AssembleUndelegationRecordID(chainID string, epoch uint64, delegator string) string {
 	return strings.Join([]string{chainID, strconv.FormatUint(epoch, 10), delegator}, ".")
 }
@@ -104,7 +108,7 @@ func AssembleUndelegationRecordID(chainID string, epoch uint64, delegator string
 func GetEpochUnbondingsKey(epoch uint64) []byte {
 	be := sdk.Uint64ToBigEndian(epoch)
 
-	return append(EpochUnbondingPrefix, be...)
+	return append(EpochUnbondingsPrefix, be...)
 }
 
 func lengthPrefix(bz []byte) []byte {

@@ -22,10 +22,10 @@ const (
 const (
 	UnbondingPending = iota
 	UnbondingStart
-	UnbondingProcessing
-	UnbondingTransferring
+	UnbondingWaitting
+	UnbondingWithdraw
 	UnbondingTransferred
 	UnbondingDone
-	UnbondingProcessingFailed
+	UnbondingStartFailed
 	UnbondingTransferFailed
 )

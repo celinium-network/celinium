@@ -44,9 +44,9 @@ func (k Keeper) AddSouceChain(ctx sdk.Context, sourceChain *types.SourceChain) e
 	return nil
 }
 
-// CreateDepositRecordForEpoch create a new DespositRecord in current epoch for all available chain.
-// If current epoch already has DepositRecord for the chain, then do nothing
-func (k Keeper) CreateDepositRecordForEpoch(ctx sdk.Context, epochNumber int64) {
+// CreateDelegationRecordForEpoch create a new DelegationRecord in current epoch for all available chain.
+// If current epoch already has DelegationRecord for the chain, then do nothing
+func (k Keeper) CreateDelegationRecordForEpoch(ctx sdk.Context, epochNumber int64) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, types.SouceChainKeyPrefix)
 
@@ -71,6 +71,21 @@ func (k Keeper) CreateDepositRecordForEpoch(ctx sdk.Context, epochNumber int64) 
 
 		k.SetDelegationRecord(ctx, id, &record)
 	}
+}
+
+// CreateEpochUnbondings a new unbonding in current epoch.
+func (k Keeper) CreateEpochUnbondings(ctx sdk.Context, epochNumber int64) {
+	_, found := k.GetEpochUnboundings(ctx, uint64(epochNumber))
+	if found {
+		return
+	}
+
+	epochUnbonding := types.EpochUnbondings{
+		Epoch:      uint64(epochNumber),
+		Unbondings: []types.Unbonding{},
+	}
+
+	k.SetEpochUnboundings(ctx, &epochUnbonding)
 }
 
 // GetDelegationRecord return DelegationRecord by id

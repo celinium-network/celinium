@@ -87,6 +87,7 @@ func (s SourceChain) AllocateFundsForValidator(amount math.Int) map[string]*big.
 		totalWeight += v.Weight
 	}
 
+	// TODO the last validator get all remind funds
 	for _, v := range s.Validators {
 		dec := math.LegacyNewDec(int64(v.Weight))
 		allocateFundAmount := dec.QuoInt64(int64(totalWeight)).MulInt(amount).BigInt()

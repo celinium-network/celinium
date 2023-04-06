@@ -228,7 +228,7 @@ type Unbonding struct {
 	RedeemNativeToken types.Coin `protobuf:"bytes,3,opt,name=redeemNativeToken,proto3" json:"redeemNativeToken"`
 	// The time at which the unbonding will complete and the native tokens will be redeemable.
 	UnbondTIme uint64 `protobuf:"varint,4,opt,name=unbondTIme,proto3" json:"unbondTIme,omitempty"`
-	// The status of the unbonding entry.
+	// The status of the unbonding.
 	// 1) Pending: waiting for the current epoch to end
 	// 2) Start: initiated the Unbonding process on the source chain
 	// 3) Unbonding: successfully initiated the Unbonding process

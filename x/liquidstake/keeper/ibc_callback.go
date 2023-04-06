@@ -1,8 +1,12 @@
 package keeper
 
 import (
+	"strings"
+	"time"
+
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
 
 	"celinium/x/liquidstake/types"
@@ -38,15 +42,16 @@ func (k Keeper) HandleIBCAcknowledgement(ctx sdk.Context, packet *channeltypes.P
 	successful := callback.CheckSuccessfulIBCAcknowledgement(k.cdc, responses)
 
 	// update record status
-	k.advanceCallbackRelatedEntry(ctx, callback, successful)
+	k.advanceCallbackRelatedEntry(ctx, callback, responses, successful)
 
 	// TODO consider remove callback ?, repeated receive same Acknowledgement
 	return nil
 }
 
-func (k Keeper) advanceCallbackRelatedEntry(ctx sdk.Context, callback *types.IBCCallback, successful bool) {
+func (k Keeper) advanceCallbackRelatedEntry(ctx sdk.Context, callback *types.IBCCallback, responses []*codectypes.Any, successful bool) {
 	// TODO optimize the if/else code block
-	if callback.CallType == types.DelegateTransferCall {
+	switch callback.CallType {
+	case types.DelegateTransferCall:
 		delegationRecordID := sdk.BigEndianToUint64([]byte(callback.Args))
 		record, found := k.GetDelegationRecord(ctx, delegationRecordID)
 		if !found {
@@ -54,8 +59,7 @@ func (k Keeper) advanceCallbackRelatedEntry(ctx sdk.Context, callback *types.IBC
 		}
 
 		k.AfterDelegateTransfer(ctx, record, successful)
-
-	} else if callback.CallType == types.DelegateCall {
+	case types.DelegateCall:
 		delegationRecordID := sdk.BigEndianToUint64([]byte(callback.Args))
 		record, found := k.GetDelegationRecord(ctx, delegationRecordID)
 		if !found {
@@ -63,5 +67,60 @@ func (k Keeper) advanceCallbackRelatedEntry(ctx sdk.Context, callback *types.IBC
 		}
 
 		k.AfterCrosschainDelegate(ctx, record, successful)
+	case types.UnbondCall:
+		var completeTime time.Time
+		for _, r := range responses {
+			if strings.Contains(r.TypeUrl, "MsgUndelegateResponse") {
+				response := stakingtypes.MsgUndelegateResponse{}
+				if err := k.cdc.Unmarshal(r.Value, &response); err != nil {
+					return
+				}
+				completeTime = response.CompletionTime
+			}
+		}
+		var unbondCallArgs types.UnbondCallbackArgs
+
+		k.cdc.MustUnmarshal([]byte(callback.Args), &unbondCallArgs)
+
+		epochUnbondings, found := k.GetEpochUnboundings(ctx, unbondCallArgs.Epoch)
+		if !found {
+			return
+		}
+
+		for _, unbonding := range epochUnbondings.Unbondings {
+			if unbonding.ChainID != unbondCallArgs.ChainID {
+				continue
+			}
+			unbonding.UnbondTIme = uint64(completeTime.Unix())
+			unbonding.Status = types.UnbondingWaitting
+		}
+		// save
+		k.SetEpochUnboundings(ctx, epochUnbondings)
+	case types.WithdrawUnbondCall:
+		var unbondCallArgs types.UnbondCallbackArgs
+		k.cdc.MustUnmarshal([]byte(callback.Args), &unbondCallArgs)
+		epochUnbondings, found := k.GetEpochUnboundings(ctx, unbondCallArgs.Epoch)
+		if !found {
+			return
+		}
+
+		for _, unbonding := range epochUnbondings.Unbondings {
+			if unbonding.ChainID != unbondCallArgs.ChainID {
+				continue
+			}
+			unbonding.Status = types.UnbondingDone
+
+			for _, userUnDelegationID := range unbonding.UserUnbondRecordIds {
+				userUndelegation, found := k.GetUndelegationRecordByID(ctx, userUnDelegationID)
+				if !found {
+					continue
+				}
+				userUndelegation.CliamStatus = types.UndelegationClaimable
+				k.SetUndelegationRecord(ctx, userUndelegation)
+			}
+		}
+		k.SetEpochUnboundings(ctx, epochUnbondings)
+
+	default:
 	}
 }

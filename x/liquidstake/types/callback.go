@@ -14,11 +14,17 @@ import (
 const (
 	DelegateTransferCall = iota
 	DelegateCall
+	UnbondCall
+	WithdrawUnbondCall
 )
 
+// TODO don't check here
 func (c *IBCCallback) CheckSuccessfulIBCAcknowledgement(cdc codec.Codec, responses []*codectypes.Any) bool {
-	// TODO optimize the if/else code block
-	if c.CallType == DelegateTransferCall {
+	// TODO (1) optimize the if/else code block
+	//      (2) check all response
+	//      (3) should not be strings.Contains()
+	switch c.CallType {
+	case DelegateTransferCall:
 		for _, r := range responses {
 			if strings.Contains(r.TypeUrl, "MsgSendResponse") {
 				response := banktypes.MsgSendResponse{}
@@ -26,7 +32,7 @@ func (c *IBCCallback) CheckSuccessfulIBCAcknowledgement(cdc codec.Codec, respons
 				return err != nil
 			}
 		}
-	} else if c.CallType == DelegateCall {
+	case DelegateCall:
 		for _, r := range responses {
 			if strings.Contains(r.TypeUrl, "MsgDelegateResponse") {
 				response := stakingtypes.MsgDelegateResponse{}
@@ -34,7 +40,18 @@ func (c *IBCCallback) CheckSuccessfulIBCAcknowledgement(cdc codec.Codec, respons
 				return err != nil
 			}
 		}
+	case UnbondCall:
+		for _, r := range responses {
+			if strings.Contains(r.TypeUrl, "MsgUndelegateResponse") {
+				response := stakingtypes.MsgUndelegateResponse{}
+				err := cdc.Unmarshal(r.Value, &response)
+				return err != nil
+			}
+		}
+	default:
+		return false
 	}
+
 	return false
 }
 

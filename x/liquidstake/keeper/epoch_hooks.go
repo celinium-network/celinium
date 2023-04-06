@@ -21,23 +21,21 @@ func (Hooks) AfterEpochEnd(_ sdk.Context, _ string, _ int64) {
 func (h Hooks) BeforeEpochStart(ctx sdk.Context, epochIdentifier string, epochNumber int64) {
 	if epochIdentifier == types.DelegationEpochIdentifier {
 		// Create new delegation for current epoch
-		h.k.CreateDepositRecordForEpoch(ctx, epochNumber)
+		h.k.CreateDelegationRecordForEpoch(ctx, epochNumber)
 
 		delegationRecords := h.k.GetAllDelegationRecord(ctx)
 
 		h.k.ProcessDelegationRecord(ctx, uint64(epochNumber), delegationRecords)
 
-		// update rate
+		// update rate,
 
-		// reinvest
+		// reinvest, start from a interchain query, maybe submit by offchain timer service?
 	} else if epochIdentifier == types.UndelegationEpochIdentifier {
-		// Create new delegation for current epoch
-
-		// distribute unboud token
+		// Create new unbondings for current epoch
+		h.k.CreateEpochUnbondings(ctx, epochNumber)
 
 		// Process Unbound
-
-		// clean up
+		h.k.ProcessUnbondings(ctx, uint64(epochNumber))
 	}
 }
 
