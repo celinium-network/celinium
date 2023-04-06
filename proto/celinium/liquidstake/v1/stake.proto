@@ -36,10 +36,10 @@ message DelegationRecord{
     string chainID = 5;
 }
 
-// UserUndelegationRecord represents a record of a user's undelegation action.
-message UserUndelegationRecord{
+// UndelegationRecord represents a record of a delegator's undelegation action.
+message UndelegationRecord{
     // Unique identifier for the undelegation record
-    uint64 id = 1;
+    string ID = 1;
 
     // The chain ID of the source chain where the undelegation was initiated.
     string chainID =2;
@@ -54,7 +54,7 @@ message UserUndelegationRecord{
     string receiver =5;
 
      // The amount and type of funds to be redeemed.
-    cosmos.base.v1beta1.Coin redeemToken = 6;
+    cosmos.base.v1beta1.Coin redeemToken = 6 [(gogoproto.nullable) = false];
 
     // The redemption status of the undelegation.
     // 1) Pending: The undelegation request has been submitted but not yet processed or completed.
@@ -65,36 +65,37 @@ message UserUndelegationRecord{
 
 // Represents a record of an unbonding transaction, which captures the derivative token that was burned 
 // and the native token that is to be redeemed. 
-message UnbondingEntry {
-    string burnedDerivativeAmount = 1[
+message Unbonding {
+    string chainID = 1;
+    string burnedDerivativeAmount = 2[
         (cosmos_proto.scalar)  = "cosmos.Int",
         (gogoproto.customtype) = "Int",
         (gogoproto.nullable)   = false];
 
     // The native tokens to be redeemed.     
-    cosmos.base.v1beta1.Coin redeemNativeToken = 2;
+    cosmos.base.v1beta1.Coin redeemNativeToken = 3 [(gogoproto.nullable) = false];
     
     // The time at which the unbonding will complete and the native tokens will be redeemable.
-    uint64 unbondTIme = 3;
+    uint64 unbondTIme = 4;
 
-    // The status of the unbonding entry.
+    // The status of the unbonding.
     // 1) Pending: waiting for the current epoch to end
     // 2) Start: initiated the Unbonding process on the source chain
     // 3) Unbonding: successfully initiated the Unbonding process
     // 4) Transfering: Unbonding period has elapsed, redeeming funds from the source chain
     // 5) Done: funds have been successfully redeemed
-    uint32 status = 4;
+    uint32 status = 5;
 
     // The IDs of the UserUnbondRecord entries that correspond to this unbonding entry. 
-    repeated uint64 UserUnbondRecordIds = 5;
+    repeated string userUnbondRecordIds = 6;
 }
 
 // Represents a collection of unbonding entries for a given epoch.
-message UnbondingEpoch{
+message EpochUnbondings{
     // The epoch number.
     uint64 epoch = 1;
 
     // The unbonding entries.
-    repeated UnbondingEntry unbondings = 2; 
+    repeated Unbonding unbondings = 2 [(gogoproto.nullable) = false]; 
 }
 

@@ -1,6 +1,9 @@
 package types
 
 import (
+	"strconv"
+	"strings"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -35,6 +38,11 @@ var (
 
 	// Prefix for key `{channel + port + sequence} => DelegationRecordID`
 	IBCDelegationCallbackPrefix = []byte{0x23}
+
+	// Prefix for key `{chainID + epoch + delegator}` => UnDelegationRecord
+	UndelegationRecrodPrefix = []byte{0x31}
+
+	EpochUnbondingPrefix = []byte{0x32}
 )
 
 // GetSourceChainKey return key for source chain, `SouceChainKeyPrefix + len(chainID)+chainID`
@@ -81,6 +89,22 @@ func GetIBCDelegationCallbackKey(channel []byte, port []byte, sequence uint64) [
 	copy(bz[prefixL+channelBzL+portBzL:], sequenceBz)
 
 	return bz
+}
+
+func GetUndelegationRecordKey(chainID string, epoch uint64, delegator string) string {
+	id := AssembleUndelegationRecordID(chainID, epoch, delegator)
+
+	return string(UndelegationRecrodPrefix) + id
+}
+
+func AssembleUndelegationRecordID(chainID string, epoch uint64, delegator string) string {
+	return strings.Join([]string{chainID, strconv.FormatUint(epoch, 10), delegator}, ".")
+}
+
+func GetEpochUnbondingsKey(epoch uint64) []byte {
+	be := sdk.Uint64ToBigEndian(epoch)
+
+	return append(EpochUnbondingPrefix, be...)
 }
 
 func lengthPrefix(bz []byte) []byte {

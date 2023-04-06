@@ -35,7 +35,9 @@ func (h Hooks) BeforeEpochStart(ctx sdk.Context, epochIdentifier string, epochNu
 
 		// distribute unboud token
 
-		// 
+		// Process Unbound
+
+		// clean up
 	}
 }
 

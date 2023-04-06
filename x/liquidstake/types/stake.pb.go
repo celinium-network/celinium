@@ -116,10 +116,10 @@ func (m *DelegationRecord) GetChainID() string {
 	return ""
 }
 
-// UserUndelegationRecord represents a record of a user's undelegation action.
-type UserUndelegationRecord struct {
+// UndelegationRecord represents a record of a delegator's undelegation action.
+type UndelegationRecord struct {
 	// Unique identifier for the undelegation record
-	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	ID string `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`
 	// The chain ID of the source chain where the undelegation was initiated.
 	ChainID string `protobuf:"bytes,2,opt,name=chainID,proto3" json:"chainID,omitempty"`
 	// The epoch of the undelegation, used to record the time or timestamp of the undelegation
@@ -129,7 +129,7 @@ type UserUndelegationRecord struct {
 	// The recipient account for the redeemed funds.
 	Receiver string `protobuf:"bytes,5,opt,name=receiver,proto3" json:"receiver,omitempty"`
 	// The amount and type of funds to be redeemed.
-	RedeemToken *types.Coin `protobuf:"bytes,6,opt,name=redeemToken,proto3" json:"redeemToken,omitempty"`
+	RedeemToken types.Coin `protobuf:"bytes,6,opt,name=redeemToken,proto3" json:"redeemToken"`
 	// The redemption status of the undelegation.
 	// 1) Pending: The undelegation request has been submitted but not yet processed or completed.
 	// 2) Claimable: The undelegation has been processed and the funds are available to be claimed by the delegator.
@@ -137,18 +137,18 @@ type UserUndelegationRecord struct {
 	CliamStatus uint32 `protobuf:"varint,7,opt,name=cliamStatus,proto3" json:"cliamStatus,omitempty"`
 }
 
-func (m *UserUndelegationRecord) Reset()         { *m = UserUndelegationRecord{} }
-func (m *UserUndelegationRecord) String() string { return proto.CompactTextString(m) }
-func (*UserUndelegationRecord) ProtoMessage()    {}
-func (*UserUndelegationRecord) Descriptor() ([]byte, []int) {
+func (m *UndelegationRecord) Reset()         { *m = UndelegationRecord{} }
+func (m *UndelegationRecord) String() string { return proto.CompactTextString(m) }
+func (*UndelegationRecord) ProtoMessage()    {}
+func (*UndelegationRecord) Descriptor() ([]byte, []int) {
 	return fileDescriptor_9beff2e65f7b246b, []int{1}
 }
-func (m *UserUndelegationRecord) XXX_Unmarshal(b []byte) error {
+func (m *UndelegationRecord) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *UserUndelegationRecord) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *UndelegationRecord) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_UserUndelegationRecord.Marshal(b, m, deterministic)
+		return xxx_messageInfo_UndelegationRecord.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -158,61 +158,61 @@ func (m *UserUndelegationRecord) XXX_Marshal(b []byte, deterministic bool) ([]by
 		return b[:n], nil
 	}
 }
-func (m *UserUndelegationRecord) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_UserUndelegationRecord.Merge(m, src)
+func (m *UndelegationRecord) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UndelegationRecord.Merge(m, src)
 }
-func (m *UserUndelegationRecord) XXX_Size() int {
+func (m *UndelegationRecord) XXX_Size() int {
 	return m.Size()
 }
-func (m *UserUndelegationRecord) XXX_DiscardUnknown() {
-	xxx_messageInfo_UserUndelegationRecord.DiscardUnknown(m)
+func (m *UndelegationRecord) XXX_DiscardUnknown() {
+	xxx_messageInfo_UndelegationRecord.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_UserUndelegationRecord proto.InternalMessageInfo
+var xxx_messageInfo_UndelegationRecord proto.InternalMessageInfo
 
-func (m *UserUndelegationRecord) GetId() uint64 {
+func (m *UndelegationRecord) GetID() string {
 	if m != nil {
-		return m.Id
+		return m.ID
 	}
-	return 0
+	return ""
 }
 
-func (m *UserUndelegationRecord) GetChainID() string {
+func (m *UndelegationRecord) GetChainID() string {
 	if m != nil {
 		return m.ChainID
 	}
 	return ""
 }
 
-func (m *UserUndelegationRecord) GetEpoch() uint64 {
+func (m *UndelegationRecord) GetEpoch() uint64 {
 	if m != nil {
 		return m.Epoch
 	}
 	return 0
 }
 
-func (m *UserUndelegationRecord) GetDelegator() string {
+func (m *UndelegationRecord) GetDelegator() string {
 	if m != nil {
 		return m.Delegator
 	}
 	return ""
 }
 
-func (m *UserUndelegationRecord) GetReceiver() string {
+func (m *UndelegationRecord) GetReceiver() string {
 	if m != nil {
 		return m.Receiver
 	}
 	return ""
 }
 
-func (m *UserUndelegationRecord) GetRedeemToken() *types.Coin {
+func (m *UndelegationRecord) GetRedeemToken() types.Coin {
 	if m != nil {
 		return m.RedeemToken
 	}
-	return nil
+	return types.Coin{}
 }
 
-func (m *UserUndelegationRecord) GetCliamStatus() uint32 {
+func (m *UndelegationRecord) GetCliamStatus() uint32 {
 	if m != nil {
 		return m.CliamStatus
 	}
@@ -221,35 +221,36 @@ func (m *UserUndelegationRecord) GetCliamStatus() uint32 {
 
 // Represents a record of an unbonding transaction, which captures the derivative token that was burned
 // and the native token that is to be redeemed.
-type UnbondingEntry struct {
-	BurnedDerivativeAmount Int `protobuf:"bytes,1,opt,name=burnedDerivativeAmount,proto3,customtype=Int" json:"burnedDerivativeAmount"`
+type Unbonding struct {
+	ChainID                string `protobuf:"bytes,1,opt,name=chainID,proto3" json:"chainID,omitempty"`
+	BurnedDerivativeAmount Int    `protobuf:"bytes,2,opt,name=burnedDerivativeAmount,proto3,customtype=Int" json:"burnedDerivativeAmount"`
 	// The native tokens to be redeemed.
-	RedeemNativeToken *types.Coin `protobuf:"bytes,2,opt,name=redeemNativeToken,proto3" json:"redeemNativeToken,omitempty"`
+	RedeemNativeToken types.Coin `protobuf:"bytes,3,opt,name=redeemNativeToken,proto3" json:"redeemNativeToken"`
 	// The time at which the unbonding will complete and the native tokens will be redeemable.
-	UnbondTIme uint64 `protobuf:"varint,3,opt,name=unbondTIme,proto3" json:"unbondTIme,omitempty"`
+	UnbondTIme uint64 `protobuf:"varint,4,opt,name=unbondTIme,proto3" json:"unbondTIme,omitempty"`
 	// The status of the unbonding entry.
 	// 1) Pending: waiting for the current epoch to end
 	// 2) Start: initiated the Unbonding process on the source chain
 	// 3) Unbonding: successfully initiated the Unbonding process
 	// 4) Transfering: Unbonding period has elapsed, redeeming funds from the source chain
 	// 5) Done: funds have been successfully redeemed
-	Status uint32 `protobuf:"varint,4,opt,name=status,proto3" json:"status,omitempty"`
+	Status uint32 `protobuf:"varint,5,opt,name=status,proto3" json:"status,omitempty"`
 	// The IDs of the UserUnbondRecord entries that correspond to this unbonding entry.
-	UserUnbondRecordIds []uint64 `protobuf:"varint,5,rep,packed,name=UserUnbondRecordIds,proto3" json:"UserUnbondRecordIds,omitempty"`
+	UserUnbondRecordIds []string `protobuf:"bytes,6,rep,name=userUnbondRecordIds,proto3" json:"userUnbondRecordIds,omitempty"`
 }
 
-func (m *UnbondingEntry) Reset()         { *m = UnbondingEntry{} }
-func (m *UnbondingEntry) String() string { return proto.CompactTextString(m) }
-func (*UnbondingEntry) ProtoMessage()    {}
-func (*UnbondingEntry) Descriptor() ([]byte, []int) {
+func (m *Unbonding) Reset()         { *m = Unbonding{} }
+func (m *Unbonding) String() string { return proto.CompactTextString(m) }
+func (*Unbonding) ProtoMessage()    {}
+func (*Unbonding) Descriptor() ([]byte, []int) {
 	return fileDescriptor_9beff2e65f7b246b, []int{2}
 }
-func (m *UnbondingEntry) XXX_Unmarshal(b []byte) error {
+func (m *Unbonding) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *UnbondingEntry) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *Unbonding) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_UnbondingEntry.Marshal(b, m, deterministic)
+		return xxx_messageInfo_Unbonding.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -259,40 +260,47 @@ func (m *UnbondingEntry) XXX_Marshal(b []byte, deterministic bool) ([]byte, erro
 		return b[:n], nil
 	}
 }
-func (m *UnbondingEntry) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_UnbondingEntry.Merge(m, src)
+func (m *Unbonding) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Unbonding.Merge(m, src)
 }
-func (m *UnbondingEntry) XXX_Size() int {
+func (m *Unbonding) XXX_Size() int {
 	return m.Size()
 }
-func (m *UnbondingEntry) XXX_DiscardUnknown() {
-	xxx_messageInfo_UnbondingEntry.DiscardUnknown(m)
+func (m *Unbonding) XXX_DiscardUnknown() {
+	xxx_messageInfo_Unbonding.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_UnbondingEntry proto.InternalMessageInfo
+var xxx_messageInfo_Unbonding proto.InternalMessageInfo
 
-func (m *UnbondingEntry) GetRedeemNativeToken() *types.Coin {
+func (m *Unbonding) GetChainID() string {
+	if m != nil {
+		return m.ChainID
+	}
+	return ""
+}
+
+func (m *Unbonding) GetRedeemNativeToken() types.Coin {
 	if m != nil {
 		return m.RedeemNativeToken
 	}
-	return nil
+	return types.Coin{}
 }
 
-func (m *UnbondingEntry) GetUnbondTIme() uint64 {
+func (m *Unbonding) GetUnbondTIme() uint64 {
 	if m != nil {
 		return m.UnbondTIme
 	}
 	return 0
 }
 
-func (m *UnbondingEntry) GetStatus() uint32 {
+func (m *Unbonding) GetStatus() uint32 {
 	if m != nil {
 		return m.Status
 	}
 	return 0
 }
 
-func (m *UnbondingEntry) GetUserUnbondRecordIds() []uint64 {
+func (m *Unbonding) GetUserUnbondRecordIds() []string {
 	if m != nil {
 		return m.UserUnbondRecordIds
 	}
@@ -300,25 +308,25 @@ func (m *UnbondingEntry) GetUserUnbondRecordIds() []uint64 {
 }
 
 // Represents a collection of unbonding entries for a given epoch.
-type UnbondingEpoch struct {
+type EpochUnbondings struct {
 	// The epoch number.
 	Epoch uint64 `protobuf:"varint,1,opt,name=epoch,proto3" json:"epoch,omitempty"`
 	// The unbonding entries.
-	Unbondings []*UnbondingEntry `protobuf:"bytes,2,rep,name=unbondings,proto3" json:"unbondings,omitempty"`
+	Unbondings []Unbonding `protobuf:"bytes,2,rep,name=unbondings,proto3" json:"unbondings"`
 }
 
-func (m *UnbondingEpoch) Reset()         { *m = UnbondingEpoch{} }
-func (m *UnbondingEpoch) String() string { return proto.CompactTextString(m) }
-func (*UnbondingEpoch) ProtoMessage()    {}
-func (*UnbondingEpoch) Descriptor() ([]byte, []int) {
+func (m *EpochUnbondings) Reset()         { *m = EpochUnbondings{} }
+func (m *EpochUnbondings) String() string { return proto.CompactTextString(m) }
+func (*EpochUnbondings) ProtoMessage()    {}
+func (*EpochUnbondings) Descriptor() ([]byte, []int) {
 	return fileDescriptor_9beff2e65f7b246b, []int{3}
 }
-func (m *UnbondingEpoch) XXX_Unmarshal(b []byte) error {
+func (m *EpochUnbondings) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *UnbondingEpoch) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *EpochUnbondings) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_UnbondingEpoch.Marshal(b, m, deterministic)
+		return xxx_messageInfo_EpochUnbondings.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -328,26 +336,26 @@ func (m *UnbondingEpoch) XXX_Marshal(b []byte, deterministic bool) ([]byte, erro
 		return b[:n], nil
 	}
 }
-func (m *UnbondingEpoch) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_UnbondingEpoch.Merge(m, src)
+func (m *EpochUnbondings) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EpochUnbondings.Merge(m, src)
 }
-func (m *UnbondingEpoch) XXX_Size() int {
+func (m *EpochUnbondings) XXX_Size() int {
 	return m.Size()
 }
-func (m *UnbondingEpoch) XXX_DiscardUnknown() {
-	xxx_messageInfo_UnbondingEpoch.DiscardUnknown(m)
+func (m *EpochUnbondings) XXX_DiscardUnknown() {
+	xxx_messageInfo_EpochUnbondings.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_UnbondingEpoch proto.InternalMessageInfo
+var xxx_messageInfo_EpochUnbondings proto.InternalMessageInfo
 
-func (m *UnbondingEpoch) GetEpoch() uint64 {
+func (m *EpochUnbondings) GetEpoch() uint64 {
 	if m != nil {
 		return m.Epoch
 	}
 	return 0
 }
 
-func (m *UnbondingEpoch) GetUnbondings() []*UnbondingEntry {
+func (m *EpochUnbondings) GetUnbondings() []Unbonding {
 	if m != nil {
 		return m.Unbondings
 	}
@@ -356,9 +364,9 @@ func (m *UnbondingEpoch) GetUnbondings() []*UnbondingEntry {
 
 func init() {
 	proto.RegisterType((*DelegationRecord)(nil), "celinium.liquidstake.v1.DelegationRecord")
-	proto.RegisterType((*UserUndelegationRecord)(nil), "celinium.liquidstake.v1.UserUndelegationRecord")
-	proto.RegisterType((*UnbondingEntry)(nil), "celinium.liquidstake.v1.UnbondingEntry")
-	proto.RegisterType((*UnbondingEpoch)(nil), "celinium.liquidstake.v1.UnbondingEpoch")
+	proto.RegisterType((*UndelegationRecord)(nil), "celinium.liquidstake.v1.UndelegationRecord")
+	proto.RegisterType((*Unbonding)(nil), "celinium.liquidstake.v1.Unbonding")
+	proto.RegisterType((*EpochUnbondings)(nil), "celinium.liquidstake.v1.EpochUnbondings")
 }
 
 func init() {
@@ -366,41 +374,42 @@ func init() {
 }
 
 var fileDescriptor_9beff2e65f7b246b = []byte{
-	// 539 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x53, 0xcd, 0x6e, 0xd3, 0x40,
-	0x10, 0xce, 0x3a, 0x6e, 0x4b, 0x36, 0x22, 0x82, 0xa5, 0x0a, 0x4e, 0x54, 0xb9, 0x56, 0x38, 0xe0,
-	0x0b, 0x36, 0x29, 0x12, 0x17, 0x4e, 0x84, 0xa0, 0x28, 0x97, 0x4a, 0x2c, 0xcd, 0x85, 0x0b, 0xf2,
-	0xcf, 0x28, 0x5d, 0x35, 0xde, 0x0d, 0xf6, 0x3a, 0xa2, 0x6f, 0xc1, 0x89, 0x27, 0xe1, 0xce, 0xb5,
-	0xc7, 0x8a, 0x13, 0xe2, 0x50, 0xa1, 0xe4, 0x09, 0x78, 0x03, 0xe4, 0x5d, 0x27, 0x38, 0x40, 0x95,
-	0x9b, 0x67, 0xe6, 0x9b, 0x99, 0x6f, 0xbf, 0xcf, 0x83, 0x1f, 0x45, 0x30, 0x63, 0x9c, 0xe5, 0x89,
-	0x3f, 0x63, 0x1f, 0x72, 0x16, 0x67, 0x32, 0xb8, 0x00, 0x7f, 0xd1, 0xf7, 0xd5, 0x87, 0x37, 0x4f,
-	0x85, 0x14, 0xe4, 0xe1, 0x1a, 0xe4, 0x55, 0x40, 0xde, 0xa2, 0xdf, 0x3d, 0x9c, 0x8a, 0xa9, 0x50,
-	0x18, 0xbf, 0xf8, 0xd2, 0xf0, 0x6e, 0x27, 0x12, 0x59, 0x22, 0xb2, 0xf7, 0xba, 0xa0, 0x83, 0xb2,
-	0x64, 0xeb, 0xc8, 0x0f, 0x83, 0xac, 0xd8, 0x12, 0x82, 0x0c, 0xfa, 0x7e, 0x24, 0x18, 0xd7, 0xf5,
-	0xde, 0x57, 0x84, 0xef, 0x0d, 0x61, 0x06, 0xd3, 0x40, 0x32, 0xc1, 0x29, 0x44, 0x22, 0x8d, 0x49,
-	0x0b, 0x1b, 0x2c, 0xb6, 0x90, 0x83, 0x5c, 0x93, 0x1a, 0x2c, 0x26, 0x23, 0xdc, 0x8a, 0x37, 0x98,
-	0x57, 0x82, 0x71, 0xcb, 0x70, 0x90, 0xdb, 0x3c, 0xe9, 0x78, 0xe5, 0xae, 0x62, 0xba, 0x57, 0x4e,
-	0xf7, 0x0a, 0xc0, 0xc0, 0xbc, 0xba, 0x39, 0xae, 0xd1, 0xbf, 0xda, 0x48, 0x1b, 0xef, 0x67, 0x32,
-	0x90, 0x79, 0x66, 0xd5, 0x1d, 0xe4, 0xde, 0xa5, 0x65, 0x44, 0x1c, 0xdc, 0x84, 0xb9, 0x88, 0xce,
-	0x4f, 0xf3, 0x24, 0x84, 0xd4, 0x32, 0xd5, 0xe6, 0x6a, 0x8a, 0x58, 0xf8, 0x20, 0x3a, 0x0f, 0x18,
-	0x1f, 0x0f, 0xad, 0x3d, 0x07, 0xb9, 0x0d, 0xba, 0x0e, 0x7b, 0xbf, 0x10, 0x6e, 0x4f, 0x32, 0x48,
-	0x27, 0x3c, 0xde, 0xf5, 0x8e, 0xca, 0x10, 0x63, 0x6b, 0x08, 0x39, 0xc4, 0x7b, 0x6a, 0x9b, 0xe2,
-	0x65, 0x52, 0x1d, 0x90, 0x23, 0xdc, 0x28, 0x67, 0x0a, 0x4d, 0xaa, 0x41, 0xff, 0x24, 0x48, 0x17,
-	0xdf, 0x49, 0x21, 0x02, 0xb6, 0x80, 0xb4, 0xe4, 0xb4, 0x89, 0xc9, 0x0b, 0xdc, 0x4c, 0x21, 0x06,
-	0x48, 0xce, 0xc4, 0x05, 0x70, 0x6b, 0x7f, 0x87, 0x5c, 0xb4, 0x8a, 0x2e, 0xd4, 0x88, 0x66, 0x2c,
-	0x48, 0xde, 0x6a, 0xa9, 0x0e, 0x94, 0x54, 0xd5, 0x54, 0xef, 0xb3, 0x81, 0x5b, 0x13, 0x1e, 0x0a,
-	0x1e, 0x33, 0x3e, 0x7d, 0xcd, 0x65, 0x7a, 0x49, 0xde, 0xe0, 0x76, 0x98, 0xa7, 0x1c, 0xe2, 0x21,
-	0xa4, 0x6c, 0x11, 0x48, 0xb6, 0x80, 0x97, 0x89, 0xc8, 0xb9, 0x54, 0xef, 0x6f, 0x0c, 0x3a, 0x85,
-	0x21, 0x3f, 0x6e, 0x8e, 0xeb, 0x63, 0x2e, 0xbf, 0x7d, 0x79, 0x82, 0x4b, 0x2a, 0x63, 0x2e, 0xe9,
-	0x2d, 0x8d, 0x64, 0x84, 0xef, 0x6b, 0x5a, 0xa7, 0x2a, 0xab, 0x9f, 0xb2, 0xcb, 0x79, 0xfa, 0x6f,
-	0x0f, 0xb1, 0x31, 0xce, 0x15, 0xdb, 0xb3, 0x71, 0x02, 0xa5, 0xc4, 0x95, 0x4c, 0xe5, 0xb7, 0x30,
-	0xb7, 0x7e, 0x8b, 0xa7, 0xf8, 0x81, 0x76, 0xb6, 0x40, 0x6a, 0x4f, 0xc7, 0x71, 0x66, 0xed, 0x39,
-	0x75, 0xd7, 0xa4, 0xff, 0x2b, 0xf5, 0x44, 0x55, 0x17, 0xe5, 0xe1, 0xc6, 0x59, 0x54, 0x75, 0x76,
-	0xb4, 0x66, 0xc4, 0xf8, 0x34, 0xb3, 0x0c, 0xa7, 0xee, 0x36, 0x4f, 0x1e, 0x7b, 0xb7, 0x5c, 0x9d,
-	0xb7, 0x2d, 0x35, 0xad, 0xb4, 0x0e, 0x9e, 0x5f, 0x2d, 0x6d, 0x74, 0xbd, 0xb4, 0xd1, 0xcf, 0xa5,
-	0x8d, 0x3e, 0xad, 0xec, 0xda, 0xf5, 0xca, 0xae, 0x7d, 0x5f, 0xd9, 0xb5, 0x77, 0x47, 0x9b, 0x43,
-	0xff, 0xb8, 0x75, 0xea, 0xf2, 0x72, 0x0e, 0x59, 0xb8, 0xaf, 0xce, 0xef, 0xd9, 0xef, 0x00, 0x00,
-	0x00, 0xff, 0xff, 0xfa, 0x92, 0x40, 0x1c, 0x0f, 0x04, 0x00, 0x00,
+	// 548 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x54, 0x4d, 0x6f, 0xd3, 0x4c,
+	0x10, 0xce, 0x3a, 0x1f, 0x7d, 0x3d, 0xd1, 0x5b, 0x60, 0xa9, 0x8a, 0x13, 0x55, 0xae, 0x15, 0x2e,
+	0xbe, 0x60, 0x93, 0x22, 0x71, 0x6f, 0x08, 0x02, 0x1f, 0xa8, 0x84, 0x69, 0x2f, 0x5c, 0x90, 0x3f,
+	0x46, 0xe9, 0xaa, 0xf1, 0x6e, 0x6a, 0xaf, 0x23, 0xf8, 0x17, 0xfc, 0x15, 0x24, 0xee, 0x5c, 0x7b,
+	0xac, 0x38, 0x21, 0x0e, 0x15, 0x4a, 0x7e, 0x02, 0x7f, 0x00, 0xd9, 0xeb, 0xa4, 0x0e, 0xb4, 0x52,
+	0x6f, 0x3b, 0x33, 0xcf, 0x7c, 0x3c, 0xcf, 0xec, 0x2e, 0x3c, 0x8e, 0x70, 0xca, 0x38, 0xcb, 0x13,
+	0x77, 0xca, 0xce, 0x73, 0x16, 0x67, 0x32, 0x38, 0x43, 0x77, 0x3e, 0x74, 0xcb, 0x83, 0x33, 0x4b,
+	0x85, 0x14, 0xf4, 0xd1, 0x0a, 0xe4, 0xd4, 0x40, 0xce, 0x7c, 0xd8, 0xdf, 0x99, 0x88, 0x89, 0x28,
+	0x31, 0x6e, 0x71, 0x52, 0xf0, 0x7e, 0x2f, 0x12, 0x59, 0x22, 0xb2, 0x0f, 0x2a, 0xa0, 0x8c, 0x2a,
+	0x64, 0x2a, 0xcb, 0x0d, 0x83, 0xac, 0xe8, 0x12, 0xa2, 0x0c, 0x86, 0x6e, 0x24, 0x18, 0x57, 0xf1,
+	0xc1, 0x37, 0x02, 0xf7, 0xc7, 0x38, 0xc5, 0x49, 0x20, 0x99, 0xe0, 0x3e, 0x46, 0x22, 0x8d, 0xe9,
+	0x36, 0x68, 0x2c, 0x36, 0x88, 0x45, 0xec, 0x96, 0xaf, 0xb1, 0x98, 0xbe, 0x82, 0xed, 0x78, 0x8d,
+	0x79, 0x21, 0x18, 0x37, 0x34, 0x8b, 0xd8, 0xdd, 0x83, 0x9e, 0x53, 0xf5, 0x2a, 0xaa, 0x3b, 0x55,
+	0x75, 0xa7, 0x00, 0x8c, 0x5a, 0x17, 0x57, 0xfb, 0x0d, 0xff, 0xaf, 0x34, 0xba, 0x0b, 0x9d, 0x4c,
+	0x06, 0x32, 0xcf, 0x8c, 0xa6, 0x45, 0xec, 0xff, 0xfd, 0xca, 0xa2, 0x16, 0x74, 0x71, 0x26, 0xa2,
+	0xd3, 0xa3, 0x3c, 0x09, 0x31, 0x35, 0x5a, 0x65, 0xe7, 0xba, 0x8b, 0x1a, 0xb0, 0x15, 0x9d, 0x06,
+	0x8c, 0x7b, 0x63, 0xa3, 0x6d, 0x11, 0x5b, 0xf7, 0x57, 0xe6, 0xe0, 0x37, 0x01, 0x7a, 0xc2, 0xe3,
+	0x1b, 0x38, 0x78, 0xe3, 0x92, 0x83, 0xee, 0x6b, 0xde, 0xb8, 0x5e, 0x40, 0xdb, 0x28, 0x40, 0x77,
+	0xa0, 0x5d, 0x76, 0x2a, 0x67, 0x6a, 0xf9, 0xca, 0xa0, 0x7b, 0xa0, 0x57, 0x35, 0x85, 0x1a, 0x48,
+	0xf7, 0xaf, 0x1d, 0xb4, 0x0f, 0xff, 0xa5, 0x18, 0x21, 0x9b, 0x63, 0x5a, 0xcd, 0xb3, 0xb6, 0xe9,
+	0x21, 0x74, 0x53, 0x8c, 0x11, 0x93, 0x63, 0x71, 0x86, 0xdc, 0xe8, 0xdc, 0x4d, 0xaa, 0x7a, 0x4e,
+	0xa1, 0x47, 0x34, 0x65, 0x41, 0xf2, 0x4e, 0x89, 0xb5, 0x55, 0x8a, 0x55, 0x77, 0x0d, 0xbe, 0x68,
+	0xa0, 0x9f, 0xf0, 0x50, 0xf0, 0x98, 0xf1, 0x49, 0x9d, 0x1c, 0xd9, 0x24, 0xf7, 0x16, 0x76, 0xc3,
+	0x3c, 0xe5, 0x18, 0x8f, 0x31, 0x65, 0xf3, 0x40, 0xb2, 0x39, 0x1e, 0x26, 0x22, 0xe7, 0x52, 0xa9,
+	0x30, 0xea, 0x15, 0xcd, 0x7f, 0x5e, 0xed, 0x37, 0x3d, 0x2e, 0xbf, 0x7f, 0x7d, 0x02, 0xd5, 0x94,
+	0x1e, 0x97, 0xfe, 0x2d, 0x89, 0xf4, 0x0d, 0x3c, 0x50, 0xb3, 0x1e, 0x95, 0x5e, 0xc5, 0xb2, 0x79,
+	0x37, 0x96, 0xff, 0x66, 0x52, 0x13, 0x20, 0x2f, 0x89, 0x1c, 0x7b, 0x09, 0x56, 0xab, 0xaf, 0x79,
+	0x6a, 0x77, 0xa6, 0xbd, 0x71, 0x67, 0x9e, 0xc2, 0xc3, 0x3c, 0xc3, 0x54, 0x89, 0xa0, 0x96, 0xee,
+	0xc5, 0x99, 0xd1, 0xb1, 0x9a, 0xb6, 0xee, 0xdf, 0x14, 0x1a, 0x9c, 0xc3, 0xbd, 0x97, 0xc5, 0x6e,
+	0xd7, 0xba, 0x65, 0xd7, 0xbb, 0x27, 0xf5, 0xdd, 0xbf, 0x5e, 0x8d, 0x54, 0x60, 0x0c, 0xcd, 0x6a,
+	0xda, 0xdd, 0x83, 0x81, 0x73, 0xcb, 0x9b, 0x74, 0xd6, 0xe5, 0x2a, 0x8e, 0xb5, 0xdc, 0xd1, 0xf3,
+	0x8b, 0x85, 0x49, 0x2e, 0x17, 0x26, 0xf9, 0xb5, 0x30, 0xc9, 0xe7, 0xa5, 0xd9, 0xb8, 0x5c, 0x9a,
+	0x8d, 0x1f, 0x4b, 0xb3, 0xf1, 0x7e, 0x6f, 0xfd, 0x0f, 0x7c, 0xdc, 0xf8, 0x09, 0xe4, 0xa7, 0x19,
+	0x66, 0x61, 0xa7, 0x7c, 0x9d, 0xcf, 0xfe, 0x04, 0x00, 0x00, 0xff, 0xff, 0xf0, 0x0e, 0x71, 0x25,
+	0x2e, 0x04, 0x00, 0x00,
 }
 
 func (m *DelegationRecord) Marshal() (dAtA []byte, err error) {
@@ -458,7 +467,7 @@ func (m *DelegationRecord) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *UserUndelegationRecord) Marshal() (dAtA []byte, err error) {
+func (m *UndelegationRecord) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -468,12 +477,12 @@ func (m *UserUndelegationRecord) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *UserUndelegationRecord) MarshalTo(dAtA []byte) (int, error) {
+func (m *UndelegationRecord) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *UserUndelegationRecord) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *UndelegationRecord) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -483,18 +492,16 @@ func (m *UserUndelegationRecord) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 		i--
 		dAtA[i] = 0x38
 	}
-	if m.RedeemToken != nil {
-		{
-			size, err := m.RedeemToken.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintStake(dAtA, i, uint64(size))
+	{
+		size, err := m.RedeemToken.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x32
+		i -= size
+		i = encodeVarintStake(dAtA, i, uint64(size))
 	}
+	i--
+	dAtA[i] = 0x32
 	if len(m.Receiver) > 0 {
 		i -= len(m.Receiver)
 		copy(dAtA[i:], m.Receiver)
@@ -521,15 +528,17 @@ func (m *UserUndelegationRecord) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 		i--
 		dAtA[i] = 0x12
 	}
-	if m.Id != 0 {
-		i = encodeVarintStake(dAtA, i, uint64(m.Id))
+	if len(m.ID) > 0 {
+		i -= len(m.ID)
+		copy(dAtA[i:], m.ID)
+		i = encodeVarintStake(dAtA, i, uint64(len(m.ID)))
 		i--
-		dAtA[i] = 0x8
+		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
 
-func (m *UnbondingEntry) Marshal() (dAtA []byte, err error) {
+func (m *Unbonding) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -539,56 +548,45 @@ func (m *UnbondingEntry) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *UnbondingEntry) MarshalTo(dAtA []byte) (int, error) {
+func (m *Unbonding) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *UnbondingEntry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *Unbonding) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.UserUnbondRecordIds) > 0 {
-		dAtA4 := make([]byte, len(m.UserUnbondRecordIds)*10)
-		var j3 int
-		for _, num := range m.UserUnbondRecordIds {
-			for num >= 1<<7 {
-				dAtA4[j3] = uint8(uint64(num)&0x7f | 0x80)
-				num >>= 7
-				j3++
-			}
-			dAtA4[j3] = uint8(num)
-			j3++
+		for iNdEx := len(m.UserUnbondRecordIds) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.UserUnbondRecordIds[iNdEx])
+			copy(dAtA[i:], m.UserUnbondRecordIds[iNdEx])
+			i = encodeVarintStake(dAtA, i, uint64(len(m.UserUnbondRecordIds[iNdEx])))
+			i--
+			dAtA[i] = 0x32
 		}
-		i -= j3
-		copy(dAtA[i:], dAtA4[:j3])
-		i = encodeVarintStake(dAtA, i, uint64(j3))
-		i--
-		dAtA[i] = 0x2a
 	}
 	if m.Status != 0 {
 		i = encodeVarintStake(dAtA, i, uint64(m.Status))
 		i--
-		dAtA[i] = 0x20
+		dAtA[i] = 0x28
 	}
 	if m.UnbondTIme != 0 {
 		i = encodeVarintStake(dAtA, i, uint64(m.UnbondTIme))
 		i--
-		dAtA[i] = 0x18
+		dAtA[i] = 0x20
 	}
-	if m.RedeemNativeToken != nil {
-		{
-			size, err := m.RedeemNativeToken.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintStake(dAtA, i, uint64(size))
+	{
+		size, err := m.RedeemNativeToken.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x12
+		i -= size
+		i = encodeVarintStake(dAtA, i, uint64(size))
 	}
+	i--
+	dAtA[i] = 0x1a
 	{
 		size := m.BurnedDerivativeAmount.Size()
 		i -= size
@@ -598,11 +596,18 @@ func (m *UnbondingEntry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i = encodeVarintStake(dAtA, i, uint64(size))
 	}
 	i--
-	dAtA[i] = 0xa
+	dAtA[i] = 0x12
+	if len(m.ChainID) > 0 {
+		i -= len(m.ChainID)
+		copy(dAtA[i:], m.ChainID)
+		i = encodeVarintStake(dAtA, i, uint64(len(m.ChainID)))
+		i--
+		dAtA[i] = 0xa
+	}
 	return len(dAtA) - i, nil
 }
 
-func (m *UnbondingEpoch) Marshal() (dAtA []byte, err error) {
+func (m *EpochUnbondings) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -612,12 +617,12 @@ func (m *UnbondingEpoch) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *UnbondingEpoch) MarshalTo(dAtA []byte) (int, error) {
+func (m *EpochUnbondings) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *UnbondingEpoch) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *EpochUnbondings) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -679,14 +684,15 @@ func (m *DelegationRecord) Size() (n int) {
 	return n
 }
 
-func (m *UserUndelegationRecord) Size() (n int) {
+func (m *UndelegationRecord) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if m.Id != 0 {
-		n += 1 + sovStake(uint64(m.Id))
+	l = len(m.ID)
+	if l > 0 {
+		n += 1 + l + sovStake(uint64(l))
 	}
 	l = len(m.ChainID)
 	if l > 0 {
@@ -703,28 +709,28 @@ func (m *UserUndelegationRecord) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovStake(uint64(l))
 	}
-	if m.RedeemToken != nil {
-		l = m.RedeemToken.Size()
-		n += 1 + l + sovStake(uint64(l))
-	}
+	l = m.RedeemToken.Size()
+	n += 1 + l + sovStake(uint64(l))
 	if m.CliamStatus != 0 {
 		n += 1 + sovStake(uint64(m.CliamStatus))
 	}
 	return n
 }
 
-func (m *UnbondingEntry) Size() (n int) {
+func (m *Unbonding) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	l = m.BurnedDerivativeAmount.Size()
-	n += 1 + l + sovStake(uint64(l))
-	if m.RedeemNativeToken != nil {
-		l = m.RedeemNativeToken.Size()
+	l = len(m.ChainID)
+	if l > 0 {
 		n += 1 + l + sovStake(uint64(l))
 	}
+	l = m.BurnedDerivativeAmount.Size()
+	n += 1 + l + sovStake(uint64(l))
+	l = m.RedeemNativeToken.Size()
+	n += 1 + l + sovStake(uint64(l))
 	if m.UnbondTIme != 0 {
 		n += 1 + sovStake(uint64(m.UnbondTIme))
 	}
@@ -732,16 +738,15 @@ func (m *UnbondingEntry) Size() (n int) {
 		n += 1 + sovStake(uint64(m.Status))
 	}
 	if len(m.UserUnbondRecordIds) > 0 {
-		l = 0
-		for _, e := range m.UserUnbondRecordIds {
-			l += sovStake(uint64(e))
+		for _, s := range m.UserUnbondRecordIds {
+			l = len(s)
+			n += 1 + l + sovStake(uint64(l))
 		}
-		n += 1 + sovStake(uint64(l)) + l
 	}
 	return n
 }
 
-func (m *UnbondingEpoch) Size() (n int) {
+func (m *EpochUnbondings) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -937,7 +942,7 @@ func (m *DelegationRecord) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *UserUndelegationRecord) Unmarshal(dAtA []byte) error {
+func (m *UndelegationRecord) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -960,17 +965,17 @@ func (m *UserUndelegationRecord) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: UserUndelegationRecord: wiretype end group for non-group")
+			return fmt.Errorf("proto: UndelegationRecord: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: UserUndelegationRecord: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: UndelegationRecord: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
 			}
-			m.Id = 0
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowStake
@@ -980,11 +985,24 @@ func (m *UserUndelegationRecord) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Id |= uint64(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthStake
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthStake
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ID = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ChainID", wireType)
@@ -1129,9 +1147,6 @@ func (m *UserUndelegationRecord) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.RedeemToken == nil {
-				m.RedeemToken = &types.Coin{}
-			}
 			if err := m.RedeemToken.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -1176,7 +1191,7 @@ func (m *UserUndelegationRecord) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *UnbondingEntry) Unmarshal(dAtA []byte) error {
+func (m *Unbonding) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1199,13 +1214,45 @@ func (m *UnbondingEntry) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: UnbondingEntry: wiretype end group for non-group")
+			return fmt.Errorf("proto: Unbonding: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: UnbondingEntry: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: Unbonding: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChainID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStake
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthStake
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthStake
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ChainID = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field BurnedDerivativeAmount", wireType)
 			}
@@ -1239,7 +1286,7 @@ func (m *UnbondingEntry) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 2:
+		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field RedeemNativeToken", wireType)
 			}
@@ -1268,14 +1315,11 @@ func (m *UnbondingEntry) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.RedeemNativeToken == nil {
-				m.RedeemNativeToken = &types.Coin{}
-			}
 			if err := m.RedeemNativeToken.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
-		case 3:
+		case 4:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field UnbondTIme", wireType)
 			}
@@ -1294,7 +1338,7 @@ func (m *UnbondingEntry) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-		case 4:
+		case 5:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
 			}
@@ -1313,82 +1357,38 @@ func (m *UnbondingEntry) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-		case 5:
-			if wireType == 0 {
-				var v uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowStake
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					v |= uint64(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				m.UserUnbondRecordIds = append(m.UserUnbondRecordIds, v)
-			} else if wireType == 2 {
-				var packedLen int
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowStake
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					packedLen |= int(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				if packedLen < 0 {
-					return ErrInvalidLengthStake
-				}
-				postIndex := iNdEx + packedLen
-				if postIndex < 0 {
-					return ErrInvalidLengthStake
-				}
-				if postIndex > l {
-					return io.ErrUnexpectedEOF
-				}
-				var elementCount int
-				var count int
-				for _, integer := range dAtA[iNdEx:postIndex] {
-					if integer < 128 {
-						count++
-					}
-				}
-				elementCount = count
-				if elementCount != 0 && len(m.UserUnbondRecordIds) == 0 {
-					m.UserUnbondRecordIds = make([]uint64, 0, elementCount)
-				}
-				for iNdEx < postIndex {
-					var v uint64
-					for shift := uint(0); ; shift += 7 {
-						if shift >= 64 {
-							return ErrIntOverflowStake
-						}
-						if iNdEx >= l {
-							return io.ErrUnexpectedEOF
-						}
-						b := dAtA[iNdEx]
-						iNdEx++
-						v |= uint64(b&0x7F) << shift
-						if b < 0x80 {
-							break
-						}
-					}
-					m.UserUnbondRecordIds = append(m.UserUnbondRecordIds, v)
-				}
-			} else {
+		case 6:
+			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field UserUnbondRecordIds", wireType)
 			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStake
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthStake
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthStake
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.UserUnbondRecordIds = append(m.UserUnbondRecordIds, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipStake(dAtA[iNdEx:])
@@ -1410,7 +1410,7 @@ func (m *UnbondingEntry) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *UnbondingEpoch) Unmarshal(dAtA []byte) error {
+func (m *EpochUnbondings) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1433,10 +1433,10 @@ func (m *UnbondingEpoch) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: UnbondingEpoch: wiretype end group for non-group")
+			return fmt.Errorf("proto: EpochUnbondings: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: UnbondingEpoch: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: EpochUnbondings: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1487,7 +1487,7 @@ func (m *UnbondingEpoch) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Unbondings = append(m.Unbondings, &UnbondingEntry{})
+			m.Unbondings = append(m.Unbondings, Unbonding{})
 			if err := m.Unbondings[len(m.Unbondings)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
