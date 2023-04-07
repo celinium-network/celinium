@@ -17,7 +17,7 @@ type KeeperTestSuite struct {
 	consAddress sdk.ConsAddress
 }
 
-var s *KeeperTestSuite
+var _ *KeeperTestSuite
 
 func (suite *KeeperTestSuite) SetupTest() {
 	suite.DoSetupTest()

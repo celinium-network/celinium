@@ -21,7 +21,7 @@ type IBCModule struct {
 }
 
 // OnAcknowledgementPacket implements types.IBCModule
-func (im IBCModule) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, acknowledgement []byte, relayer sdk.AccAddress) error {
+func (im IBCModule) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, acknowledgement []byte, _ sdk.AccAddress) error {
 	var ack channeltypes.Acknowledgement
 	if err := channeltypes.SubModuleCdc.UnmarshalJSON(acknowledgement, &ack); err != nil {
 		return err
@@ -36,42 +36,42 @@ func (im IBCModule) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes
 }
 
 // OnChanCloseConfirm implements types.IBCModule
-func (IBCModule) OnChanCloseConfirm(ctx sdk.Context, portID string, channelID string) error {
+func (IBCModule) OnChanCloseConfirm(sdk.Context, string, string) error {
 	return nil
 }
 
 // OnChanCloseInit implements types.IBCModule
-func (IBCModule) OnChanCloseInit(ctx sdk.Context, portID string, channelID string) error {
+func (IBCModule) OnChanCloseInit(sdk.Context, string, string) error {
 	return nil
 }
 
 // OnChanOpenAck implements types.IBCModule
-func (IBCModule) OnChanOpenAck(ctx sdk.Context, portID string, channelID string, counterpartyChannelID string, counterpartyVersion string) error {
+func (IBCModule) OnChanOpenAck(sdk.Context, string, string, string, string) error {
 	return nil
 }
 
 // OnChanOpenConfirm implements types.IBCModule
-func (IBCModule) OnChanOpenConfirm(ctx sdk.Context, portID string, channelID string) error {
+func (IBCModule) OnChanOpenConfirm(sdk.Context, string, string) error {
 	return nil
 }
 
 // OnChanOpenInit implements types.IBCModule
-func (IBCModule) OnChanOpenInit(ctx sdk.Context, order channeltypes.Order, connectionHops []string, portID string, channelID string, channelCap *capabilitytypes.Capability, counterparty channeltypes.Counterparty, version string) (string, error) {
+func (IBCModule) OnChanOpenInit(sdk.Context, channeltypes.Order, []string, string, string, *capabilitytypes.Capability, channeltypes.Counterparty, string) (string, error) {
 	return "", nil
 }
 
 // OnChanOpenTry implements types.IBCModule
-func (IBCModule) OnChanOpenTry(ctx sdk.Context, order channeltypes.Order, connectionHops []string, portID string, channelID string, channelCap *capabilitytypes.Capability, counterparty channeltypes.Counterparty, counterpartyVersion string) (version string, err error) {
+func (IBCModule) OnChanOpenTry(sdk.Context, channeltypes.Order, []string, string, string, *capabilitytypes.Capability, channeltypes.Counterparty, string) (version string, err error) {
 	return "", nil
 }
 
 // OnRecvPacket implements types.IBCModule
-func (IBCModule) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, relayer sdk.AccAddress) exported.Acknowledgement {
+func (IBCModule) OnRecvPacket(sdk.Context, channeltypes.Packet, sdk.AccAddress) exported.Acknowledgement {
 	return nil
 }
 
 // OnTimeoutPacket implements types.IBCModule
-func (IBCModule) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet, relayer sdk.AccAddress) error {
+func (IBCModule) OnTimeoutPacket(sdk.Context, channeltypes.Packet, sdk.AccAddress) error {
 	return nil
 }
 

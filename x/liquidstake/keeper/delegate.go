@@ -213,8 +213,8 @@ func (k Keeper) AfterCrosschainDelegate(ctx sdk.Context, record *types.Delegatio
 	return nil
 }
 
-func (k Keeper) handleTransferFailedDelegationRecord(ctx sdk.Context, record types.DelegationRecord) {
-}
+// func (k Keeper) handleTransferFailedDelegationRecord(ctx sdk.Context, record types.DelegationRecord) {
+// }
 
-func (k Keeper) handleDelegateFailedDelegationRecord(ctx sdk.Context, record types.DelegationRecord) {
-}
+// func (k Keeper) handleDelegateFailedDelegationRecord(ctx sdk.Context, record types.DelegationRecord) {
+// }

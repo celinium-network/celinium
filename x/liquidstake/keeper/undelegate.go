@@ -115,10 +115,10 @@ func (k Keeper) GetUndelegationRecord(ctx sdk.Context, chainID string, epoch uin
 	return k.GetUndelegationRecordByID(ctx, id)
 }
 
-func (k Keeper) GetUndelegationRecordByID(ctx sdk.Context, ID string) (*types.UndelegationRecord, bool) {
+func (k Keeper) GetUndelegationRecordByID(ctx sdk.Context, id string) (*types.UndelegationRecord, bool) {
 	store := ctx.KVStore(k.storeKey)
 
-	bz := store.Get([]byte(types.GetUndelegationRecordKeyFromID(ID)))
+	bz := store.Get([]byte(types.GetUndelegationRecordKeyFromID(id)))
 	if bz == nil {
 		return nil, false
 	}

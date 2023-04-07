@@ -32,7 +32,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/simapp/helpers"
 	"github.com/cosmos/cosmos-sdk/testutil/mock"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/errors"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	authzcodec "github.com/cosmos/cosmos-sdk/x/authz/codec"
@@ -123,7 +122,7 @@ func NewAppWithCustomOptions(t *testing.T, isCheckTx bool, options SetupOptions)
 }
 
 // Setup initializes a new App. A Nop logger is set in App.
-func Setup(t *testing.T, isCheckTx bool) *App {
+func Setup(t *testing.T, _ bool) *App {
 	t.Helper()
 
 	privVal := mock.NewPV()
@@ -425,7 +424,7 @@ func SignCheckDeliver(
 	chainID string, accNums, accSeqs []uint64, expSimPass, expPass bool, priv ...cryptotypes.PrivKey,
 ) (sdk.GasInfo, *sdk.Result, error) {
 	tx, err := helpers.GenSignedMockTx(
-		rand.New(rand.NewSource(time.Now().UnixNano())),
+		rand.New(rand.NewSource(time.Now().UnixNano())), //nolint:gosec
 		txCfg,
 		msgs,
 		sdk.Coins{sdk.NewInt64Coin(sdk.DefaultBondDenom, 0)},
@@ -476,7 +475,7 @@ func GenSequenceOfTxs(txGen client.TxConfig, msgs []sdk.Msg, accNums []uint64, i
 	var err error
 	for i := 0; i < numToGenerate; i++ {
 		txs[i], err = helpers.GenSignedMockTx(
-			rand.New(rand.NewSource(time.Now().UnixNano())),
+			rand.New(rand.NewSource(time.Now().UnixNano())), //nolint:gosec
 			txGen,
 			msgs,
 			sdk.Coins{sdk.NewInt64Coin(sdk.DefaultBondDenom, 0)},
@@ -525,7 +524,7 @@ func NewPubKeyFromHex(pk string) (res cryptotypes.PubKey) {
 		panic(err)
 	}
 	if len(pkBytes) != ed25519.PubKeySize {
-		panic(errors.Wrap(errors.ErrInvalidPubKey, "invalid pubkey size"))
+		panic("invalid pubkey size")
 	}
 	return &ed25519.PubKey{Key: pkBytes}
 }
@@ -534,7 +533,7 @@ func NewPubKeyFromHex(pk string) (res cryptotypes.PubKey) {
 type EmptyAppOptions struct{}
 
 // Get implements AppOptions
-func (ao EmptyAppOptions) Get(o string) interface{} {
+func (ao EmptyAppOptions) Get(string) interface{} {
 	return nil
 }
 
