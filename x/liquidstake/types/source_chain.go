@@ -24,7 +24,7 @@ const (
 // BasicVerify verify SouceChain parameters
 // todo: more verify ?
 func (s SourceChain) BasicVerify() error {
-	if len(s.Validators) <= MinValidators {
+	if len(s.Validators) < MinValidators {
 		return fmt.Errorf("min validators: %d, get: %d", MinValidators, len(s.Validators))
 	}
 

@@ -334,7 +334,7 @@ func (k Keeper) submitWithdrawUnbondICATransaction(ctx sdk.Context, sourceChain 
 	for _, v := range sourceChain.Validators {
 		witdrawMsgs = append(witdrawMsgs, transfertypes.NewMsgTransfer(
 			transfertypes.PortID, // TODO the source chain maybe not use the default ibc transfer port. config it.
-			sourceChain.TrasnferChannelID,
+			sourceChain.TransferChannelID,
 			sdk.NewCoin(sourceChain.NativeDenom, math.NewIntFromBigInt(validatorAllocateFunds[v.Address])),
 			sourceChainDelegateAddr,
 			sourceChain.UnboudAddress,

@@ -92,7 +92,7 @@ func (k Keeper) handlePendingDelegationRecord(ctx sdk.Context, record types.Dele
 	timeoutTimestamp := ctx.BlockTime().Add(time.Minute).UnixNano()
 	msg := ibctransfertypes.MsgTransfer{
 		SourcePort:       ibctransfertypes.PortID,
-		SourceChannel:    sourceChain.TrasnferChannelID,
+		SourceChannel:    sourceChain.TransferChannelID,
 		Token:            record.DelegationCoin,
 		Sender:           sourceChain.DelegateAddress,
 		Receiver:         hostAddr,
