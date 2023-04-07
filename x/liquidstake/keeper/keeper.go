@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"celinium/x/liquidstake/types"
-
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
@@ -13,6 +11,8 @@ import (
 	ibcclientkeeper "github.com/cosmos/ibc-go/v6/modules/core/02-client/keeper"
 	ibcclienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
 	"github.com/cosmos/ibc-go/v6/modules/core/exported"
+
+	"github.com/celinium-netwok/celinium/x/liquidstake/types"
 )
 
 type Keeper struct {

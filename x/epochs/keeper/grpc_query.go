@@ -25,7 +25,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"celinium/x/epochs/types"
+	"github.com/celinium-netwok/celinium/x/epochs/types"
 )
 
 var _ types.QueryServer = Keeper{}

@@ -9,7 +9,7 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v6/modules/core/05-port/types"
 	"github.com/cosmos/ibc-go/v6/modules/core/exported"
 
-	"celinium/x/liquidstake/keeper"
+	"github.com/celinium-netwok/celinium/x/liquidstake/keeper"
 )
 
 var _ porttypes.IBCModule = IBCModule{}

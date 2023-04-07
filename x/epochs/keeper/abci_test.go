@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"celinium/x/epochs"
-	"celinium/x/epochs/types"
+	"github.com/celinium-netwok/celinium/x/epochs"
+	"github.com/celinium-netwok/celinium/x/epochs/types"
 )
 
 func (suite *KeeperTestSuite) TestEpochInfoChangesBeginBlockerAndInitGenesis() {

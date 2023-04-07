@@ -1,11 +1,11 @@
 package keeper
 
 import (
-	"celinium/x/liquidstake/types"
-
 	sdkerrors "cosmossdk.io/errors"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/celinium-netwok/celinium/x/liquidstake/types"
 )
 
 func (k Keeper) AddSouceChain(ctx sdk.Context, sourceChain *types.SourceChain) error {

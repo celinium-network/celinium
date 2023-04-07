@@ -3,7 +3,7 @@ package keeper_test
 import (
 	"time"
 
-	"celinium/x/epochs/types"
+	"github.com/celinium-netwok/celinium/x/epochs/types"
 )
 
 func (suite *KeeperTestSuite) TestEpochLifeCycle() {

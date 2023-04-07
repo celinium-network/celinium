@@ -1,4 +1,4 @@
-module celinium
+module github.com/celinium-netwok/celinium
 
 go 1.19
 

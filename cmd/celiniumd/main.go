@@ -6,8 +6,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/server"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 
-	"celinium/app"
-	"celinium/cmd/celiniumd/cmd"
+	"github.com/celinium-netwok/celinium/app"
+	"github.com/celinium-netwok/celinium/cmd/celiniumd/cmd"
 )
 
 func main() {

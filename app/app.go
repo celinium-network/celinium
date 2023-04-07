@@ -129,20 +129,20 @@ import (
 	icahosttypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/host/types"
 	icatypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/types"
 
-	appparams "celinium/app/params"
+	appparams "github.com/celinium-netwok/celinium/app/params"
 
-	epochs "celinium/x/epochs"
-	epochskeeper "celinium/x/epochs/keeper"
-	epochstypes "celinium/x/epochs/types"
+	epochs "github.com/celinium-netwok/celinium/x/epochs"
+	epochskeeper "github.com/celinium-netwok/celinium/x/epochs/keeper"
+	epochstypes "github.com/celinium-netwok/celinium/x/epochs/types"
 
-	liquidstake "celinium/x/liquidstake"
-	liquidstakekeeper "celinium/x/liquidstake/keeper"
-	liquidstaketypes "celinium/x/liquidstake/types"
+	liquidstake "github.com/celinium-netwok/celinium/x/liquidstake"
+	liquidstakekeeper "github.com/celinium-netwok/celinium/x/liquidstake/keeper"
+	liquidstaketypes "github.com/celinium-netwok/celinium/x/liquidstake/types"
 )
 
 const (
 	AccountAddressPrefix = "cosmos"
-	Name                 = "celinium"
+	Name                 = "github.com/celinium-netwok/celinium"
 )
 
 func getGovProposalHandlers() []govclient.ProposalHandler {

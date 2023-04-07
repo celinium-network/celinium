@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"celinium/app"
+	"github.com/celinium-netwok/celinium/app"
 
 	"github.com/cosmos/cosmos-sdk/simapp"
 	simulationtypes "github.com/cosmos/cosmos-sdk/types/simulation"
