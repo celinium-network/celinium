@@ -1,11 +1,10 @@
 package keeper
 
 import (
-	"celinium/x/liquidstake/types"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	epochstypes "celinium/x/epochs/types"
+	epochstypes "github.com/celinium-netwok/celinium/x/epochs/types"
+	"github.com/celinium-netwok/celinium/x/liquidstake/types"
 )
 
 // Hooks wrapper struct for liquid stake keeper

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"celinium/app"
+	"github.com/celinium-netwok/celinium/app"
 
 	"github.com/cosmos/cosmos-sdk/simapp"
 	simulationtypes "github.com/cosmos/cosmos-sdk/types/simulation"
@@ -20,7 +20,7 @@ func init() {
 	simapp.GetSimulatorFlags()
 }
 
-var defaultConsensusParams = &abci.ConsensusParams{
+var _ = &abci.ConsensusParams{
 	Block: &abci.BlockParams{
 		MaxBytes: 200000,
 		MaxGas:   2000000,

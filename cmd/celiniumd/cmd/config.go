@@ -3,7 +3,7 @@ package cmd
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"celinium/app"
+	"github.com/celinium-netwok/celinium/app"
 )
 
 func initSDKConfig() {

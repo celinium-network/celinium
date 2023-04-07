@@ -16,7 +16,7 @@ import (
 	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
 
-	"celinium/x/liquidstake/types"
+	"github.com/celinium-netwok/celinium/x/liquidstake/types"
 )
 
 func (k Keeper) Undelegate(ctx sdk.Context, chainID string, amount math.Int, delegator sdk.AccAddress /*,receiver sdk.AccAddress*/) error {
@@ -115,10 +115,10 @@ func (k Keeper) GetUndelegationRecord(ctx sdk.Context, chainID string, epoch uin
 	return k.GetUndelegationRecordByID(ctx, id)
 }
 
-func (k Keeper) GetUndelegationRecordByID(ctx sdk.Context, ID string) (*types.UndelegationRecord, bool) {
+func (k Keeper) GetUndelegationRecordByID(ctx sdk.Context, id string) (*types.UndelegationRecord, bool) {
 	store := ctx.KVStore(k.storeKey)
 
-	bz := store.Get([]byte(types.GetUndelegationRecordKeyFromID(ID)))
+	bz := store.Get([]byte(types.GetUndelegationRecordKeyFromID(id)))
 	if bz == nil {
 		return nil, false
 	}

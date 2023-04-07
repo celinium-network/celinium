@@ -3,9 +3,6 @@ package liquidstake
 import (
 	"encoding/json"
 
-	"celinium/x/liquidstake/keeper"
-	"celinium/x/liquidstake/types"
-
 	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -15,6 +12,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	abci "github.com/tendermint/tendermint/abci/types"
+
+	"github.com/celinium-netwok/celinium/x/liquidstake/keeper"
+	"github.com/celinium-netwok/celinium/x/liquidstake/types"
 )
 
 var (

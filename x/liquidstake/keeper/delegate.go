@@ -13,7 +13,7 @@ import (
 	ibctransfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
 
-	"celinium/x/liquidstake/types"
+	"github.com/celinium-netwok/celinium/x/liquidstake/types"
 )
 
 // Delegate performs a liquid stake delegation. delegator transfer the ibcToken to module account then
@@ -213,8 +213,8 @@ func (k Keeper) AfterCrosschainDelegate(ctx sdk.Context, record *types.Delegatio
 	return nil
 }
 
-func (k Keeper) handleTransferFailedDelegationRecord(ctx sdk.Context, record types.DelegationRecord) {
-}
+// func (k Keeper) handleTransferFailedDelegationRecord(ctx sdk.Context, record types.DelegationRecord) {
+// }
 
-func (k Keeper) handleDelegateFailedDelegationRecord(ctx sdk.Context, record types.DelegationRecord) {
-}
+// func (k Keeper) handleDelegateFailedDelegationRecord(ctx sdk.Context, record types.DelegationRecord) {
+// }

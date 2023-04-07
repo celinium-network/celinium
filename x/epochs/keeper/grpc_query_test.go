@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"celinium/x/epochs/types"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
+
+	"github.com/celinium-netwok/celinium/x/epochs/types"
 )
 
 func (suite *KeeperTestSuite) TestEpochInfo() {

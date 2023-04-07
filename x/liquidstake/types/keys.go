@@ -97,8 +97,8 @@ func GetUndelegationRecordKey(chainID string, epoch uint64, delegator string) st
 	return string(UndelegationRecrodPrefix) + id
 }
 
-func GetUndelegationRecordKeyFromID(ID string) string {
-	return string(UndelegationRecrodPrefix) + ID
+func GetUndelegationRecordKeyFromID(id string) string {
+	return string(UndelegationRecrodPrefix) + id
 }
 
 func AssembleUndelegationRecordID(chainID string, epoch uint64, delegator string) string {

@@ -17,9 +17,9 @@
 package keeper
 
 import (
-	"celinium/x/epochs/types"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/celinium-netwok/celinium/x/epochs/types"
 )
 
 var _ types.EpochHooks = MultiEpochHooks{}

@@ -1,7 +1,7 @@
 package types
 
 import (
-	epochstypes "celinium/x/epochs/types"
+	epochstypes "github.com/celinium-netwok/celinium/x/epochs/types"
 )
 
 // epoch identifier for liquid stake.

@@ -3,11 +3,11 @@ package keeper_test
 import (
 	"time"
 
-	"celinium/app"
-	"celinium/testutil"
-	"celinium/x/epochs/types"
-
 	"github.com/cosmos/cosmos-sdk/baseapp"
+
+	"github.com/celinium-netwok/celinium/app"
+	"github.com/celinium-netwok/celinium/testutil"
+	"github.com/celinium-netwok/celinium/x/epochs/types"
 )
 
 // Test helpers

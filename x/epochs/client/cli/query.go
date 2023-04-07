@@ -25,7 +25,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/spf13/cobra"
 
-	"celinium/x/epochs/types"
+	"github.com/celinium-netwok/celinium/x/epochs/types"
 )
 
 // GetQueryCmd returns the cli query commands for this module
