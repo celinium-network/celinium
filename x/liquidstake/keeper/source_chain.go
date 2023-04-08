@@ -13,17 +13,6 @@ func (k Keeper) AddSouceChain(ctx sdk.Context, sourceChain *types.SourceChain) e
 		return sdkerrors.Wrapf(types.ErrSourceChainParameter, "error: %v", err)
 	}
 
-	// check source chain ibc client
-	// if err := k.checkIBCClient(ctx, sourceChain.ChainID); err != nil {
-	// 	return err
-	// }
-
-	// check source chain ibc transfer.
-	// TODO: Should consider whether to detect?
-	// if !k.ibcTransferKeeper.GetSendEnabled(ctx) || !k.ibcTransferKeeper.GetReceiveEnabled(ctx) {
-	// 	return types.ErrBannedIBCTransfer
-	// }
-
 	// check source chain wheather is already existed.
 	if _, found := k.GetSourceChain(ctx, sourceChain.ChainID); found {
 		return sdkerrors.Wrapf(types.ErrSourceChainExist, "already exist source chain, ID: %s", sourceChain.ChainID)

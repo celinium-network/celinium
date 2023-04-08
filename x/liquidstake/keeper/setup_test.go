@@ -16,6 +16,7 @@ import (
 	ibctesting "github.com/cosmos/ibc-go/v6/testing"
 
 	celiniumapp "github.com/celinium-netwok/celinium/app"
+	params "github.com/celinium-netwok/celinium/app/params"
 )
 
 type KeeperTestSuite struct {
@@ -104,4 +105,20 @@ func copyConnectionAndClientToPath(path *ibctesting.Path, pathToCopy *ibctesting
 	path.EndpointA.ConnectionConfig = pathToCopy.EndpointA.ConnectionConfig
 	path.EndpointB.ConnectionConfig = pathToCopy.EndpointB.ConnectionConfig
 	return path
+}
+
+func getCeliniumApp(chain *ibctesting.TestChain) *celiniumapp.App {
+	app, ok := chain.App.(*celiniumapp.App)
+	if !ok {
+		panic("not celinium app")
+	}
+
+	return app
+}
+
+func (suite *KeeperTestSuite) calcuateDenomTrace(endpoint *ibctesting.Endpoint) string {
+	sourcePrefix := transfertypes.GetDenomPrefix(endpoint.ChannelConfig.PortID, endpoint.ChannelID)
+	denomTrace := transfertypes.ParseDenomTrace(sourcePrefix + params.DefaultBondDenom)
+
+	return denomTrace.Hash().String()
 }
