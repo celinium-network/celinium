@@ -16,7 +16,6 @@ import (
 	ibctesting "github.com/cosmos/ibc-go/v6/testing"
 
 	celiniumapp "github.com/celinium-netwok/celinium/app"
-	params "github.com/celinium-netwok/celinium/app/params"
 )
 
 type KeeperTestSuite struct {
@@ -116,9 +115,9 @@ func getCeliniumApp(chain *ibctesting.TestChain) *celiniumapp.App {
 	return app
 }
 
-func (suite *KeeperTestSuite) calcuateDenomTrace(endpoint *ibctesting.Endpoint) string {
-	sourcePrefix := transfertypes.GetDenomPrefix(endpoint.ChannelConfig.PortID, endpoint.ChannelID)
-	denomTrace := transfertypes.ParseDenomTrace(sourcePrefix + params.DefaultBondDenom)
+func (suite *KeeperTestSuite) calcuateIBCDenom(portID, channelID string, denom string) string {
+	sourcePrefix := transfertypes.GetDenomPrefix(portID, channelID)
+	denomTrace := transfertypes.ParseDenomTrace(sourcePrefix + denom)
 
-	return denomTrace.Hash().String()
+	return denomTrace.IBCDenom()
 }

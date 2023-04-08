@@ -90,9 +90,12 @@ func (suite *KeeperTestSuite) mockSourceChain() *types.SourceChain {
 		TransferChannelID:         suite.transferPath.EndpointB.ChannelID,
 		Bech32ValidatorAddrPrefix: params.Bech32PrefixValAddr,
 		Validators:                selectedVals,
-		IbcDenom:                  suite.calcuateDenomTrace(suite.transferPath.EndpointB),
-		NativeDenom:               params.DefaultBondDenom,
-		DerivativeDenom:           "DLST",
+		IbcDenom: suite.calcuateIBCDenom(
+			suite.transferPath.EndpointB.ChannelConfig.PortID,
+			suite.transferPath.EndpointB.ChannelID,
+			params.DefaultBondDenom),
+		NativeDenom:     params.DefaultBondDenom,
+		DerivativeDenom: "DLST",
 	}
 
 	return &sourceChain

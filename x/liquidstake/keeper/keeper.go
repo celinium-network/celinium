@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	sdkerrors "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -9,8 +8,6 @@ import (
 	icacontrollerkeeper "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/controller/keeper"
 	ibctransferkeeper "github.com/cosmos/ibc-go/v6/modules/apps/transfer/keeper"
 	ibcclientkeeper "github.com/cosmos/ibc-go/v6/modules/core/02-client/keeper"
-	ibcclienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
-	"github.com/cosmos/ibc-go/v6/modules/core/exported"
 
 	"github.com/celinium-netwok/celinium/x/liquidstake/types"
 )
@@ -109,20 +106,20 @@ func (k Keeper) GetAllDelegationRecord(ctx sdk.Context) []types.DelegationRecord
 }
 
 // checkIBCClient check weather the ibcclient of the specific chain is active
-func (k Keeper) checkIBCClient(ctx sdk.Context, chainID string) error {
-	clientState, found := k.ibcClientKeeper.GetClientState(ctx, chainID)
-	if !found {
-		return sdkerrors.Wrapf(ibcclienttypes.ErrClientNotFound, "unknown client, ID: %s", chainID)
-	}
+// func (k Keeper) checkIBCClient(ctx sdk.Context, chainID string) error {
+// 	clientState, found := k.ibcClientKeeper.GetClientState(ctx, chainID)
+// 	if !found {
+// 		return sdkerrors.Wrapf(ibcclienttypes.ErrClientNotFound, "unknown client, ID: %s", chainID)
+// 	}
 
-	clientStore := k.ibcClientKeeper.ClientStore(ctx, chainID)
+// 	clientStore := k.ibcClientKeeper.ClientStore(ctx, chainID)
 
-	if status := clientState.Status(ctx, clientStore, k.cdc); status != exported.Active {
-		return sdkerrors.Wrapf(ibcclienttypes.ErrClientNotActive, "cannot update client (%s) with status %s", chainID, status)
-	}
+// 	if status := clientState.Status(ctx, clientStore, k.cdc); status != exported.Active {
+// 		return sdkerrors.Wrapf(ibcclienttypes.ErrClientNotActive, "cannot update client (%s) with status %s", chainID, status)
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 // sendCoinsFromAccountToAccount preform send coins form sender to receiver.
 func (k Keeper) sendCoinsFromAccountToAccount(ctx sdk.Context, senderAddr sdk.AccAddress, receiverAddr sdk.AccAddress, amt sdk.Coins) error {
