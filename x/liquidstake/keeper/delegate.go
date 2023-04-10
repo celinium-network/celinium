@@ -40,15 +40,15 @@ func (k *Keeper) Delegate(ctx sdk.Context, chainID string, amount math.Int, dele
 		return sdkerrors.Wrapf(types.ErrNoExistDelegationRecord, "chainID %s, epoch %d, recorID %d", chainID, currentEpoch, recordID)
 	}
 
-	delegatorAccAddress := sdk.MustAccAddressFromBech32(sourceChain.DelegateAddress)
+	sourceChainDelegatorAccAddress := sdk.MustAccAddressFromBech32(sourceChain.DelegateAddress)
 	// transfer ibc token to sourcechain's delegation account
-	if err := k.sendCoinsFromAccountToAccount(ctx, delegator, delegatorAccAddress, sdk.Coins{sdk.NewCoin(sourceChain.IbcDenom, amount)}); err != nil {
+	if err := k.sendCoinsFromAccountToAccount(ctx, delegator, sourceChainDelegatorAccAddress, sdk.Coins{sdk.NewCoin(sourceChain.IbcDenom, amount)}); err != nil {
 		return err
 	}
 
 	// TODO TruncateInt calculations can be huge precision error
 	derivativeCoinAmount := amount.Mul(sourceChain.Redemptionratio.TruncateInt())
-	if err := k.mintCoins(ctx, delegatorAccAddress, sdk.Coins{sdk.NewCoin(sourceChain.DerivativeDenom, derivativeCoinAmount)}); err != nil {
+	if err := k.mintCoins(ctx, delegator, sdk.Coins{sdk.NewCoin(sourceChain.DerivativeDenom, derivativeCoinAmount)}); err != nil {
 		return err
 	}
 

@@ -9,7 +9,7 @@ import (
 
 const (
 	// ModuleName is the name of the staking module
-	ModuleName = "interstaking"
+	ModuleName = "liquidstake"
 
 	// StoreKey is the string store representation
 	StoreKey = ModuleName

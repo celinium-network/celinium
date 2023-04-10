@@ -204,6 +204,7 @@ var (
 		govtypes.ModuleName:            {authtypes.Burner},
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
 		ibcfeetypes.ModuleName:         nil,
+		liquidstaketypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
 	}
 )
 
@@ -545,10 +546,12 @@ func NewApp(
 	icaCtlLiquidStakeIBCModule := icacontroller.NewIBCMiddleware(liquidstakeIBCModule, app.ICAControllerKeeper)
 	icaControllerStack := ibcfee.NewIBCMiddleware(icaCtlLiquidStakeIBCModule, app.IBCFeeKeeper)
 
+	transferStack := liquidstake.NewIBCMiddleware(app.LiquidStakeKeeper, transferIBCModule)
+
 	ibcRouter := ibcporttypes.NewRouter()
 	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostStack).
 		AddRoute(icacontrollertypes.SubModuleName, icaControllerStack).
-		AddRoute(ibctransfertypes.ModuleName, transferIBCModule).
+		AddRoute(ibctransfertypes.ModuleName, transferStack).
 		AddRoute(liquidstaketypes.ModuleName, icaControllerStack)
 
 	app.IBCKeeper.SetRouter(ibcRouter)

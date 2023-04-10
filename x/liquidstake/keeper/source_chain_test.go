@@ -90,6 +90,7 @@ func (suite *KeeperTestSuite) mockSourceChainParams() *types.SourceChain {
 		TransferChannelID:         suite.transferPath.EndpointB.ChannelID,
 		Bech32ValidatorAddrPrefix: params.Bech32PrefixValAddr,
 		Validators:                selectedVals,
+		Redemptionratio:           sdk.NewDec(1),
 		IbcDenom: suite.calcuateIBCDenom(
 			suite.transferPath.EndpointB.ChannelConfig.PortID,
 			suite.transferPath.EndpointB.ChannelID,
