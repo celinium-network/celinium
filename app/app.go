@@ -459,14 +459,14 @@ func NewApp(
 	// If evidence needs to be handled for the app, set routes in router here and seal
 	app.EvidenceKeeper = *evidenceKeeper
 
-	app.EpochsKeeper = *epochskeeper.NewKeeper(appCodec, keys[epochstypes.StoreKey])
-
 	// grant capabilities for the ibc/ibc-transfer/interchain-accounts modules
 	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibchost.ModuleName)
 	scopedICAControllerKeeper := app.CapabilityKeeper.ScopeToModule(icacontrollertypes.SubModuleName)
 	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
 	scopedICAHostKeeper := app.CapabilityKeeper.ScopeToModule(icahosttypes.SubModuleName)
 	scopedLiquiStakeKeeper := app.CapabilityKeeper.ScopeToModule(liquidstaketypes.ModuleName)
+
+	app.EpochsKeeper = *epochskeeper.NewKeeper(appCodec, keys[epochstypes.StoreKey])
 
 	// Sealing prevents other modules from creating scoped sub-keepers
 	app.CapabilityKeeper.Seal()
@@ -577,6 +577,11 @@ func NewApp(
 		app.MsgServiceRouter(),
 		govConfig,
 	)
+
+	// set epoch keeper
+	app.EpochsKeeper.SetHooks(epochskeeper.NewMultiEpochHooks(
+		app.LiquidStakeKeeper.Hooks(),
+	))
 
 	/****  Module Options ****/
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))

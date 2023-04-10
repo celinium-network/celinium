@@ -39,3 +39,7 @@ func (h Hooks) BeforeEpochStart(ctx sdk.Context, epochIdentifier string, epochNu
 }
 
 var _ epochstypes.EpochHooks = Hooks{}
+
+func (k Keeper) Hooks() Hooks {
+	return Hooks{k}
+}

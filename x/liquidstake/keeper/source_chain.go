@@ -4,6 +4,7 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	icatypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/types"
 
 	"github.com/celinium-netwok/celinium/x/liquidstake/types"
 )
@@ -54,11 +55,19 @@ func (k Keeper) CreateDelegationRecordForEpoch(ctx sdk.Context, epochNumber int6
 
 		id := k.GetDelegationRecordID(ctx)
 
-		record := types.DelegationRecord{}
+		record := types.DelegationRecord{
+			Id:             id,
+			DelegationCoin: sdk.NewCoin(sourcechain.NativeDenom, sdk.ZeroInt()),
+			Status:         types.DelegationPending,
+			EpochNumber:    uint64(epochNumber),
+			ChainID:        sourcechain.ChainID,
+		}
 
 		k.SetChainDelegationRecordID(ctx, sourcechain.ChainID, uint64(epochNumber), id)
 
 		k.SetDelegationRecord(ctx, id, &record)
+
+		k.IncreaseDelegationRecordID(ctx)
 	}
 }
 
@@ -123,11 +132,16 @@ func (k Keeper) SetChainDelegationRecordID(ctx sdk.Context, chainID string, epoc
 
 // chainAvaiable wheather a chain is available. when all interchain account is registered, then it's available
 func (k Keeper) sourceChainAvaiable(ctx sdk.Context, sourceChain *types.SourceChain) bool {
-	_, found1 := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ConnectionID, sourceChain.WithdrawAddress)
-	_, found2 := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ConnectionID, sourceChain.DelegateAddress)
-	_, found3 := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ConnectionID, sourceChain.UnboudAddress)
+	findICA := func(addr string) bool {
+		portID, err := icatypes.NewControllerPortID(addr)
+		if err != nil {
+			return false
+		}
+		_, found := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ConnectionID, portID)
+		return found
+	}
 
-	if found1 && found2 && found3 {
+	if findICA(sourceChain.WithdrawAddress) && findICA(sourceChain.DelegateAddress) && findICA(sourceChain.UnboudAddress) {
 		return true
 	}
 

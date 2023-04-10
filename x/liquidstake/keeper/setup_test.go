@@ -32,7 +32,6 @@ type KeeperTestSuite struct {
 
 func init() {
 	ibctesting.DefaultTestingAppInit = SetupTestingApp
-	celiniumapp.DefaultUnbondingTime = time.Minute * 5
 }
 
 func SetupTestingApp() (ibctesting.TestingApp, map[string]json.RawMessage) {
@@ -69,7 +68,8 @@ func newTransferPath(chainA, chainB *ibctesting.TestChain) *ibctesting.Path {
 
 	tmConfig := ibctesting.NewTendermintConfig()
 	tmConfig.UnbondingPeriod = celiniumapp.DefaultUnbondingTime
-	tmConfig.TrustingPeriod = celiniumapp.DefaultUnbondingTime - time.Second
+	tmConfig.TrustingPeriod = celiniumapp.DefaultUnbondingTime - time.Minute*5
+	tmConfig.MaxClockDrift = celiniumapp.DefaultUnbondingTime - time.Minute*5
 
 	path.EndpointA.ClientConfig = tmConfig
 	path.EndpointB.ClientConfig = tmConfig
@@ -86,7 +86,8 @@ func newICAPath(chainA, chainB *ibctesting.TestChain) *ibctesting.Path {
 
 	tmConfig := ibctesting.NewTendermintConfig()
 	tmConfig.UnbondingPeriod = celiniumapp.DefaultUnbondingTime
-	tmConfig.TrustingPeriod = celiniumapp.DefaultUnbondingTime - time.Second
+	tmConfig.TrustingPeriod = celiniumapp.DefaultUnbondingTime - time.Minute*5
+	tmConfig.MaxClockDrift = celiniumapp.DefaultUnbondingTime - time.Minute*5
 
 	path.EndpointA.ClientConfig = tmConfig
 	path.EndpointB.ClientConfig = tmConfig
