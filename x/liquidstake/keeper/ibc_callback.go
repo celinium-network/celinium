@@ -142,7 +142,7 @@ func (k Keeper) advanceCallbackRelatedEntry(ctx sdk.Context, callback *types.IBC
 			if epochUnbondings.Unbondings[i].ChainID != unbondCallArgs.ChainID {
 				continue
 			}
-			epochUnbondings.Unbondings[i].UnbondTIme = uint64(completeTime.Unix())
+			epochUnbondings.Unbondings[i].UnbondTIme = uint64(completeTime.UnixNano())
 			epochUnbondings.Unbondings[i].Status = types.UnbondingWaitting
 		}
 

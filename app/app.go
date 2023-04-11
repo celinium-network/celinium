@@ -541,12 +541,12 @@ func NewApp(
 		app.TransferKeeper,
 	)
 
+	transferStack := liquidstake.NewIBCMiddleware(app.LiquidStakeKeeper, transferIBCModule)
+
 	liquidstakeModule := liquidstake.NewAppModule(appCodec, app.LiquidStakeKeeper)
-	liquidstakeIBCModule := liquidstake.NewIBCModule(app.LiquidStakeKeeper, appCodec)
+	liquidstakeIBCModule := liquidstake.NewIBCModule(app.LiquidStakeKeeper, appCodec, transferIBCModule)
 	icaCtlLiquidStakeIBCModule := icacontroller.NewIBCMiddleware(liquidstakeIBCModule, app.ICAControllerKeeper)
 	icaControllerStack := ibcfee.NewIBCMiddleware(icaCtlLiquidStakeIBCModule, app.IBCFeeKeeper)
-
-	transferStack := liquidstake.NewIBCMiddleware(app.LiquidStakeKeeper, transferIBCModule)
 
 	ibcRouter := ibcporttypes.NewRouter()
 	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostStack).

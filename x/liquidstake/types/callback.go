@@ -43,6 +43,8 @@ func (c *IBCCallback) CheckSuccessfulIBCAcknowledgement(cdc codec.Codec, respons
 				return true
 			}
 		}
+	case WithdrawUnbondCall:
+		return true
 	default:
 		return false
 	}

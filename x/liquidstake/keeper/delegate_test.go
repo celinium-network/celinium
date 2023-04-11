@@ -5,7 +5,6 @@ import (
 
 	epochtypes "github.com/celinium-netwok/celinium/x/epochs/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
 
 	"github.com/celinium-netwok/celinium/x/liquidstake/types"
 )
@@ -69,31 +68,7 @@ func (suite *KeeperTestSuite) processDelegation(epochInfo *epochtypes.EpochInfo)
 	suite.controlChain.NextBlock()
 	suite.transferPath.EndpointA.UpdateClient()
 
-	msgRecvPackets := parseMsgRecvPacketFromEvents(suite.controlChain, nextBlockBeginRes.Events, controlChainUserAddr.String())
-
-	for i := 0; i < len(msgRecvPackets); i++ {
-		var midRecvMsg *channeltypes.MsgRecvPacket
-		var midAckMsg *channeltypes.MsgAcknowledgement
-
-		midAckMsg, err := chainRecvPacket(suite.sourceChain, suite.transferPath.EndpointB, &msgRecvPackets[i])
-
-		if midAckMsg == nil || err != nil {
-			break
-		}
-
-		// relay the ibc msg unitl no ibc info in events.
-		for {
-			midRecvMsg, _ = chainRecvAck(suite.controlChain, suite.transferPath.EndpointA, midAckMsg)
-			if midRecvMsg == nil {
-				break
-			}
-
-			midAckMsg, _ = chainRecvPacket(suite.sourceChain, suite.transferPath.EndpointB, midRecvMsg)
-			if midAckMsg == nil {
-				break
-			}
-		}
-	}
+	suite.relayIBCPacketFromCtlToSrc(nextBlockBeginRes.Events, controlChainUserAddr.String())
 }
 
 func (suite *KeeperTestSuite) TestProcessDelegation() {

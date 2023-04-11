@@ -62,15 +62,11 @@ func (suite *KeeperTestSuite) TestUserUndelegate() {
 	controlChainApp.LiquidStakeKeeper.Undelegate(suite.controlChain.GetContext(), sourceChainParams.ChainID, testCoin.Amount, controlChainUserAddr)
 
 	// process at next unbond epoch begin
-	coordTime := suite.controlChain.Coordinator.CurrentTime
-	duration := unbondingEpochInfo.Duration - (coordTime.Sub(unbondingEpochInfo.StartTime.Add(unbondingEpochInfo.Duration)))
-	coordTime = coordTime.Add(duration + time.Minute*5)
-
-	suite.controlChain.Coordinator.CurrentTime = coordTime
-	suite.sourceChain.Coordinator.CurrentTime = coordTime
+	coordTime := suite.advanceToNextEpoch(unbondingEpochInfo)
 
 	nextBlockTime := coordTime
 	_, nextBlockBeginRes := nextBlockWithRes(suite.controlChain, nextBlockTime)
+	nextBlockWithRes(suite.sourceChain, nextBlockTime)
 
 	suite.controlChain.NextBlock()
 	suite.transferPath.EndpointA.UpdateClient()
@@ -83,7 +79,20 @@ func (suite *KeeperTestSuite) TestUserUndelegate() {
 			continue
 		}
 		suite.Equal(unbonding.Status, uint32(types.UnbondingWaitting))
+
+		// TODO check the unbonding.Amount will be failed
 	}
+}
+
+func (suite *KeeperTestSuite) advanceToNextEpoch(epochInfo *epochtypes.EpochInfo) time.Time {
+	coordTime := suite.controlChain.Coordinator.CurrentTime
+	duration := epochInfo.Duration - (coordTime.Sub(epochInfo.StartTime.Add(epochInfo.Duration)))
+	coordTime = coordTime.Add(duration + time.Minute*5)
+
+	suite.controlChain.Coordinator.CurrentTime = coordTime
+	suite.sourceChain.Coordinator.CurrentTime = coordTime
+
+	return coordTime
 }
 
 func (suite *KeeperTestSuite) relayIBCPacketFromCtlToSrc(events []abci.Event, sender string) {

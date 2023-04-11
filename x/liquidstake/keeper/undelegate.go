@@ -224,7 +224,7 @@ func (k Keeper) ProcessEpochUnbondings(ctx sdk.Context, epoch uint64, unbondings
 			// retry now maybe deadloop ?
 		case types.UnbondingWaitting:
 			// TODO timestamp become int64
-			if ctx.BlockTime().Before(time.Unix(int64(unbonding.UnbondTIme), 0).Add(5 * time.Minute)) {
+			if ctx.BlockTime().Before(time.Unix(0, int64(unbonding.UnbondTIme)).Add(5 * time.Minute)) {
 				continue
 			}
 
