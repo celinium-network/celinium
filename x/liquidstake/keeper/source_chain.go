@@ -57,7 +57,7 @@ func (k Keeper) CreateDelegationRecordForEpoch(ctx sdk.Context, epochNumber int6
 
 		record := types.DelegationRecord{
 			Id:             id,
-			DelegationCoin: sdk.NewCoin(sourcechain.NativeDenom, sdk.ZeroInt()),
+			DelegationCoin: sdk.NewCoin(sourcechain.IbcDenom, sdk.ZeroInt()),
 			Status:         types.DelegationPending,
 			EpochNumber:    uint64(epochNumber),
 			ChainID:        sourcechain.ChainID,

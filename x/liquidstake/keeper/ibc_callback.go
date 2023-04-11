@@ -4,6 +4,7 @@ import (
 	"strings"
 	"time"
 
+	sdkerrors "cosmossdk.io/errors"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -33,16 +34,66 @@ func (k Keeper) GetCallBack(ctx sdk.Context, channel string, port string, sequen
 	return &callback, true
 }
 
-func (k Keeper) HandleIBCAcknowledgement(ctx sdk.Context, packet *channeltypes.Packet, responses []*codectypes.Any) error {
-	callback, found := k.GetCallBack(ctx, packet.SourceChannel, packet.SourcePort, packet.Sequence)
-	if !found {
-		return nil
+func GetResultFromAcknowledgement(acknowledgement []byte) ([]byte, error) {
+	var ack channeltypes.Acknowledgement
+	if err := channeltypes.SubModuleCdc.UnmarshalJSON(acknowledgement, &ack); err != nil {
+		return nil, err
 	}
 
-	successful := callback.CheckSuccessfulIBCAcknowledgement(k.cdc, responses)
+	switch response := ack.Response.(type) {
+	case *channeltypes.Acknowledgement_Result:
+		if len(response.Result) == 0 {
+			return nil, sdkerrors.Wrapf(channeltypes.ErrInvalidAcknowledgement, "empty acknowledgement")
+		}
+		return ack.GetResult(), nil
+	case *channeltypes.Acknowledgement_Error:
+		return nil, sdkerrors.Wrapf(channeltypes.ErrInvalidPacket, "invalid acknowledgement")
+	default:
+		return nil, sdkerrors.Wrapf(channeltypes.ErrInvalidAcknowledgement, "unknown acknowledgement status")
+
+	}
+}
+
+func (k Keeper) HandleIBCTransferAcknowledgement(ctx sdk.Context, packet *channeltypes.Packet, acknowledgement []byte) error {
+	_, err := GetResultFromAcknowledgement(acknowledgement)
+	if err != nil {
+		return err
+	}
+
+	callback, found := k.GetCallBack(ctx, packet.SourceChannel, packet.SourcePort, packet.Sequence)
+	if !found {
+		return sdkerrors.Wrapf(types.ErrCallbackNotExist, "channelID: %s, portID: %s, sequence: %d",
+			packet.SourceChannel, packet.SourcePort, packet.Sequence)
+	}
 
 	// update record status
-	k.advanceCallbackRelatedEntry(ctx, callback, responses, successful)
+	k.advanceCallbackRelatedEntry(ctx, callback, nil, true)
+
+	// TODO consider remove callback ?, repeated receive same Acknowledgement
+	return nil
+}
+
+func (k Keeper) HandleICAAcknowledgement(ctx sdk.Context, packet *channeltypes.Packet, acknowledgement []byte) error {
+	res, err := GetResultFromAcknowledgement(acknowledgement)
+	if err != nil {
+		return err
+	}
+
+	var txMsgData sdk.TxMsgData
+	if err := k.cdc.Unmarshal(res, &txMsgData); err != nil {
+		return err
+	}
+
+	callback, found := k.GetCallBack(ctx, packet.SourceChannel, packet.SourcePort, packet.Sequence)
+	if !found {
+		return sdkerrors.Wrapf(types.ErrCallbackNotExist, "channelID: %s, portID: %s, sequence: %d",
+			packet.SourceChannel, packet.SourcePort, packet.Sequence)
+	}
+
+	successful := callback.CheckSuccessfulIBCAcknowledgement(k.cdc, txMsgData.MsgResponses)
+
+	// update record status
+	k.advanceCallbackRelatedEntry(ctx, callback, txMsgData.MsgResponses, successful)
 
 	// TODO consider remove callback ?, repeated receive same Acknowledgement
 	return nil

@@ -35,9 +35,7 @@ func (c *IBCCallback) CheckSuccessfulIBCAcknowledgement(cdc codec.Codec, respons
 	case DelegateCall:
 		for _, r := range responses {
 			if strings.Contains(r.TypeUrl, "MsgDelegateResponse") {
-				response := stakingtypes.MsgDelegateResponse{}
-				err := cdc.Unmarshal(r.Value, &response)
-				return err != nil
+				return true
 			}
 		}
 	case UnbondCall:

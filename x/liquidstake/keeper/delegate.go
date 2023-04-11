@@ -134,7 +134,12 @@ func (k Keeper) AfterDelegateTransfer(ctx sdk.Context, record *types.DelegationR
 		return sdkerrors.Wrapf(types.ErrUnknownSourceChain, "unknown source chain, chainID: %s", record.ChainID)
 	}
 
-	sourceChainDelegateAddr, _ := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ChainID, sourceChain.DelegateAddress)
+	portID, err := icatypes.NewControllerPortID(sourceChain.DelegateAddress)
+	if err != nil {
+		return err
+	}
+
+	sourceChainDelegateAddr, _ := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ConnectionID, portID)
 	sourceChainDelegateAddress := sdk.MustAccAddressFromBech32(sourceChainDelegateAddr)
 
 	allocatedFunds := sourceChain.AllocateFundsForValidator(record.DelegationCoin.Amount)
@@ -150,7 +155,7 @@ func (k Keeper) AfterDelegateTransfer(ctx sdk.Context, record *types.DelegationR
 		stakingMsgs = append(stakingMsgs, stakingtypes.NewMsgDelegate(
 			sourceChainDelegateAddress,
 			valAddress,
-			sdk.NewCoin(sourceChain.NativeDenom, math.NewIntFromBigInt(amount)),
+			sdk.NewCoin(sourceChain.NativeDenom, amount),
 		))
 	}
 
@@ -162,11 +167,6 @@ func (k Keeper) AfterDelegateTransfer(ctx sdk.Context, record *types.DelegationR
 	packetData := icatypes.InterchainAccountPacketData{
 		Type: icatypes.EXECUTE_TX,
 		Data: data,
-	}
-
-	portID, err := icatypes.NewControllerPortID(sourceChain.DelegateAddress)
-	if err != nil {
-		return err
 	}
 
 	// TODO timeout ?

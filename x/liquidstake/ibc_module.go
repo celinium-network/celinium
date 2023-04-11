@@ -22,17 +22,7 @@ type IBCModule struct {
 
 // OnAcknowledgementPacket implements types.IBCModule
 func (im IBCModule) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, acknowledgement []byte, _ sdk.AccAddress) error {
-	var ack channeltypes.Acknowledgement
-	if err := channeltypes.SubModuleCdc.UnmarshalJSON(acknowledgement, &ack); err != nil {
-		return err
-	}
-
-	var txMsgData sdk.TxMsgData
-	if err := im.cdc.Unmarshal(ack.GetResult(), &txMsgData); err != nil {
-		return err
-	}
-
-	return im.keeper.HandleIBCAcknowledgement(ctx, &packet, txMsgData.MsgResponses)
+	return im.keeper.HandleICAAcknowledgement(ctx, &packet, acknowledgement)
 }
 
 // OnChanCloseConfirm implements types.IBCModule

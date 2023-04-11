@@ -99,34 +99,87 @@ func (suite *KeeperTestSuite) TestProcessDelegation() {
 	for i := 0; i < len(msgRecvPackets); i++ {
 		sourceChainContext := suite.sourceChain.GetContext()
 		_, err = sourceChainApp.IBCKeeper.RecvPacket(sourceChainContext, &msgRecvPackets[i])
-		suite.sourceChain.NextBlock()
-
 		suite.NoError(err)
-
-		ack, _ := ibctesting.ParseAckFromEvents(sourceChainContext.EventManager().Events())
-
-		packet := msgRecvPackets[i].Packet
-		key := ibchost.PacketAcknowledgementKey(packet.GetDestPort(),
-			packet.GetDestChannel(),
-			packet.GetSequence())
-
+		suite.sourceChain.NextBlock()
 		suite.transferPath.EndpointB.UpdateClient()
 
-		proof, height := suite.sourceChain.QueryProof(key)
+		ackMsg, err := assembleAckPacketFromEvents(suite.sourceChain, msgRecvPackets[i].Packet, sourceChainContext.EventManager().Events())
+		suite.NoError(err)
 
-		backProofType := ibccommitmenttypes.MerkleProof{}
-		backProofType.Unmarshal(proof)
+		controlChainContext := suite.controlChain.GetContext()
+		_, err = controlChainApp.IBCKeeper.Acknowledgement(controlChainContext, ackMsg)
+		suite.NoError(err)
+		suite.controlChain.NextBlock()
+		suite.transferPath.EndpointA.UpdateClient()
 
-		ackMsg := channeltypes.MsgAcknowledgement{
-			Packet:          packet,
-			Acknowledgement: ack,
-			ProofAcked:      proof,
-			ProofHeight:     height,
-			Signer:          controlChainUserAddr.String(),
-		}
-		_, err = controlChainApp.IBCKeeper.Acknowledgement(suite.controlChain.GetContext(), &ackMsg)
+		recvMsg, err := assembleRecvPacketByEvents(suite.controlChain, controlChainContext.EventManager().Events())
+		suite.NoError(err)
+
+		sourceChainContext = suite.sourceChain.GetContext()
+		_, err = sourceChainApp.IBCKeeper.RecvPacket(sourceChainContext, recvMsg)
+		suite.NoError(err)
+		suite.sourceChain.NextBlock()
+		suite.transferPath.EndpointB.UpdateClient()
+
+		ackMsg, err = assembleAckPacketFromEvents(suite.sourceChain, recvMsg.Packet, sourceChainContext.EventManager().Events())
+		suite.NoError(err)
+
+		controlChainContext = suite.controlChain.GetContext()
+		_, err = controlChainApp.IBCKeeper.Acknowledgement(controlChainContext, ackMsg)
 		suite.NoError(err)
 	}
+
+	// delegate successful
+	sc, found := controlChainApp.LiquidStakeKeeper.GetSourceChain(suite.controlChain.GetContext(), sourceChainParams.ChainID)
+	suite.True(found)
+	suite.Equal(sc.StakedAmount, testCoin.Amount)
+}
+
+func assembleRecvPacketByEvents(chain *ibctesting.TestChain, events sdk.Events) (*channeltypes.MsgRecvPacket, error) {
+	packet, err := ibctesting.ParsePacketFromEvents(events)
+	if err != nil {
+		return nil, err
+	}
+
+	commitKey := ibchost.PacketCommitmentKey(packet.SourcePort, packet.SourceChannel, packet.Sequence)
+	proof, height := chain.QueryProof(commitKey)
+
+	backProofType := ibccommitmenttypes.MerkleProof{}
+	backProofType.Unmarshal(proof)
+
+	msgRecvPacket := channeltypes.MsgRecvPacket{
+		Packet:          packet,
+		ProofCommitment: proof,
+		ProofHeight:     height,
+		Signer:          chain.SenderAccount.GetAddress().String(),
+	}
+
+	return &msgRecvPacket, nil
+}
+
+func assembleAckPacketFromEvents(chain *ibctesting.TestChain, packet channeltypes.Packet, events sdk.Events) (*channeltypes.MsgAcknowledgement, error) {
+	ack, err := ibctesting.ParseAckFromEvents(events)
+	if err != nil {
+		return nil, err
+	}
+	key := ibchost.PacketAcknowledgementKey(packet.GetDestPort(),
+		packet.GetDestChannel(),
+		packet.GetSequence())
+
+	proof, height := chain.QueryProof(key)
+
+	backProofType := ibccommitmenttypes.MerkleProof{}
+	backProofType.Unmarshal(proof)
+
+	ackMsg := channeltypes.MsgAcknowledgement{
+		Packet:          packet,
+		Acknowledgement: ack,
+		ProofAcked:      proof,
+		ProofHeight:     height,
+		Signer:          chain.SenderAccount.GetAddress().String(),
+	}
+
+	return &ackMsg, nil
 }
 
 func (suite *KeeperTestSuite) startDelegationEpoch(sourceChain *types.SourceChain) *epochtypes.EpochInfo {

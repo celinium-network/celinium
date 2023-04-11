@@ -95,8 +95,9 @@ func (k Keeper) GetAllDelegationRecord(ctx sdk.Context) []types.DelegationRecord
 	iterator := storetypes.KVStorePrefixIterator(store, types.DelegationRecordPrefix)
 
 	var records []types.DelegationRecord
-	r := types.DelegationRecord{}
 	for ; iterator.Valid(); iterator.Next() {
+		r := types.DelegationRecord{}
+
 		bz := iterator.Value()
 		k.cdc.MustUnmarshal(bz, &r)
 		records = append(records, r)
