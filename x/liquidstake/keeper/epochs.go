@@ -25,15 +25,17 @@ func (h Hooks) BeforeEpochStart(ctx sdk.Context, epochIdentifier string, epochNu
 
 		h.k.ProcessDelegationRecord(ctx, uint64(epochNumber), delegationRecords)
 
-		// update rate,
+		// update rate
 
 		// reinvest, start from a interchain query, maybe submit by offchain timer service?
+
 	} else if epochIdentifier == types.UndelegationEpochIdentifier {
 		// Create new unbondings for current epoch
 		h.k.CreateEpochUnbondings(ctx, epochNumber)
 
 		// Process Unbound
 		h.k.ProcessUnbondings(ctx, uint64(epochNumber))
+
 	}
 }
 
