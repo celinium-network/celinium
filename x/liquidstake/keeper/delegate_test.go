@@ -71,7 +71,6 @@ func (suite *KeeperTestSuite) TestProcessDelegation() {
 	suite.IBCTransfer(sourceChainUserAddr.String(), controlChainUserAddr.String(), testCoin, suite.transferPath, true)
 
 	controlChainApp := getCeliniumApp(suite.controlChain)
-	sourceChainApp := getCeliniumApp(suite.sourceChain)
 
 	err := controlChainApp.LiquidStakeKeeper.Delegate(suite.controlChain.GetContext(), sourceChainParams.ChainID, testCoin.Amount, controlChainUserAddr)
 	suite.NoError(err)
@@ -97,42 +96,61 @@ func (suite *KeeperTestSuite) TestProcessDelegation() {
 	msgRecvPackets := parseMsgRecvPacketFromEvents(suite.controlChain, nextBlockBeginRes.Events, controlChainUserAddr.String())
 
 	for i := 0; i < len(msgRecvPackets); i++ {
-		sourceChainContext := suite.sourceChain.GetContext()
-		_, err = sourceChainApp.IBCKeeper.RecvPacket(sourceChainContext, &msgRecvPackets[i])
-		suite.NoError(err)
-		suite.sourceChain.NextBlock()
-		suite.transferPath.EndpointB.UpdateClient()
+		var midRecvMsg *channeltypes.MsgRecvPacket
+		var midAckMsg *channeltypes.MsgAcknowledgement
 
-		ackMsg, err := assembleAckPacketFromEvents(suite.sourceChain, msgRecvPackets[i].Packet, sourceChainContext.EventManager().Events())
-		suite.NoError(err)
+		midAckMsg, err := chainRecvPacket(suite.sourceChain, suite.transferPath.EndpointB, &msgRecvPackets[i])
 
-		controlChainContext := suite.controlChain.GetContext()
-		_, err = controlChainApp.IBCKeeper.Acknowledgement(controlChainContext, ackMsg)
-		suite.NoError(err)
-		suite.controlChain.NextBlock()
-		suite.transferPath.EndpointA.UpdateClient()
+		if midAckMsg == nil || err != nil {
+			break
+		}
 
-		recvMsg, err := assembleRecvPacketByEvents(suite.controlChain, controlChainContext.EventManager().Events())
-		suite.NoError(err)
+		// relay the ibc msg unitl no ibc info in events.
+		for {
+			midRecvMsg, err = chainRecvAck(suite.controlChain, suite.transferPath.EndpointA, midAckMsg)
+			suite.NoError(err)
+			if midRecvMsg == nil {
+				break
+			}
 
-		sourceChainContext = suite.sourceChain.GetContext()
-		_, err = sourceChainApp.IBCKeeper.RecvPacket(sourceChainContext, recvMsg)
-		suite.NoError(err)
-		suite.sourceChain.NextBlock()
-		suite.transferPath.EndpointB.UpdateClient()
-
-		ackMsg, err = assembleAckPacketFromEvents(suite.sourceChain, recvMsg.Packet, sourceChainContext.EventManager().Events())
-		suite.NoError(err)
-
-		controlChainContext = suite.controlChain.GetContext()
-		_, err = controlChainApp.IBCKeeper.Acknowledgement(controlChainContext, ackMsg)
-		suite.NoError(err)
+			midAckMsg, err = chainRecvPacket(suite.sourceChain, suite.transferPath.EndpointB, midRecvMsg)
+			suite.NoError(err)
+			if midAckMsg == nil {
+				break
+			}
+		}
 	}
 
 	// delegate successful
 	sc, found := controlChainApp.LiquidStakeKeeper.GetSourceChain(suite.controlChain.GetContext(), sourceChainParams.ChainID)
 	suite.True(found)
 	suite.Equal(sc.StakedAmount, testCoin.Amount)
+}
+
+func chainRecvPacket(chain *ibctesting.TestChain, endpoint *ibctesting.Endpoint, msgRecvpacket *channeltypes.MsgRecvPacket) (*channeltypes.MsgAcknowledgement, error) {
+	ctx := chain.GetContext()
+	getCeliniumApp(chain)
+	if _, err := getCeliniumApp(chain).IBCKeeper.RecvPacket(ctx, msgRecvpacket); err != nil {
+		return nil, err
+	}
+
+	chain.NextBlock()
+	endpoint.UpdateClient()
+
+	return assembleAckPacketFromEvents(chain, msgRecvpacket.Packet, ctx.EventManager().Events())
+}
+
+func chainRecvAck(chain *ibctesting.TestChain, endpoint *ibctesting.Endpoint, ack *channeltypes.MsgAcknowledgement) (*channeltypes.MsgRecvPacket, error) {
+	ctx := chain.GetContext()
+	getCeliniumApp(chain)
+	if _, err := getCeliniumApp(chain).IBCKeeper.Acknowledgement(ctx, ack); err != nil {
+		return nil, err
+	}
+
+	chain.NextBlock()
+	endpoint.UpdateClient()
+
+	return assembleRecvPacketByEvents(chain, ctx.EventManager().Events())
 }
 
 func assembleRecvPacketByEvents(chain *ibctesting.TestChain, events sdk.Events) (*channeltypes.MsgRecvPacket, error) {
