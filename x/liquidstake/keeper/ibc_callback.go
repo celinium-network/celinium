@@ -138,13 +138,14 @@ func (k Keeper) advanceCallbackRelatedEntry(ctx sdk.Context, callback *types.IBC
 			return
 		}
 
-		for _, unbonding := range epochUnbondings.Unbondings {
-			if unbonding.ChainID != unbondCallArgs.ChainID {
+		for i := 0; i < len(epochUnbondings.Unbondings); i++ {
+			if epochUnbondings.Unbondings[i].ChainID != unbondCallArgs.ChainID {
 				continue
 			}
-			unbonding.UnbondTIme = uint64(completeTime.Unix())
-			unbonding.Status = types.UnbondingWaitting
+			epochUnbondings.Unbondings[i].UnbondTIme = uint64(completeTime.Unix())
+			epochUnbondings.Unbondings[i].Status = types.UnbondingWaitting
 		}
+
 		// save
 		k.SetEpochUnboundings(ctx, epochUnbondings)
 	case types.WithdrawUnbondCall:

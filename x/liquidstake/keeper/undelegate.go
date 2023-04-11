@@ -25,9 +25,9 @@ func (k Keeper) Undelegate(ctx sdk.Context, chainID string, amount math.Int, del
 		return sdkerrors.Wrapf(types.ErrUnknownSourceChain, "unknown source chain, chainID: %s", chainID)
 	}
 
-	epochInfo, found := k.epochKeeper.GetEpochInfo(ctx, types.DelegationEpochIdentifier)
+	epochInfo, found := k.epochKeeper.GetEpochInfo(ctx, types.UndelegationEpochIdentifier)
 	if !found {
-		return sdkerrors.Wrapf(types.ErrUnknownEpoch, "unknown epoch, epoch identifier: %s", types.DelegationEpochIdentifier)
+		return sdkerrors.Wrapf(types.ErrUnknownEpoch, "unknown epoch, epoch identifier: %s", types.UndelegationEpochIdentifier)
 	}
 
 	// TODO, epoch should be uint64 or int64
@@ -241,10 +241,18 @@ func (k Keeper) ProcessEpochUnbondings(ctx sdk.Context, epoch uint64, unbondings
 	sort.Strings(chainIDs)
 
 	for _, chainID := range chainIDs {
+		amount, ok := pendingUnbondAmount[chainID]
+		if !ok || amount.IsZero() {
+			continue
+		}
 		k.submitUnbondICATransaction(ctx, sourceChainTemp[chainID], pendingUnbondAmount[chainID], epoch)
 	}
 
 	for _, chainID := range chainIDs {
+		amount, ok := completeUnbondAmmount[chainID]
+		if !ok || amount.IsZero() {
+			continue
+		}
 		k.submitWithdrawUnbondICATransaction(ctx, sourceChainTemp[chainID], completeUnbondAmmount[chainID], epoch)
 	}
 
@@ -261,7 +269,12 @@ func (k Keeper) submitUnbondICATransaction(ctx sdk.Context, sourceChain *types.S
 
 	undelegateMsgs := make([]proto.Message, 0)
 
-	sourceChainDelegateAddr, _ := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ChainID, sourceChain.DelegateAddress)
+	portID, err := icatypes.NewControllerPortID(sourceChain.DelegateAddress)
+	if err != nil {
+		return err
+	}
+
+	sourceChainDelegateAddr, _ := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ConnectionID, portID)
 	sourceChainDelegateAddress := sdk.MustAccAddressFromBech32(sourceChainDelegateAddr)
 
 	for _, v := range sourceChain.Validators {
@@ -285,11 +298,6 @@ func (k Keeper) submitUnbondICATransaction(ctx sdk.Context, sourceChain *types.S
 	packetData := icatypes.InterchainAccountPacketData{
 		Type: icatypes.EXECUTE_TX,
 		Data: data,
-	}
-
-	portID, err := icatypes.NewControllerPortID(sourceChain.DelegateAddress)
-	if err != nil {
-		return err
 	}
 
 	// TODO timeout ?

@@ -5,7 +5,6 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 )
@@ -41,9 +40,7 @@ func (c *IBCCallback) CheckSuccessfulIBCAcknowledgement(cdc codec.Codec, respons
 	case UnbondCall:
 		for _, r := range responses {
 			if strings.Contains(r.TypeUrl, "MsgUndelegateResponse") {
-				response := stakingtypes.MsgUndelegateResponse{}
-				err := cdc.Unmarshal(r.Value, &response)
-				return err != nil
+				return true
 			}
 		}
 	default:

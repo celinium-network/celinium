@@ -11,8 +11,7 @@ import (
 )
 
 func (suite *KeeperTestSuite) TestCreateNewDelegationRecordAtEpochStart() {
-	sourceChain := suite.mockSourceChainParams()
-	suite.startDelegationEpoch(sourceChain)
+	suite.setSourceChainAndEpoch(suite.mockSourceChainParams(), suite.delegationEpoch())
 
 	controlChainApp := getCeliniumApp(suite.controlChain)
 
@@ -24,7 +23,7 @@ func (suite *KeeperTestSuite) TestCreateNewDelegationRecordAtEpochStart() {
 
 func (suite *KeeperTestSuite) TestUserDelegate() {
 	sourceChainParams := suite.mockSourceChainParams()
-	suite.startDelegationEpoch(sourceChainParams)
+	suite.setSourceChainAndEpoch(sourceChainParams, suite.delegationEpoch())
 
 	sourceChainUserAddr := suite.sourceChain.SenderAccount.GetAddress()
 	controlChainUserAddr := suite.controlChain.SenderAccount.GetAddress()
@@ -53,26 +52,8 @@ func (suite *KeeperTestSuite) TestUserDelegate() {
 	suite.True(delegationRecord.DelegationCoin.Amount.Equal(testCoin.Amount))
 }
 
-func (suite *KeeperTestSuite) TestProcessDelegation() {
-	sourceChainParams := suite.mockSourceChainParams()
-	suite.startDelegationEpoch(sourceChainParams)
-
-	// delegation at epoch 2
-	sourceChainUserAddr := suite.sourceChain.SenderAccount.GetAddress()
+func (suite *KeeperTestSuite) processDelegation(epochInfo *epochtypes.EpochInfo) {
 	controlChainUserAddr := suite.controlChain.SenderAccount.GetAddress()
-
-	testCoin := sdk.NewCoin(sourceChainParams.NativeDenom, sdk.NewIntFromUint64(100000))
-	mintCoin(suite.sourceChain, sourceChainUserAddr, testCoin)
-	suite.IBCTransfer(sourceChainUserAddr.String(), controlChainUserAddr.String(), testCoin, suite.transferPath, true)
-
-	controlChainApp := getCeliniumApp(suite.controlChain)
-
-	err := controlChainApp.LiquidStakeKeeper.Delegate(suite.controlChain.GetContext(), sourceChainParams.ChainID, testCoin.Amount, controlChainUserAddr)
-	suite.NoError(err)
-
-	epochInfo, found := controlChainApp.EpochsKeeper.GetEpochInfo(suite.controlChain.GetContext(), types.DelegationEpochIdentifier)
-	suite.True(found)
-
 	coordTime := suite.controlChain.Coordinator.CurrentTime
 	duration := time.Hour - (coordTime.Sub(epochInfo.StartTime.Add(time.Hour)))
 
@@ -113,6 +94,27 @@ func (suite *KeeperTestSuite) TestProcessDelegation() {
 			}
 		}
 	}
+}
+
+func (suite *KeeperTestSuite) TestProcessDelegation() {
+	sourceChainParams := suite.mockSourceChainParams()
+	epochInfo := suite.delegationEpoch()
+	suite.setSourceChainAndEpoch(sourceChainParams, epochInfo)
+
+	// delegation at epoch 2
+	sourceChainUserAddr := suite.sourceChain.SenderAccount.GetAddress()
+	controlChainUserAddr := suite.controlChain.SenderAccount.GetAddress()
+
+	testCoin := sdk.NewCoin(sourceChainParams.NativeDenom, sdk.NewIntFromUint64(100000))
+	mintCoin(suite.sourceChain, sourceChainUserAddr, testCoin)
+	suite.IBCTransfer(sourceChainUserAddr.String(), controlChainUserAddr.String(), testCoin, suite.transferPath, true)
+
+	controlChainApp := getCeliniumApp(suite.controlChain)
+
+	err := controlChainApp.LiquidStakeKeeper.Delegate(suite.controlChain.GetContext(), sourceChainParams.ChainID, testCoin.Amount, controlChainUserAddr)
+	suite.NoError(err)
+
+	suite.processDelegation(epochInfo)
 
 	// delegate successful
 	sc, found := controlChainApp.LiquidStakeKeeper.GetSourceChain(suite.controlChain.GetContext(), sourceChainParams.ChainID)
@@ -120,23 +122,8 @@ func (suite *KeeperTestSuite) TestProcessDelegation() {
 	suite.Equal(sc.StakedAmount, testCoin.Amount)
 }
 
-func (suite *KeeperTestSuite) startDelegationEpoch(sourceChain *types.SourceChain) *epochtypes.EpochInfo {
-	controlChainApp := getCeliniumApp(suite.controlChain)
-
-	channelSequence := controlChainApp.GetIBCKeeper().ChannelKeeper.GetNextChannelSequence(suite.controlChain.GetContext())
-
-	err := controlChainApp.LiquidStakeKeeper.AddSouceChain(suite.controlChain.GetContext(), sourceChain)
-	suite.NoError(err)
-	suite.controlChain.NextBlock()
-
-	createdICAs := getCreatedICAFromSourceChain(sourceChain)
-	for _, ica := range createdICAs {
-		suite.relayICACreatedPacket(channelSequence, ica)
-		channelSequence++
-	}
-
-	// set delegation Epoch Info
-	epochInfo := epochtypes.EpochInfo{
+func (suite *KeeperTestSuite) delegationEpoch() *epochtypes.EpochInfo {
+	return &epochtypes.EpochInfo{
 		Identifier:              types.DelegationEpochIdentifier,
 		StartTime:               suite.controlChain.CurrentHeader.Time,
 		Duration:                time.Hour,
@@ -145,12 +132,4 @@ func (suite *KeeperTestSuite) startDelegationEpoch(sourceChain *types.SourceChai
 		EpochCountingStarted:    true,
 		CurrentEpochStartHeight: suite.controlChain.GetContext().BlockHeight(),
 	}
-
-	controlChainApp.EpochsKeeper.SetEpochInfo(suite.controlChain.GetContext(), epochInfo)
-
-	// start epoch and update off chain light.
-	suite.controlChain.Coordinator.IncrementTimeBy(time.Hour)
-	suite.transferPath.EndpointA.UpdateClient()
-
-	return &epochInfo
 }

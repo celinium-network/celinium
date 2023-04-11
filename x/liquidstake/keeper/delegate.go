@@ -83,6 +83,11 @@ func (k *Keeper) ProcessDelegationRecord(ctx sdk.Context, curEpochNumber uint64,
 }
 
 func (k Keeper) handlePendingDelegationRecord(ctx sdk.Context, record types.DelegationRecord) error {
+	// TODO just delete it?
+	if record.DelegationCoin.Amount.IsZero() {
+		return nil
+	}
+
 	// TODO The errors must be hanndler
 	sourceChain, _ := k.GetSourceChain(ctx, record.ChainID)
 	portID, _ := icatypes.NewControllerPortID(sourceChain.DelegateAddress)

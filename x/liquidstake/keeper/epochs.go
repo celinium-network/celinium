@@ -7,7 +7,6 @@ import (
 	"github.com/celinium-netwok/celinium/x/liquidstake/types"
 )
 
-// Hooks wrapper struct for liquid stake keeper
 type Hooks struct {
 	k Keeper
 }
