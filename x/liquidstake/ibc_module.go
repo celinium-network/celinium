@@ -16,14 +16,12 @@ var _ porttypes.IBCModule = IBCModule{}
 
 // / IBCModule implements the ICS26 interface for interchain accounts controller chains
 type IBCModule struct {
-	ibcTransferApp porttypes.IBCModule
-	keeper         keeper.Keeper
-	cdc            codec.Codec
+	keeper keeper.Keeper
+	cdc    codec.Codec
 }
 
 // OnAcknowledgementPacket implements types.IBCModule
 func (im IBCModule) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, acknowledgement []byte, relayer sdk.AccAddress) error {
-	im.ibcTransferApp.OnRecvPacket(ctx, packet, relayer)
 	return im.keeper.HandleICAAcknowledgement(ctx, &packet, acknowledgement)
 }
 
@@ -67,10 +65,9 @@ func (IBCModule) OnTimeoutPacket(sdk.Context, channeltypes.Packet, sdk.AccAddres
 	return nil
 }
 
-func NewIBCModule(k keeper.Keeper, cdc codec.Codec, transferModule porttypes.IBCModule) IBCModule {
+func NewIBCModule(k keeper.Keeper, cdc codec.Codec) IBCModule {
 	return IBCModule{
-		ibcTransferApp: transferModule,
-		keeper:         k,
-		cdc:            cdc,
+		keeper: k,
+		cdc:    cdc,
 	}
 }
