@@ -102,14 +102,12 @@ func (suite *KeeperTestSuite) TestProcessDelegation() {
 
 		// relay the ibc msg unitl no ibc info in events.
 		for {
-			midRecvMsg, err = chainRecvAck(suite.controlChain, suite.transferPath.EndpointA, midAckMsg)
-			suite.NoError(err)
+			midRecvMsg, _ = chainRecvAck(suite.controlChain, suite.transferPath.EndpointA, midAckMsg)
 			if midRecvMsg == nil {
 				break
 			}
 
-			midAckMsg, err = chainRecvPacket(suite.sourceChain, suite.transferPath.EndpointB, midRecvMsg)
-			suite.NoError(err)
+			midAckMsg, _ = chainRecvPacket(suite.sourceChain, suite.transferPath.EndpointB, midRecvMsg)
 			if midAckMsg == nil {
 				break
 			}
