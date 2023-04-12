@@ -7,7 +7,7 @@ import (
 
 	icacontrollerkeeper "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/controller/keeper"
 	ibctransferkeeper "github.com/cosmos/ibc-go/v6/modules/apps/transfer/keeper"
-	ibcclientkeeper "github.com/cosmos/ibc-go/v6/modules/core/02-client/keeper"
+	ibckeeper "github.com/cosmos/ibc-go/v6/modules/core/keeper"
 
 	"github.com/celinium-netwok/celinium/x/liquidstake/types"
 )
@@ -19,7 +19,7 @@ type Keeper struct {
 	accountKeeper     types.AccountKeeper
 	bankKeeper        types.BankKeeper
 	epochKeeper       types.EpochKeeper
-	ibcClientKeeper   ibcclientkeeper.Keeper
+	ibcKeeper         *ibckeeper.Keeper
 	ibcTransferKeeper ibctransferkeeper.Keeper
 	icaCtlKeeper      icacontrollerkeeper.Keeper
 }
@@ -30,7 +30,7 @@ func NewKeeper(
 	accountKeeper types.AccountKeeper,
 	bankKeeper types.BankKeeper,
 	epochKeeper types.EpochKeeper,
-	ibcClientKeeper ibcclientkeeper.Keeper,
+	ibcClientKeeper *ibckeeper.Keeper,
 	icaCtlKeeper icacontrollerkeeper.Keeper,
 	ibcTransferKeeper ibctransferkeeper.Keeper,
 ) Keeper {
@@ -40,7 +40,7 @@ func NewKeeper(
 		accountKeeper:     accountKeeper,
 		bankKeeper:        bankKeeper,
 		epochKeeper:       epochKeeper,
-		ibcClientKeeper:   ibcClientKeeper,
+		ibcKeeper:         ibcClientKeeper,
 		ibcTransferKeeper: ibcTransferKeeper,
 		icaCtlKeeper:      icaCtlKeeper,
 	}

@@ -16,4 +16,5 @@ var (
 	ErrInsufficientFunds       = sdkioerrors.Register(ModuleName, 9, "insufficient funds to support the current transaction")
 	ErrEpochUnbondingNotExist  = sdkioerrors.Register(ModuleName, 10, "unbondings not found for specific epoch")
 	ErrCallbackNotExist        = sdkioerrors.Register(ModuleName, 11, "callback not find")
+	ErrIBCQueryNotExist        = sdkioerrors.Register(ModuleName, 12, "ibcquery not exist")
 )

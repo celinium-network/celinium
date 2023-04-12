@@ -15,6 +15,7 @@ const (
 	DelegateCall
 	UnbondCall
 	WithdrawUnbondCall
+	TransferRewardCall
 )
 
 // TODO don't check here
@@ -44,6 +45,8 @@ func (c *IBCCallback) CheckSuccessfulIBCAcknowledgement(cdc codec.Codec, respons
 			}
 		}
 	case WithdrawUnbondCall:
+		return true
+	case TransferRewardCall:
 		return true
 	default:
 		return false

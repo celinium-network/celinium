@@ -43,6 +43,8 @@ var (
 	UndelegationRecrodPrefix = []byte{0x31}
 
 	EpochUnbondingsPrefix = []byte{0x32}
+
+	IBCQueryKey = []byte{0x41}
 )
 
 // GetSourceChainKey return key for source chain, `SouceChainKeyPrefix + len(chainID)+chainID`

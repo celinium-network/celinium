@@ -100,7 +100,7 @@ func (k Keeper) HandleICAAcknowledgement(ctx sdk.Context, packet *channeltypes.P
 }
 
 func (k Keeper) advanceCallbackRelatedEntry(ctx sdk.Context, callback *types.IBCCallback, responses []*codectypes.Any, successful bool) {
-	// TODO optimize the if/else code block
+	// TODO too much swiach/case
 	switch callback.CallType {
 	case types.DelegateTransferCall:
 		delegationRecordID := sdk.BigEndianToUint64([]byte(callback.Args))
@@ -148,6 +148,8 @@ func (k Keeper) advanceCallbackRelatedEntry(ctx sdk.Context, callback *types.IBC
 
 		// save
 		k.SetEpochUnboundings(ctx, epochUnbondings)
+
+		// TODO remove SourceChain.StakedAmount
 	case types.WithdrawUnbondCall:
 		var unbondCallArgs types.UnbondCallbackArgs
 		k.cdc.MustUnmarshal([]byte(callback.Args), &unbondCallArgs)
@@ -172,7 +174,28 @@ func (k Keeper) advanceCallbackRelatedEntry(ctx sdk.Context, callback *types.IBC
 			}
 		}
 		k.SetEpochUnboundings(ctx, epochUnbondings)
+	case types.TransferRewardCall:
+		var callbackArgs types.TransferRewardCallbackArgs
+		k.cdc.MustUnmarshal([]byte(callback.Args), &callbackArgs)
+		epochInfo, found := k.epochKeeper.GetEpochInfo(ctx, types.DelegationEpochIdentifier)
+		if !found {
+			return
+		}
 
+		currentEpoch := uint64(epochInfo.CurrentEpoch)
+		recordID, found := k.GetChianDelegationRecordID(ctx, callbackArgs.ChainID, currentEpoch)
+		if !found {
+			return
+		}
+
+		record, found := k.GetDelegationRecord(ctx, recordID)
+		if !found {
+			return
+		}
+
+		record.DelegationCoin = record.DelegationCoin.AddAmount(callbackArgs.Amount)
+
+		k.SetDelegationRecord(ctx, recordID, record)
 	default:
 	}
 }
