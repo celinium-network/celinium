@@ -219,6 +219,10 @@ func (k Keeper) AfterCrosschainDelegate(ctx sdk.Context, record *types.Delegatio
 		return sdkerrors.Wrapf(types.ErrUnknownSourceChain, "unknown source chain, chainID: %s", record.ChainID)
 	}
 
+	record.Status = types.DelegationDone
+
+	k.SetDelegationRecord(ctx, record.Id, record)
+
 	sourceChain.UpdateWithDelegationRecord(record)
 
 	// save source chain

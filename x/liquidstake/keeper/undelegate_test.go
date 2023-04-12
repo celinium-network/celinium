@@ -4,13 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-
 	"github.com/celinium-netwok/celinium/app"
 	epochtypes "github.com/celinium-netwok/celinium/x/epochs/types"
 	"github.com/celinium-netwok/celinium/x/liquidstake/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
 )
 
 func (suite *KeeperTestSuite) unbondingEpoch() *epochtypes.EpochInfo {
@@ -95,34 +92,6 @@ func (suite *KeeperTestSuite) advanceToNextEpoch(epochInfo *epochtypes.EpochInfo
 	suite.sourceChain.Coordinator.CurrentTime = coordTime
 
 	return coordTime
-}
-
-func (suite *KeeperTestSuite) relayIBCPacketFromCtlToSrc(events []abci.Event, sender string) {
-	msgRecvPackets := parseMsgRecvPacketFromEvents(suite.controlChain, events, sender)
-
-	for i := 0; i < len(msgRecvPackets); i++ {
-		var midRecvMsg *channeltypes.MsgRecvPacket
-		var midAckMsg *channeltypes.MsgAcknowledgement
-
-		midAckMsg, err := chainRecvPacket(suite.sourceChain, suite.transferPath.EndpointB, &msgRecvPackets[i])
-
-		if midAckMsg == nil || err != nil {
-			break
-		}
-
-		// relay the ibc msg unitl no ibc info in events.
-		for {
-			midRecvMsg, _ = chainRecvAck(suite.controlChain, suite.transferPath.EndpointA, midAckMsg)
-			if midRecvMsg == nil {
-				break
-			}
-
-			midAckMsg, _ = chainRecvPacket(suite.sourceChain, suite.transferPath.EndpointB, midRecvMsg)
-			if midAckMsg == nil {
-				break
-			}
-		}
-	}
 }
 
 func (suite *KeeperTestSuite) TestWithdrawCompleteUnbond() {
@@ -211,7 +180,7 @@ func (suite *KeeperTestSuite) TestWithdrawCompleteUnbond() {
 	suite.transferPath.EndpointB.UpdateClient()
 
 	ack, _ := assembleAckPacketFromEvents(suite.sourceChain, msgRecvPackets[0].Packet, ctx.EventManager().Events())
-	recvs := parseMsgRecvPacketFromEvents(suite.sourceChain, nextBlockBeginRes.Events, controlChainUserAddr.String())
+	recvs := parseMsgRecvPacketFromEvents(suite.sourceChain, ctx.EventManager().ABCIEvents(), controlChainUserAddr.String())
 
 	for i := 0; i < len(recvs); i++ {
 		controlChainApp.IBCKeeper.RecvPacket(suite.controlChain.GetContext(), &recvs[i])

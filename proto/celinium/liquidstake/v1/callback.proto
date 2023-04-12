@@ -42,3 +42,7 @@ message TransferRewardCallbackArgs{
         (gogoproto.customtype) = "Int",
         (gogoproto.nullable)   = false];
 }
+
+message SetWithdrawMessageArgs{
+    string chainID = 1;
+}

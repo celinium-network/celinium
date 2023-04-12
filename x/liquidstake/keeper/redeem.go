@@ -27,6 +27,10 @@ func (k Keeper) UpdateRedeemRatio(ctx sdk.Context, records []types.DelegationRec
 		processingAmount := k.GetProcessingFundsFromRecords(sourcechain, records)
 		doneAmount := sourcechain.StakedAmount
 
+		if processingAmount.IsZero() && doneAmount.IsZero() {
+			continue
+		}
+
 		derivationAmount := k.bankKeeper.GetSupply(ctx, sourcechain.DerivativeDenom)
 
 		// average?
@@ -38,13 +42,16 @@ func (k Keeper) UpdateRedeemRatio(ctx sdk.Context, records []types.DelegationRec
 
 // TODO, make it return `map[chainID]math.Int`, then just loop it once.
 func (k Keeper) GetProcessingFundsFromRecords(sourceChain *types.SourceChain, records []types.DelegationRecord) math.Int {
-	var amount math.Int
+	amount := math.ZeroInt()
 	for _, record := range records {
 		if record.ChainID != sourceChain.ChainID {
 			continue
 		}
 
 		if !types.IsDelegationRecordProcessing(int(record.Status)) {
+			continue
+		}
+		if record.DelegationCoin.Amount.IsZero() {
 			continue
 		}
 

@@ -196,6 +196,8 @@ func (k Keeper) advanceCallbackRelatedEntry(ctx sdk.Context, callback *types.IBC
 		record.DelegationCoin = record.DelegationCoin.AddAmount(callbackArgs.Amount)
 
 		k.SetDelegationRecord(ctx, recordID, record)
+	case types.SetWithdrawAddressCall:
+		// TODO make source chain available here
 	default:
 	}
 }

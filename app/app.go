@@ -536,7 +536,7 @@ func NewApp(
 		app.AccountKeeper,
 		app.BankKeeper,
 		app.EpochsKeeper,
-		app.IBCKeeper.ClientKeeper,
+		app.IBCKeeper,
 		app.ICAControllerKeeper,
 		app.TransferKeeper,
 	)

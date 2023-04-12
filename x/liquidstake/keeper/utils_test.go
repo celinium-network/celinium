@@ -245,6 +245,34 @@ func parseMsgRecvPacketFromEvents(fromChain *ibctesting.TestChain, events []abci
 	return msgRecvPackets
 }
 
+func (suite *KeeperTestSuite) relayIBCPacketFromCtlToSrc(events []abci.Event, sender string) {
+	msgRecvPackets := parseMsgRecvPacketFromEvents(suite.controlChain, events, sender)
+
+	for i := 0; i < len(msgRecvPackets); i++ {
+		var midRecvMsg *channeltypes.MsgRecvPacket
+		var midAckMsg *channeltypes.MsgAcknowledgement
+
+		midAckMsg, err := chainRecvPacket(suite.sourceChain, suite.transferPath.EndpointB, &msgRecvPackets[i])
+
+		if midAckMsg == nil || err != nil {
+			break
+		}
+
+		// relay the ibc msg unitl no ibc info in events.
+		for {
+			midRecvMsg, _ = chainRecvAck(suite.controlChain, suite.transferPath.EndpointA, midAckMsg)
+			if midRecvMsg == nil {
+				break
+			}
+
+			midAckMsg, _ = chainRecvPacket(suite.sourceChain, suite.transferPath.EndpointB, midRecvMsg)
+			if midAckMsg == nil {
+				break
+			}
+		}
+	}
+}
+
 // next block with res
 func nextBlockWithRes(chain *ibctesting.TestChain, nextBlockTime time.Time) (abci.ResponseEndBlock, abci.ResponseBeginBlock) {
 	endBlockres := chain.App.EndBlock(abci.RequestEndBlock{Height: chain.CurrentHeader.Height})
