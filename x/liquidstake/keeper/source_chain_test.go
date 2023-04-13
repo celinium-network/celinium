@@ -30,7 +30,7 @@ func (suite *KeeperTestSuite) TestAddSourceChain() {
 }
 
 func getCreatedICAFromSourceChain(s *types.SourceChain) []string {
-	return []string{s.WithdrawAddress, s.DelegateAddress, s.UnboudAddress}
+	return []string{s.WithdrawAddress, s.DelegateAddress}
 }
 
 func (suite *KeeperTestSuite) generateSourceChainParams() *types.SourceChain {
@@ -83,7 +83,8 @@ func (suite *KeeperTestSuite) relayICACreatedPacket(packetSequence uint64, ctlAc
 	suite.icaPath.EndpointB.ChannelID = channeltypes.FormatChannelIdentifier(packetSequence)
 	suite.icaPath.EndpointA.ChannelID = suite.icaPath.EndpointB.ChannelID
 
-	channel, _ := controlChainApp.IBCKeeper.ChannelKeeper.GetChannel(suite.controlChain.GetContext(), portID, suite.icaPath.EndpointB.ChannelID)
+	channel, _ := controlChainApp.IBCKeeper.ChannelKeeper.GetChannel(
+		suite.controlChain.GetContext(), portID, suite.icaPath.EndpointB.ChannelID)
 	suite.icaPath.EndpointB.ChannelConfig.Version = channel.Version
 
 	err = suite.icaPath.EndpointA.ChanOpenTry()
@@ -96,16 +97,12 @@ func (suite *KeeperTestSuite) relayICACreatedPacket(packetSequence uint64, ctlAc
 	suite.NoError(err)
 
 	icaFromCtlChain, found := controlChainApp.ICAControllerKeeper.GetInterchainAccountAddress(
-		suite.controlChain.GetContext(),
-		suite.icaPath.EndpointB.ConnectionID,
-		portID)
+		suite.controlChain.GetContext(), suite.icaPath.EndpointB.ConnectionID, portID)
 
 	suite.True(found)
 
 	icaFromSrcChain, found := sourceChainApp.ICAHostKeeper.GetInterchainAccountAddress(
-		suite.sourceChain.GetContext(),
-		suite.icaPath.EndpointA.ConnectionID,
-		portID)
+		suite.sourceChain.GetContext(), suite.icaPath.EndpointA.ConnectionID, portID)
 
 	suite.True(found)
 	suite.Equal(icaFromCtlChain, icaFromSrcChain)

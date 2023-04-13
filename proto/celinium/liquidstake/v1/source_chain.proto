@@ -37,14 +37,14 @@ message SourceChain {
 
     repeated Validator validators  = 5 [(gogoproto.nullable) = false];
 
-    // The address of Interchain account for receiving POS reward
+    // The address of interchain account for withdraw POS reward
     string withdrawAddress = 6 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
-    // The address of Interchain account for delegation
-    string delegateAddress = 7 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+    // The address of for ecsrow user's token
+    string ecsrowAddress = 7 [(cosmos_proto.scalar) = "cosmos.AddressString"];
  
-    // The address of Interchain account for unbound
-    string unboudAddress = 8 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+    // The address of interchain account for delegation
+    string delegateAddress = 8 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
     // Redemption ratio in the current epoch
     string redemptionratio = 9 [

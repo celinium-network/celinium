@@ -186,7 +186,7 @@ func (suite *KeeperTestSuite) TestWithdrawCompleteUnbond() {
 	}
 	amt := controlChainApp.BankKeeper.GetBalance(
 		suite.controlChain.GetContext(),
-		sdk.MustAccAddressFromBech32(sourceChainParams.UnboudAddress),
+		sdk.MustAccAddressFromBech32(sourceChainParams.DelegateAddress),
 		sourceChainParams.IbcDenom,
 	)
 

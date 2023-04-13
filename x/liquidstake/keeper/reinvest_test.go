@@ -60,7 +60,7 @@ func (suite *KeeperTestSuite) TestReinvest() {
 
 	ctx = suite.controlChain.GetContext()
 	delegatorICAOnSrcChain, err := controlChainApp.LiquidStakeKeeper.GetSourceChainAddr(
-		ctx, sourceChainParams.ConnectionID, sourceChainParams.UnboudAddress)
+		ctx, sourceChainParams.ConnectionID, sourceChainParams.DelegateAddress)
 	suite.NoError(err)
 
 	// delegatorICAOnSrcChain has some reward now,
@@ -82,7 +82,7 @@ func (suite *KeeperTestSuite) TestSetWithdrawAddress() {
 	ctx := suite.controlChain.GetContext()
 
 	delegatorAddr, err := controlChainApp.LiquidStakeKeeper.GetSourceChainAddr(
-		ctx, sourceChainParams.ConnectionID, sourceChainParams.UnboudAddress)
+		ctx, sourceChainParams.ConnectionID, sourceChainParams.DelegateAddress)
 	suite.NoError(err)
 
 	err = controlChainApp.LiquidStakeKeeper.SetDistriWithdrawAddress(ctx)

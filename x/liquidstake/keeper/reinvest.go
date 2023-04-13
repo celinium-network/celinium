@@ -33,7 +33,7 @@ func (k Keeper) StartReInvest(ctx sdk.Context) {
 }
 
 func (k Keeper) WithdrawDelegateReward(ctx sdk.Context, sourceChain *types.SourceChain) error {
-	delegateAccAddr, err := k.GetSourceChainAddr(ctx, sourceChain.ConnectionID, sourceChain.UnboudAddress)
+	delegateAccAddr, err := k.GetSourceChainAddr(ctx, sourceChain.ConnectionID, sourceChain.DelegateAddress)
 	if err != nil {
 		return err
 	}
@@ -59,7 +59,7 @@ func (k Keeper) WithdrawDelegateReward(ctx sdk.Context, sourceChain *types.Sourc
 
 	// TODO timeout ?
 	timeoutTimestamp := ctx.BlockTime().Add(30 * time.Minute).UnixNano()
-	portID, err := icatypes.NewControllerPortID(sourceChain.UnboudAddress)
+	portID, err := icatypes.NewControllerPortID(sourceChain.DelegateAddress)
 	if err != nil {
 		return err
 	}
@@ -89,7 +89,7 @@ func (k Keeper) WithdrawDelegateReward(ctx sdk.Context, sourceChain *types.Sourc
 }
 
 func (k Keeper) AfterWithdrawDelegateReward(ctx sdk.Context, sourceChain *types.SourceChain, reward math.Int) error {
-	delegateAccAddr, err := k.GetSourceChainAddr(ctx, sourceChain.ConnectionID, sourceChain.UnboudAddress)
+	delegateAccAddr, err := k.GetSourceChainAddr(ctx, sourceChain.ConnectionID, sourceChain.DelegateAddress)
 	if err != nil {
 		return err
 	}
@@ -170,7 +170,7 @@ func (k Keeper) SetDistriWithdrawAddress(ctx sdk.Context) error {
 		bz := iterator.Value()
 		k.cdc.MustUnmarshal(bz, sourceChain)
 
-		delegateAccAddr, err := k.GetSourceChainAddr(ctx, sourceChain.ConnectionID, sourceChain.UnboudAddress)
+		delegateAccAddr, err := k.GetSourceChainAddr(ctx, sourceChain.ConnectionID, sourceChain.DelegateAddress)
 		if err != nil {
 			return err
 		}
@@ -199,7 +199,7 @@ func (k Keeper) SetDistriWithdrawAddress(ctx sdk.Context) error {
 
 		// TODO timeout ?
 		timeoutTimestamp := ctx.BlockTime().Add(30 * time.Minute).UnixNano()
-		portID, err := icatypes.NewControllerPortID(sourceChain.UnboudAddress)
+		portID, err := icatypes.NewControllerPortID(sourceChain.DelegateAddress)
 		if err != nil {
 			return err
 		}
