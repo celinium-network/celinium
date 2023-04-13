@@ -48,9 +48,9 @@ func (s SourceChain) BasicVerify() error {
 	return sdk.ValidateDenom(s.DerivativeDenom)
 }
 
-// GenerateAndFillAccount generate the WithdrawAddress/DelegateAddress/UnboudAddress for source chain
+// GenerateAccounts generate the WithdrawAddress/DelegateAddress/UnboudAddress for source chain
 // TODO: Add a function parameter to do some work like register, then don't need return values?
-func (s *SourceChain) GenerateAndFillAccount(ctx sdk.Context) (accounts []*authtypes.ModuleAccount) {
+func (s *SourceChain) GenerateAccounts(ctx sdk.Context) (accounts []*authtypes.ModuleAccount) {
 	header := ctx.BlockHeader()
 
 	buf := []byte(ModuleName + s.ChainID + s.ConnectionID)
@@ -61,17 +61,16 @@ func (s *SourceChain) GenerateAndFillAccount(ctx sdk.Context) (accounts []*autht
 	withDrawAccount := authtypes.NewEmptyModuleAccount(withdrawAddrBuf, authtypes.Staking)
 
 	delegationAddrBuf := string(buf) + DelegationAddressSuffix
-	delegationAccount := authtypes.NewEmptyModuleAccount(delegationAddrBuf, authtypes.Staking)
+	ecsrowAccount := authtypes.NewEmptyModuleAccount(delegationAddrBuf, authtypes.Staking)
 
 	unbondAddrBuf := string(buf) + UnboundAddressSuffix
 	unbondAccount := authtypes.NewEmptyModuleAccount(unbondAddrBuf, authtypes.Staking)
 
 	s.WithdrawAddress = withDrawAccount.Address
-	s.DelegateAddress = delegationAccount.Address
-	s.UnboudAddress = unbondAccount.Address
+	s.EcsrowAddress = ecsrowAccount.Address
+	s.DelegateAddress = unbondAccount.Address
 
 	accounts = append(accounts, withDrawAccount)
-	accounts = append(accounts, delegationAccount)
 	accounts = append(accounts, unbondAccount)
 
 	return accounts

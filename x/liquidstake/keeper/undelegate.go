@@ -269,7 +269,7 @@ func (k Keeper) undelegateFromSourceChain(ctx sdk.Context, sourceChain *types.So
 
 	undelegateMsgs := make([]proto.Message, 0)
 
-	portID, err := icatypes.NewControllerPortID(sourceChain.UnboudAddress)
+	portID, err := icatypes.NewControllerPortID(sourceChain.DelegateAddress)
 	if err != nil {
 		return err
 	}
@@ -336,7 +336,7 @@ func (k Keeper) withdrawUnbondFromSourceChain(ctx sdk.Context, sourceChain *type
 
 	witdrawMsgs := make([]proto.Message, 0)
 
-	portID, err := icatypes.NewControllerPortID(sourceChain.UnboudAddress)
+	portID, err := icatypes.NewControllerPortID(sourceChain.DelegateAddress)
 	if err != nil {
 		return err
 	}
@@ -350,7 +350,7 @@ func (k Keeper) withdrawUnbondFromSourceChain(ctx sdk.Context, sourceChain *type
 			sourceChain.TransferChannelID,
 			sdk.NewCoin(sourceChain.NativeDenom, validatorAllocateFunds[v.Address]),
 			sourceChainUnbondAddr,
-			sourceChain.UnboudAddress,
+			sourceChain.DelegateAddress,
 			ibcclienttypes.Height{},
 			uint64(timeoutTimestamp),
 			"",

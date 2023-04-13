@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"encoding/json"
+	"math/rand"
 	"testing"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	icatypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/types"
 	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
@@ -28,6 +30,8 @@ type KeeperTestSuite struct {
 
 	sourceChain  *ibctesting.TestChain
 	controlChain *ibctesting.TestChain
+
+	testCoin sdk.Coin
 }
 
 func init() {
@@ -57,6 +61,20 @@ func (suite *KeeperTestSuite) SetupTest() {
 
 	suite.icaPath = newICAPath(suite.sourceChain, suite.controlChain)
 	suite.icaPath = copyConnectionAndClientToPath(suite.icaPath, suite.transferPath)
+
+	// create test coin, mint in sourcechain, then transfer to control chain by ibc
+	srcChainParams := suite.generateSourceChainParams()
+
+	amount := uint64(rand.Int()%100000 + 100000) //nolint:gosec
+	testCoin := sdk.NewCoin(srcChainParams.NativeDenom, sdk.NewIntFromUint64(amount))
+
+	srcChainUserAccAddr := suite.sourceChain.SenderAccount.GetAddress()
+	ctlChainUserAccAddr := suite.controlChain.SenderAccount.GetAddress()
+
+	mintCoin(suite.sourceChain, srcChainUserAccAddr, testCoin)
+	suite.IBCTransfer(srcChainUserAccAddr.String(), ctlChainUserAccAddr.String(), testCoin, suite.transferPath, true)
+
+	suite.testCoin = testCoin
 }
 
 func newTransferPath(chainA, chainB *ibctesting.TestChain) *ibctesting.Path {

@@ -12,7 +12,7 @@ import (
 )
 
 func (suite *KeeperTestSuite) TestAddSourceChain() {
-	sourceChain := suite.mockSourceChainParams()
+	sourceChain := suite.generateSourceChainParams()
 
 	controlChainApp := getCeliniumApp(suite.controlChain)
 	channelSequence := controlChainApp.GetIBCKeeper().ChannelKeeper.GetNextChannelSequence(suite.controlChain.GetContext())
@@ -29,49 +29,11 @@ func (suite *KeeperTestSuite) TestAddSourceChain() {
 	}
 }
 
-func (suite *KeeperTestSuite) relayICACreatedPacket(packetSequence uint64, ctlAccount string) {
-	controlChainApp := getCeliniumApp(suite.controlChain)
-	sourceChainApp := getCeliniumApp(suite.sourceChain)
-
-	portID, err := icatypes.NewControllerPortID(ctlAccount)
-	suite.NoError(err)
-	suite.icaPath.EndpointB.ChannelConfig.PortID = portID
-	suite.icaPath.EndpointB.ChannelID = channeltypes.FormatChannelIdentifier(packetSequence)
-	suite.icaPath.EndpointA.ChannelID = suite.icaPath.EndpointB.ChannelID
-
-	channel, _ := controlChainApp.IBCKeeper.ChannelKeeper.GetChannel(suite.controlChain.GetContext(), portID, suite.icaPath.EndpointB.ChannelID)
-	suite.icaPath.EndpointB.ChannelConfig.Version = channel.Version
-
-	err = suite.icaPath.EndpointA.ChanOpenTry()
-	suite.NoError(err)
-
-	err = suite.icaPath.EndpointB.ChanOpenAck()
-	suite.NoError(err)
-
-	err = suite.icaPath.EndpointA.ChanOpenConfirm()
-	suite.NoError(err)
-
-	icaFromCtlChain, found := controlChainApp.ICAControllerKeeper.GetInterchainAccountAddress(
-		suite.controlChain.GetContext(),
-		suite.icaPath.EndpointB.ConnectionID,
-		portID)
-
-	suite.True(found)
-
-	icaFromSrcChain, found := sourceChainApp.ICAHostKeeper.GetInterchainAccountAddress(
-		suite.sourceChain.GetContext(),
-		suite.icaPath.EndpointA.ConnectionID,
-		portID)
-
-	suite.True(found)
-	suite.Equal(icaFromCtlChain, icaFromSrcChain)
-}
-
 func getCreatedICAFromSourceChain(s *types.SourceChain) []string {
-	return []string{s.WithdrawAddress, s.DelegateAddress, s.UnboudAddress}
+	return []string{s.WithdrawAddress, s.DelegateAddress}
 }
 
-func (suite *KeeperTestSuite) mockSourceChainParams() *types.SourceChain {
+func (suite *KeeperTestSuite) generateSourceChainParams() *types.SourceChain {
 	sourceChainVals := len(suite.sourceChain.Vals.Validators)
 	randVals := rand.Int()%sourceChainVals + 1 //nolint:gosec
 	selectedVals := make([]types.Validator, 0)
@@ -109,4 +71,39 @@ func (suite *KeeperTestSuite) mockSourceChainParams() *types.SourceChain {
 	}
 
 	return &sourceChain
+}
+
+func (suite *KeeperTestSuite) relayICACreatedPacket(packetSequence uint64, ctlAccount string) {
+	controlChainApp := getCeliniumApp(suite.controlChain)
+	sourceChainApp := getCeliniumApp(suite.sourceChain)
+
+	portID, err := icatypes.NewControllerPortID(ctlAccount)
+	suite.NoError(err)
+	suite.icaPath.EndpointB.ChannelConfig.PortID = portID
+	suite.icaPath.EndpointB.ChannelID = channeltypes.FormatChannelIdentifier(packetSequence)
+	suite.icaPath.EndpointA.ChannelID = suite.icaPath.EndpointB.ChannelID
+
+	channel, _ := controlChainApp.IBCKeeper.ChannelKeeper.GetChannel(
+		suite.controlChain.GetContext(), portID, suite.icaPath.EndpointB.ChannelID)
+	suite.icaPath.EndpointB.ChannelConfig.Version = channel.Version
+
+	err = suite.icaPath.EndpointA.ChanOpenTry()
+	suite.NoError(err)
+
+	err = suite.icaPath.EndpointB.ChanOpenAck()
+	suite.NoError(err)
+
+	err = suite.icaPath.EndpointA.ChanOpenConfirm()
+	suite.NoError(err)
+
+	icaFromCtlChain, found := controlChainApp.ICAControllerKeeper.GetInterchainAccountAddress(
+		suite.controlChain.GetContext(), suite.icaPath.EndpointB.ConnectionID, portID)
+
+	suite.True(found)
+
+	icaFromSrcChain, found := sourceChainApp.ICAHostKeeper.GetInterchainAccountAddress(
+		suite.sourceChain.GetContext(), suite.icaPath.EndpointA.ConnectionID, portID)
+
+	suite.True(found)
+	suite.Equal(icaFromCtlChain, icaFromSrcChain)
 }

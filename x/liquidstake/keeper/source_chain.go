@@ -19,9 +19,9 @@ func (k Keeper) AddSouceChain(ctx sdk.Context, sourceChain *types.SourceChain) e
 		return sdkerrors.Wrapf(types.ErrSourceChainExist, "already exist source chain, ID: %s", sourceChain.ChainID)
 	}
 
-	accounts := sourceChain.GenerateAndFillAccount(ctx)
+	icaAccounts := sourceChain.GenerateAccounts(ctx)
 
-	for _, a := range accounts {
+	for _, a := range icaAccounts {
 		k.accountKeeper.NewAccount(ctx, a)
 		k.accountKeeper.SetAccount(ctx, a)
 		if err := k.icaCtlKeeper.RegisterInterchainAccount(ctx, sourceChain.ConnectionID, a.GetAddress().String(), ""); err != nil {
@@ -141,7 +141,7 @@ func (k Keeper) sourceChainAvaiable(ctx sdk.Context, sourceChain *types.SourceCh
 		return found
 	}
 
-	if findICA(sourceChain.WithdrawAddress) && findICA(sourceChain.DelegateAddress) && findICA(sourceChain.UnboudAddress) {
+	if findICA(sourceChain.WithdrawAddress) && findICA(sourceChain.DelegateAddress) {
 		return true
 	}
 

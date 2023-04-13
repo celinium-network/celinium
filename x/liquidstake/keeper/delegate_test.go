@@ -4,95 +4,65 @@ import (
 	"time"
 
 	epochtypes "github.com/celinium-netwok/celinium/x/epochs/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/celinium-netwok/celinium/x/liquidstake/types"
 )
 
 func (suite *KeeperTestSuite) TestCreateNewDelegationRecordAtEpochStart() {
-	suite.setSourceChainAndEpoch(suite.mockSourceChainParams(), suite.delegationEpoch())
+	suite.setSourceChainAndEpoch(suite.generateSourceChainParams(), suite.delegationEpoch())
 
 	controlChainApp := getCeliniumApp(suite.controlChain)
 
-	// check new delegation record
-	nextDelegationRecordID := controlChainApp.LiquidStakeKeeper.GetDelegationRecordID(suite.controlChain.GetContext())
-	_, found := controlChainApp.LiquidStakeKeeper.GetDelegationRecord(suite.controlChain.GetContext(), nextDelegationRecordID-1)
+	ctx := suite.controlChain.GetContext()
+	nextDelegationRecordID := controlChainApp.LiquidStakeKeeper.GetDelegationRecordID(ctx)
+	_, found := controlChainApp.LiquidStakeKeeper.GetDelegationRecord(ctx, nextDelegationRecordID-1)
 	suite.True(found)
 }
 
 func (suite *KeeperTestSuite) TestUserDelegate() {
-	sourceChainParams := suite.mockSourceChainParams()
+	sourceChainParams := suite.generateSourceChainParams()
 	suite.setSourceChainAndEpoch(sourceChainParams, suite.delegationEpoch())
 
-	sourceChainUserAddr := suite.sourceChain.SenderAccount.GetAddress()
-	controlChainUserAddr := suite.controlChain.SenderAccount.GetAddress()
-
+	ctlChainUserAddr := suite.controlChain.SenderAccount.GetAddress()
 	controlChainApp := getCeliniumApp(suite.controlChain)
 
-	testCoin := sdk.NewCoin(sourceChainParams.NativeDenom, sdk.NewIntFromUint64(100000))
-	mintCoin(suite.sourceChain, sourceChainUserAddr, testCoin)
-	suite.IBCTransfer(sourceChainUserAddr.String(), controlChainUserAddr.String(), testCoin, suite.transferPath, true)
+	testCoin := suite.testCoin
 
-	ibcBalanceBeforeDelegate := controlChainApp.BankKeeper.GetBalance(suite.controlChain.GetContext(), controlChainUserAddr, sourceChainParams.IbcDenom)
-	derivativeBalanceBeforeDelegate := controlChainApp.BankKeeper.GetBalance(suite.controlChain.GetContext(), controlChainUserAddr, sourceChainParams.DerivativeDenom)
+	ctx := suite.controlChain.GetContext()
+	bal := controlChainApp.BankKeeper.GetBalance(ctx, ctlChainUserAddr, sourceChainParams.IbcDenom)
+	derivativeBalBefore := controlChainApp.BankKeeper.GetBalance(ctx, ctlChainUserAddr, sourceChainParams.DerivativeDenom)
 
-	err := controlChainApp.LiquidStakeKeeper.Delegate(suite.controlChain.GetContext(), sourceChainParams.ChainID, testCoin.Amount, controlChainUserAddr)
+	err := controlChainApp.LiquidStakeKeeper.Delegate(ctx, sourceChainParams.ChainID, testCoin.Amount, ctlChainUserAddr)
 	suite.NoError(err)
 
-	ibcBalanceAfterDelegate := controlChainApp.BankKeeper.GetBalance(suite.controlChain.GetContext(), controlChainUserAddr, sourceChainParams.IbcDenom)
-	derivativeBalanceAfterDelegate := controlChainApp.BankKeeper.GetBalance(
-		suite.controlChain.GetContext(), controlChainUserAddr, sourceChainParams.DerivativeDenom)
+	balAfter := controlChainApp.BankKeeper.GetBalance(ctx, ctlChainUserAddr, sourceChainParams.IbcDenom)
+	derivativeBalAfter := controlChainApp.BankKeeper.GetBalance(ctx, ctlChainUserAddr, sourceChainParams.DerivativeDenom)
 
-	suite.True(ibcBalanceAfterDelegate.Amount.Add(testCoin.Amount).Equal(ibcBalanceBeforeDelegate.Amount))
-	suite.True(derivativeBalanceAfterDelegate.Amount.Sub(testCoin.Amount).Equal(derivativeBalanceBeforeDelegate.Amount))
+	suite.True(balAfter.Amount.Add(testCoin.Amount).Equal(bal.Amount))
+	suite.True(derivativeBalAfter.Amount.Sub(testCoin.Amount).Equal(derivativeBalBefore.Amount))
 
-	nextDelegationRecordID := controlChainApp.LiquidStakeKeeper.GetDelegationRecordID(suite.controlChain.GetContext())
-	delegationRecord, found := controlChainApp.LiquidStakeKeeper.GetDelegationRecord(suite.controlChain.GetContext(), nextDelegationRecordID-1)
+	nextDelegationRecordID := controlChainApp.LiquidStakeKeeper.GetDelegationRecordID(ctx)
+	delegationRecord, found := controlChainApp.LiquidStakeKeeper.GetDelegationRecord(ctx, nextDelegationRecordID-1)
 	suite.True(found)
 	suite.True(delegationRecord.DelegationCoin.Amount.Equal(testCoin.Amount))
 }
 
-func (suite *KeeperTestSuite) advanceNextDelegationEpochAndProcess(epochInfo *epochtypes.EpochInfo) {
-	controlChainUserAddr := suite.controlChain.SenderAccount.GetAddress()
-	coordTime := suite.controlChain.Coordinator.CurrentTime
-	duration := epochInfo.Duration - (coordTime.Sub(epochInfo.StartTime.Add(epochInfo.Duration)))
-
-	// make next block will start new delegation epoch
-	coordTime = coordTime.Add(duration + time.Minute*5)
-
-	suite.controlChain.Coordinator.CurrentTime = coordTime
-	suite.sourceChain.Coordinator.CurrentTime = coordTime
-
-	nextBlockTime := coordTime
-	_, nextBlockBeginRes := nextBlockWithRes(suite.controlChain, nextBlockTime)
-
-	suite.controlChain.NextBlock()
-	suite.transferPath.EndpointA.UpdateClient()
-
-	suite.relayIBCPacketFromCtlToSrc(nextBlockBeginRes.Events, controlChainUserAddr.String())
-}
-
-func (suite *KeeperTestSuite) TestProcessDelegation() {
-	sourceChainParams := suite.mockSourceChainParams()
+func (suite *KeeperTestSuite) TestProcessDelegationAfterEpochAdvance() {
+	sourceChainParams := suite.generateSourceChainParams()
 	epochInfo := suite.delegationEpoch()
 	suite.setSourceChainAndEpoch(sourceChainParams, epochInfo)
 
 	// delegation at epoch 2
-	sourceChainUserAddr := suite.sourceChain.SenderAccount.GetAddress()
 	controlChainUserAddr := suite.controlChain.SenderAccount.GetAddress()
-
-	testCoin := sdk.NewCoin(sourceChainParams.NativeDenom, sdk.NewIntFromUint64(100000))
-	mintCoin(suite.sourceChain, sourceChainUserAddr, testCoin)
-	suite.IBCTransfer(sourceChainUserAddr.String(), controlChainUserAddr.String(), testCoin, suite.transferPath, true)
-
+	testCoin := suite.testCoin
 	controlChainApp := getCeliniumApp(suite.controlChain)
 
-	err := controlChainApp.LiquidStakeKeeper.Delegate(suite.controlChain.GetContext(), sourceChainParams.ChainID, testCoin.Amount, controlChainUserAddr)
+	err := controlChainApp.LiquidStakeKeeper.Delegate(
+		suite.controlChain.GetContext(), sourceChainParams.ChainID, testCoin.Amount, controlChainUserAddr)
 	suite.NoError(err)
 
-	suite.advanceNextDelegationEpochAndProcess(epochInfo)
+	suite.advanceEpochAndRelayIBC(epochInfo)
 
-	// delegate successful
 	sc, found := controlChainApp.LiquidStakeKeeper.GetSourceChain(suite.controlChain.GetContext(), sourceChainParams.ChainID)
 	suite.True(found)
 	suite.Equal(sc.StakedAmount, testCoin.Amount)

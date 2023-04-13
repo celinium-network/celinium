@@ -1,15 +1,8 @@
 package keeper
 
 import (
-	"strings"
-	"time"
-
 	sdkerrors "cosmossdk.io/errors"
-	"cosmossdk.io/math"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
 
 	"github.com/celinium-netwok/celinium/x/liquidstake/types"
@@ -68,11 +61,13 @@ func (k Keeper) HandleIBCTransferAcknowledgement(ctx sdk.Context, packet *channe
 			packet.SourceChannel, packet.SourcePort, packet.Sequence)
 	}
 
-	// update record status
-	k.advanceCallbackRelatedEntry(ctx, callback, nil, true)
+	handler, ok := callbackHandlerRegistry[callback.CallType]
+	if !ok {
+		return nil
+	}
 
+	return handler(&k, ctx, callback, nil)
 	// TODO consider remove callback ?, repeated receive same Acknowledgement
-	return nil
 }
 
 func (k Keeper) HandleICAAcknowledgement(ctx sdk.Context, packet *channeltypes.Packet, acknowledgement []byte) error {
@@ -92,138 +87,12 @@ func (k Keeper) HandleICAAcknowledgement(ctx sdk.Context, packet *channeltypes.P
 			packet.SourceChannel, packet.SourcePort, packet.Sequence)
 	}
 
-	successful := callback.CheckSuccessfulIBCAcknowledgement(k.cdc, txMsgData.MsgResponses)
+	handler, ok := callbackHandlerRegistry[callback.CallType]
+	if !ok {
+		return nil
+	}
 
-	// update record status
-	k.advanceCallbackRelatedEntry(ctx, callback, txMsgData.MsgResponses, successful)
+	return handler(&k, ctx, callback, txMsgData.MsgResponses)
 
 	// TODO consider remove callback ?, repeated receive same Acknowledgement
-	return nil
-}
-
-func (k Keeper) advanceCallbackRelatedEntry(ctx sdk.Context, callback *types.IBCCallback, responses []*codectypes.Any, successful bool) {
-	// TODO too much swiach/case
-	switch callback.CallType {
-	case types.DelegateTransferCall:
-		delegationRecordID := sdk.BigEndianToUint64([]byte(callback.Args))
-		record, found := k.GetDelegationRecord(ctx, delegationRecordID)
-		if !found {
-			return
-		}
-
-		k.AfterDelegateTransfer(ctx, record, successful)
-	case types.DelegateCall:
-		delegationRecordID := sdk.BigEndianToUint64([]byte(callback.Args))
-		record, found := k.GetDelegationRecord(ctx, delegationRecordID)
-		if !found {
-			return
-		}
-
-		k.AfterCrosschainDelegate(ctx, record, successful)
-	case types.UnbondCall:
-		var completeTime time.Time
-		for _, r := range responses {
-			if strings.Contains(r.TypeUrl, "MsgUndelegateResponse") {
-				response := stakingtypes.MsgUndelegateResponse{}
-				if err := k.cdc.Unmarshal(r.Value, &response); err != nil {
-					return
-				}
-				completeTime = response.CompletionTime
-			}
-		}
-		var unbondCallArgs types.UnbondCallbackArgs
-
-		k.cdc.MustUnmarshal([]byte(callback.Args), &unbondCallArgs)
-
-		epochUnbondings, found := k.GetEpochUnboundings(ctx, unbondCallArgs.Epoch)
-		if !found {
-			return
-		}
-
-		for i := 0; i < len(epochUnbondings.Unbondings); i++ {
-			if epochUnbondings.Unbondings[i].ChainID != unbondCallArgs.ChainID {
-				continue
-			}
-			epochUnbondings.Unbondings[i].UnbondTIme = uint64(completeTime.UnixNano())
-			epochUnbondings.Unbondings[i].Status = types.UnbondingWaitting
-		}
-
-		// save
-		k.SetEpochUnboundings(ctx, epochUnbondings)
-
-		// TODO remove SourceChain.StakedAmount
-	case types.WithdrawUnbondCall:
-		var unbondCallArgs types.UnbondCallbackArgs
-		k.cdc.MustUnmarshal([]byte(callback.Args), &unbondCallArgs)
-		epochUnbondings, found := k.GetEpochUnboundings(ctx, unbondCallArgs.Epoch)
-		if !found {
-			return
-		}
-
-		for _, unbonding := range epochUnbondings.Unbondings {
-			if unbonding.ChainID != unbondCallArgs.ChainID {
-				continue
-			}
-			unbonding.Status = types.UnbondingDone
-
-			for _, userUnDelegationID := range unbonding.UserUnbondRecordIds {
-				userUndelegation, found := k.GetUndelegationRecordByID(ctx, userUnDelegationID)
-				if !found {
-					continue
-				}
-				userUndelegation.CliamStatus = types.UndelegationClaimable
-				k.SetUndelegationRecord(ctx, userUndelegation)
-			}
-		}
-		k.SetEpochUnboundings(ctx, epochUnbondings)
-	case types.TransferRewardCall:
-		var callbackArgs types.TransferRewardCallbackArgs
-		k.cdc.MustUnmarshal([]byte(callback.Args), &callbackArgs)
-		epochInfo, found := k.epochKeeper.GetEpochInfo(ctx, types.DelegationEpochIdentifier)
-		if !found {
-			return
-		}
-
-		currentEpoch := uint64(epochInfo.CurrentEpoch)
-		recordID, found := k.GetChianDelegationRecordID(ctx, callbackArgs.ChainID, currentEpoch)
-		if !found {
-			return
-		}
-
-		record, found := k.GetDelegationRecord(ctx, recordID)
-		if !found {
-			return
-		}
-
-		record.DelegationCoin = record.DelegationCoin.AddAmount(callbackArgs.Amount)
-		k.SetDelegationRecord(ctx, recordID, record)
-	case types.WithdrawDelegateRewardCall:
-		var callbackArgs types.WithdrawDelegateRewardCallbackArgs
-		k.cdc.MustUnmarshal([]byte(callback.Args), &callbackArgs)
-		totalReward := math.ZeroInt()
-		sourceChain, found := k.GetSourceChain(ctx, callbackArgs.ChainID)
-		if !found {
-			return
-		}
-		for _, r := range responses {
-			if strings.Contains(r.TypeUrl, "MsgWithdrawDelegatorRewardResponse") {
-				response := distrtypes.MsgWithdrawDelegatorRewardResponse{}
-				if err := k.cdc.Unmarshal(r.Value, &response); err != nil {
-					return
-				}
-				for _, c := range response.Amount {
-					if c.Amount.IsNil() || c.Amount.IsZero() {
-						continue
-					}
-					totalReward = totalReward.Add(c.Amount)
-				}
-			}
-		}
-		if !totalReward.IsZero() {
-			k.AfterWithdrawDelegateReward(ctx, sourceChain, totalReward)
-		}
-	case types.SetWithdrawAddressCall:
-		// TODO make source chain available here
-	default:
-	}
 }

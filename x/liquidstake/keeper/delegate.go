@@ -18,7 +18,7 @@ import (
 
 // Delegate performs a liquid stake delegation. delegator transfer the ibcToken to module account then
 // get derivative token by the rate.
-func (k *Keeper) Delegate(ctx sdk.Context, chainID string, amount math.Int, delegator sdk.AccAddress) error {
+func (k *Keeper) Delegate(ctx sdk.Context, chainID string, amount math.Int, caller sdk.AccAddress) error {
 	sourceChain, found := k.GetSourceChain(ctx, chainID)
 	if !found {
 		return sdkerrors.Wrapf(types.ErrUnknownSourceChain, "unknown source chain, chainID: %s", chainID)
@@ -40,15 +40,16 @@ func (k *Keeper) Delegate(ctx sdk.Context, chainID string, amount math.Int, dele
 		return sdkerrors.Wrapf(types.ErrNoExistDelegationRecord, "chainID %s, epoch %d, recorID %d", chainID, currentEpoch, recordID)
 	}
 
-	sourceChainDelegatorAccAddress := sdk.MustAccAddressFromBech32(sourceChain.DelegateAddress)
+	ecsrowAccAddress := sdk.MustAccAddressFromBech32(sourceChain.EcsrowAddress)
 	// transfer ibc token to sourcechain's delegation account
-	if err := k.sendCoinsFromAccountToAccount(ctx, delegator, sourceChainDelegatorAccAddress, sdk.Coins{sdk.NewCoin(sourceChain.IbcDenom, amount)}); err != nil {
+	if err := k.sendCoinsFromAccountToAccount(ctx, caller,
+		ecsrowAccAddress, sdk.Coins{sdk.NewCoin(sourceChain.IbcDenom, amount)}); err != nil {
 		return err
 	}
 
 	// TODO TruncateInt calculations can be huge precision error
-	derivativeCoinAmount := amount.Mul(sourceChain.Redemptionratio.TruncateInt())
-	if err := k.mintCoins(ctx, delegator, sdk.Coins{sdk.NewCoin(sourceChain.DerivativeDenom, derivativeCoinAmount)}); err != nil {
+	derivativeAmount := amount.Mul(sourceChain.Redemptionratio.TruncateInt())
+	if err := k.mintCoins(ctx, caller, sdk.Coins{sdk.NewCoin(sourceChain.DerivativeDenom, derivativeAmount)}); err != nil {
 		return err
 	}
 
@@ -91,15 +92,15 @@ func (k Keeper) handlePendingDelegationRecord(ctx sdk.Context, record types.Dele
 
 	// send token from sourceChain's DelegateAddress to sourceChain's UnboudAddress
 	if err := k.sendCoinsFromAccountToAccount(ctx,
+		sdk.MustAccAddressFromBech32(sourceChain.EcsrowAddress),
 		sdk.MustAccAddressFromBech32(sourceChain.DelegateAddress),
-		sdk.MustAccAddressFromBech32(sourceChain.UnboudAddress),
 		sdk.Coins{record.DelegationCoin},
 	); err != nil {
 		return err
 	}
 
 	// TODO The errors must be hanndler
-	portID, _ := icatypes.NewControllerPortID(sourceChain.UnboudAddress)
+	portID, _ := icatypes.NewControllerPortID(sourceChain.DelegateAddress)
 	hostAddr, _ := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ConnectionID, portID)
 
 	// TODO timeout ?
@@ -108,7 +109,7 @@ func (k Keeper) handlePendingDelegationRecord(ctx sdk.Context, record types.Dele
 		SourcePort:       ibctransfertypes.PortID,
 		SourceChannel:    sourceChain.TransferChannelID,
 		Token:            record.DelegationCoin,
-		Sender:           sourceChain.UnboudAddress,
+		Sender:           sourceChain.DelegateAddress,
 		Receiver:         hostAddr,
 		TimeoutHeight:    ibcclienttypes.Height{},
 		TimeoutTimestamp: uint64(timeoutTimestamp),
@@ -148,7 +149,7 @@ func (k Keeper) AfterDelegateTransfer(ctx sdk.Context, record *types.DelegationR
 		return sdkerrors.Wrapf(types.ErrUnknownSourceChain, "unknown source chain, chainID: %s", record.ChainID)
 	}
 
-	portID, err := icatypes.NewControllerPortID(sourceChain.UnboudAddress)
+	portID, err := icatypes.NewControllerPortID(sourceChain.DelegateAddress)
 	if err != nil {
 		return err
 	}

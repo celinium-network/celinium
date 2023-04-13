@@ -245,6 +245,26 @@ func parseMsgRecvPacketFromEvents(fromChain *ibctesting.TestChain, events []abci
 	return msgRecvPackets
 }
 
+func (suite *KeeperTestSuite) advanceEpochAndRelayIBC(epochInfo *epochtypes.EpochInfo) {
+	ctlChainUserAddr := suite.controlChain.SenderAccount.GetAddress()
+	coordTime := suite.controlChain.Coordinator.CurrentTime
+	duration := epochInfo.Duration - coordTime.Sub(epochInfo.StartTime.Add(epochInfo.Duration))
+
+	// make next block will start new epoch
+	coordTime = coordTime.Add(duration + time.Minute*5)
+
+	suite.controlChain.Coordinator.CurrentTime = coordTime
+	suite.sourceChain.Coordinator.CurrentTime = coordTime
+
+	nextBlockTime := coordTime
+	_, nextBlockBeginRes := nextBlockWithRes(suite.controlChain, nextBlockTime)
+
+	suite.controlChain.NextBlock()
+	suite.transferPath.EndpointA.UpdateClient()
+
+	suite.relayIBCPacketFromCtlToSrc(nextBlockBeginRes.Events, ctlChainUserAddr.String())
+}
+
 func (suite *KeeperTestSuite) relayIBCPacketFromCtlToSrc(events []abci.Event, sender string) {
 	msgRecvPackets := parseMsgRecvPacketFromEvents(suite.controlChain, events, sender)
 
