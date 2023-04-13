@@ -5,4 +5,5 @@ package types
 const (
 	DelegationEpochIdentifier   = "LiquidStakeDelegateEpoch"
 	UndelegationEpochIdentifier = "LiquidStakeUndelegateEpoch"
+	ReinvestEpochIdentifier     = "LiquidStakeReinvestEpoch"
 )

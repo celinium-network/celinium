@@ -116,7 +116,7 @@ func (suite *KeeperTestSuite) setSourceChainAndEpoch(sourceChain *types.SourceCh
 	}
 	controlChainApp.EpochsKeeper.SetEpochInfo(suite.controlChain.GetContext(), *epochInfo)
 
-	// start epoch and update off chain light.
+	// start epoch and update offchain light.
 	suite.controlChain.Coordinator.IncrementTimeBy(epochInfo.Duration)
 	suite.transferPath.EndpointA.UpdateClient()
 }
@@ -216,12 +216,12 @@ func assembleAckPacketFromEvents(chain *ibctesting.TestChain, packet channeltype
 func parseMsgRecvPacketFromEvents(fromChain *ibctesting.TestChain, events []abci.Event, sender string) []channeltypes.MsgRecvPacket {
 	var msgRecvPackets []channeltypes.MsgRecvPacket
 	for _, ev := range events {
-		events := sdk.Events{sdk.Event{
+		sdkevents := sdk.Events{sdk.Event{
 			Type:       ev.Type,
 			Attributes: ev.Attributes,
 		}}
 
-		packet, err := ibctesting.ParsePacketFromEvents(events)
+		packet, err := ibctesting.ParsePacketFromEvents(sdkevents)
 		if err != nil {
 			continue
 		}
@@ -248,27 +248,56 @@ func parseMsgRecvPacketFromEvents(fromChain *ibctesting.TestChain, events []abci
 func (suite *KeeperTestSuite) relayIBCPacketFromCtlToSrc(events []abci.Event, sender string) {
 	msgRecvPackets := parseMsgRecvPacketFromEvents(suite.controlChain, events, sender)
 
-	for i := 0; i < len(msgRecvPackets); i++ {
-		var midRecvMsg *channeltypes.MsgRecvPacket
-		var midAckMsg *channeltypes.MsgAcknowledgement
+	channelPackets := make(map[string][]channeltypes.MsgRecvPacket)
+	channelProcesed := make(map[string]int)
 
-		midAckMsg, err := chainRecvPacket(suite.sourceChain, suite.transferPath.EndpointB, &msgRecvPackets[i])
+	for _, packet := range msgRecvPackets {
+		ps, ok := channelPackets[packet.Packet.SourceChannel]
+		if !ok {
+			ps = make([]channeltypes.MsgRecvPacket, 0)
+		}
+		ps = append(ps, packet)
 
-		if midAckMsg == nil || err != nil {
-			break
+		channelPackets[packet.Packet.SourceChannel] = ps
+		channelProcesed[packet.Packet.SourceChannel] = 0
+	}
+
+	for {
+		for channelID, packets := range channelPackets {
+			offset := channelProcesed[channelID]
+			for ; offset < len(packets); offset++ {
+
+				midAckMsg, _ := chainRecvPacket(suite.sourceChain, suite.transferPath.EndpointB, &packets[offset])
+				if midAckMsg == nil {
+					continue
+				}
+
+				midRecvMsg, _ := chainRecvAck(suite.controlChain, suite.transferPath.EndpointA, midAckMsg)
+				if midRecvMsg == nil {
+					continue
+				}
+				if midRecvMsg.Packet.SourceChannel == channelID {
+					packets = append(packets, *midRecvMsg)
+				} else {
+					ps, ok := channelPackets[midRecvMsg.Packet.SourceChannel]
+					if !ok {
+						ps = make([]channeltypes.MsgRecvPacket, 0)
+					}
+					ps = append(ps, *midRecvMsg)
+					channelPackets[midRecvMsg.Packet.SourceChannel] = ps
+				}
+			}
+			channelProcesed[channelID] = offset
 		}
 
-		// relay the ibc msg unitl no ibc info in events.
-		for {
-			midRecvMsg, _ = chainRecvAck(suite.controlChain, suite.transferPath.EndpointA, midAckMsg)
-			if midRecvMsg == nil {
-				break
+		done := true
+		for channelID, packets := range channelPackets {
+			if channelProcesed[channelID] != len(packets) {
+				done = false
 			}
-
-			midAckMsg, _ = chainRecvPacket(suite.sourceChain, suite.transferPath.EndpointB, midRecvMsg)
-			if midAckMsg == nil {
-				break
-			}
+		}
+		if done {
+			break
 		}
 	}
 }

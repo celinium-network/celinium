@@ -46,3 +46,7 @@ message TransferRewardCallbackArgs{
 message SetWithdrawMessageArgs{
     string chainID = 1;
 }
+
+message WithdrawDelegateRewardCallbackArgs{
+    string chainID = 1;
+}

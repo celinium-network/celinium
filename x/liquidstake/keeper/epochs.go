@@ -17,23 +17,21 @@ func (Hooks) AfterEpochEnd(_ sdk.Context, _ string, _ int64) {
 
 // BeforeEpochStart implements types.EpochHooks
 func (h Hooks) BeforeEpochStart(ctx sdk.Context, epochIdentifier string, epochNumber int64) {
-	if epochIdentifier == types.DelegationEpochIdentifier {
+	switch epochIdentifier {
+	case types.DelegationEpochIdentifier:
 		h.k.CreateDelegationRecordForEpoch(ctx, epochNumber)
 
 		delegationRecords := h.k.GetAllDelegationRecord(ctx)
-
 		h.k.ProcessDelegationRecord(ctx, uint64(epochNumber), delegationRecords)
 
 		h.k.UpdateRedeemRatio(ctx, delegationRecords)
-
-		// reinvest, start from a interchain query, maybe submit by offchain timer service?
-
-	} else if epochIdentifier == types.UndelegationEpochIdentifier {
-		// Create new unbondings for current epoch
+	case types.UndelegationEpochIdentifier:
 		h.k.CreateEpochUnbondings(ctx, epochNumber)
 
-		// Process Unbound
 		h.k.ProcessUnbondings(ctx, uint64(epochNumber))
+	case types.ReinvestEpochIdentifier:
+		h.k.StartReInvest(ctx)
+	default:
 	}
 }
 

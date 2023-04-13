@@ -77,9 +77,18 @@ func (suite *KeeperTestSuite) mockSourceChainParams() *types.SourceChain {
 	selectedVals := make([]types.Validator, 0)
 	maxWeight := uint64(100000)
 
+	selectedVals = append(selectedVals, types.Validator{
+		Address: sdk.ValAddress(suite.sourceChain.Vals.Proposer.Address).String(),
+		Weight:  rand.Uint64()%maxWeight + types.MinValidatorWeight, //nolint:gosec
+	})
+
 	for i := 0; i < randVals; i++ {
+		vaddr := sdk.ValAddress(suite.sourceChain.Vals.Validators[i].Address).String()
+		if vaddr == selectedVals[0].Address {
+			continue
+		}
 		selectedVals = append(selectedVals, types.Validator{
-			Address: sdk.ValAddress(suite.sourceChain.Vals.Validators[i].Address).String(),
+			Address: vaddr,
 			Weight:  rand.Uint64()%maxWeight + types.MinValidatorWeight, //nolint:gosec
 		})
 	}

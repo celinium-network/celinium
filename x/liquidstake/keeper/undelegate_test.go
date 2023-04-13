@@ -50,7 +50,7 @@ func (suite *KeeperTestSuite) TestUserUndelegate() {
 	err := controlChainApp.LiquidStakeKeeper.Delegate(suite.controlChain.GetContext(), sourceChainParams.ChainID, testCoin.Amount, controlChainUserAddr)
 	suite.NoError(err)
 
-	suite.processDelegation(delegationEpochInfo)
+	suite.advanceNextDelegationEpochAndProcess(delegationEpochInfo)
 
 	// user has already delegate, then undelegate
 	unbondingEpochInfo := suite.unbondingEpoch()
@@ -112,7 +112,7 @@ func (suite *KeeperTestSuite) TestWithdrawCompleteUnbond() {
 	err := controlChainApp.LiquidStakeKeeper.Delegate(suite.controlChain.GetContext(), sourceChainParams.ChainID, testCoin.Amount, controlChainUserAddr)
 	suite.NoError(err)
 
-	suite.processDelegation(delegationEpochInfo)
+	suite.advanceNextDelegationEpochAndProcess(delegationEpochInfo)
 
 	// user has already delegate, then undelegate
 	unbondingEpochInfo := suite.unbondingEpoch()

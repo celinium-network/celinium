@@ -5,8 +5,10 @@ import (
 	"time"
 
 	sdkerrors "cosmossdk.io/errors"
+	"cosmossdk.io/math"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
 
@@ -194,8 +196,32 @@ func (k Keeper) advanceCallbackRelatedEntry(ctx sdk.Context, callback *types.IBC
 		}
 
 		record.DelegationCoin = record.DelegationCoin.AddAmount(callbackArgs.Amount)
-
 		k.SetDelegationRecord(ctx, recordID, record)
+	case types.WithdrawDelegateRewardCall:
+		var callbackArgs types.WithdrawDelegateRewardCallbackArgs
+		k.cdc.MustUnmarshal([]byte(callback.Args), &callbackArgs)
+		totalReward := math.ZeroInt()
+		sourceChain, found := k.GetSourceChain(ctx, callbackArgs.ChainID)
+		if !found {
+			return
+		}
+		for _, r := range responses {
+			if strings.Contains(r.TypeUrl, "MsgWithdrawDelegatorRewardResponse") {
+				response := distrtypes.MsgWithdrawDelegatorRewardResponse{}
+				if err := k.cdc.Unmarshal(r.Value, &response); err != nil {
+					return
+				}
+				for _, c := range response.Amount {
+					if c.Amount.IsNil() || c.Amount.IsZero() {
+						continue
+					}
+					totalReward = totalReward.Add(c.Amount)
+				}
+			}
+		}
+		if !totalReward.IsZero() {
+			k.AfterWithdrawDelegateReward(ctx, sourceChain, totalReward)
+		}
 	case types.SetWithdrawAddressCall:
 		// TODO make source chain available here
 	default:

@@ -40,7 +40,8 @@ func (suite *KeeperTestSuite) TestUserDelegate() {
 	suite.NoError(err)
 
 	ibcBalanceAfterDelegate := controlChainApp.BankKeeper.GetBalance(suite.controlChain.GetContext(), controlChainUserAddr, sourceChainParams.IbcDenom)
-	derivativeBalanceAfterDelegate := controlChainApp.BankKeeper.GetBalance(suite.controlChain.GetContext(), controlChainUserAddr, sourceChainParams.DerivativeDenom)
+	derivativeBalanceAfterDelegate := controlChainApp.BankKeeper.GetBalance(
+		suite.controlChain.GetContext(), controlChainUserAddr, sourceChainParams.DerivativeDenom)
 
 	suite.True(ibcBalanceAfterDelegate.Amount.Add(testCoin.Amount).Equal(ibcBalanceBeforeDelegate.Amount))
 	suite.True(derivativeBalanceAfterDelegate.Amount.Sub(testCoin.Amount).Equal(derivativeBalanceBeforeDelegate.Amount))
@@ -51,10 +52,10 @@ func (suite *KeeperTestSuite) TestUserDelegate() {
 	suite.True(delegationRecord.DelegationCoin.Amount.Equal(testCoin.Amount))
 }
 
-func (suite *KeeperTestSuite) processDelegation(epochInfo *epochtypes.EpochInfo) {
+func (suite *KeeperTestSuite) advanceNextDelegationEpochAndProcess(epochInfo *epochtypes.EpochInfo) {
 	controlChainUserAddr := suite.controlChain.SenderAccount.GetAddress()
 	coordTime := suite.controlChain.Coordinator.CurrentTime
-	duration := time.Hour - (coordTime.Sub(epochInfo.StartTime.Add(time.Hour)))
+	duration := epochInfo.Duration - (coordTime.Sub(epochInfo.StartTime.Add(epochInfo.Duration)))
 
 	// make next block will start new delegation epoch
 	coordTime = coordTime.Add(duration + time.Minute*5)
@@ -89,7 +90,7 @@ func (suite *KeeperTestSuite) TestProcessDelegation() {
 	err := controlChainApp.LiquidStakeKeeper.Delegate(suite.controlChain.GetContext(), sourceChainParams.ChainID, testCoin.Amount, controlChainUserAddr)
 	suite.NoError(err)
 
-	suite.processDelegation(epochInfo)
+	suite.advanceNextDelegationEpochAndProcess(epochInfo)
 
 	// delegate successful
 	sc, found := controlChainApp.LiquidStakeKeeper.GetSourceChain(suite.controlChain.GetContext(), sourceChainParams.ChainID)
@@ -104,7 +105,7 @@ func (suite *KeeperTestSuite) delegationEpoch() *epochtypes.EpochInfo {
 		Duration:                time.Hour,
 		CurrentEpoch:            1,
 		CurrentEpochStartTime:   suite.controlChain.CurrentHeader.Time,
-		EpochCountingStarted:    true,
+		EpochCountingStarted:    false,
 		CurrentEpochStartHeight: suite.controlChain.GetContext().BlockHeight(),
 	}
 }

@@ -15,6 +15,7 @@ const (
 	DelegateCall
 	UnbondCall
 	WithdrawUnbondCall
+	WithdrawDelegateRewardCall
 	TransferRewardCall
 	SetWithdrawAddressCall
 )
@@ -47,7 +48,7 @@ func (c *IBCCallback) CheckSuccessfulIBCAcknowledgement(cdc codec.Codec, respons
 		}
 	case WithdrawUnbondCall:
 		return true
-	case TransferRewardCall:
+	case WithdrawDelegateRewardCall:
 		return true
 	case SetWithdrawAddressCall:
 		return true
