@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"time"
-
 	"cosmossdk.io/math"
 	"github.com/gogo/protobuf/proto"
 
@@ -47,24 +45,7 @@ func (k Keeper) WithdrawDelegateReward(ctx sdk.Context, sourceChain *types.Sourc
 		})
 	}
 
-	data, err := icatypes.SerializeCosmosTx(k.cdc, sendMsgs)
-	if err != nil {
-		return err
-	}
-
-	packetData := icatypes.InterchainAccountPacketData{
-		Type: icatypes.EXECUTE_TX,
-		Data: data,
-	}
-
-	// TODO timeout ?
-	timeoutTimestamp := ctx.BlockTime().Add(30 * time.Minute).UnixNano()
-	portID, err := icatypes.NewControllerPortID(sourceChain.DelegateAddress)
-	if err != nil {
-		return err
-	}
-
-	sequence, err := k.icaCtlKeeper.SendTx(ctx, nil, sourceChain.ConnectionID, portID, packetData, uint64(timeoutTimestamp)) //nolint:staticcheck //
+	sequence, portID, err := k.sendIBCMsg(ctx, sendMsgs, sourceChain.ConnectionID, sourceChain.DelegateAddress)
 	if err != nil {
 		return err
 	}
@@ -107,24 +88,7 @@ func (k Keeper) AfterWithdrawDelegateReward(ctx sdk.Context, sourceChain *types.
 		Amount:      []sdk.Coin{sdk.NewCoin(sourceChain.NativeDenom, reward)},
 	})
 
-	data, err := icatypes.SerializeCosmosTx(k.cdc, sendMsgs)
-	if err != nil {
-		return err
-	}
-
-	packetData := icatypes.InterchainAccountPacketData{
-		Type: icatypes.EXECUTE_TX,
-		Data: data,
-	}
-
-	// TODO timeout ?
-	timeoutTimestamp := ctx.BlockTime().Add(30 * time.Minute).UnixNano()
-	portID, err := icatypes.NewControllerPortID(sourceChain.WithdrawAddress)
-	if err != nil {
-		return err
-	}
-
-	sequence, err := k.icaCtlKeeper.SendTx(ctx, nil, sourceChain.ConnectionID, portID, packetData, uint64(timeoutTimestamp)) //nolint:staticcheck //
+	sequence, portID, err := k.sendIBCMsg(ctx, sendMsgs, sourceChain.ConnectionID, sourceChain.WithdrawAddress)
 	if err != nil {
 		return err
 	}
@@ -187,24 +151,7 @@ func (k Keeper) SetDistriWithdrawAddress(ctx sdk.Context) error {
 			WithdrawAddress:  rewardAccAddr.String(),
 		})
 
-		data, err := icatypes.SerializeCosmosTx(k.cdc, sendMsgs)
-		if err != nil {
-			return err
-		}
-
-		packetData := icatypes.InterchainAccountPacketData{
-			Type: icatypes.EXECUTE_TX,
-			Data: data,
-		}
-
-		// TODO timeout ?
-		timeoutTimestamp := ctx.BlockTime().Add(30 * time.Minute).UnixNano()
-		portID, err := icatypes.NewControllerPortID(sourceChain.DelegateAddress)
-		if err != nil {
-			return err
-		}
-
-		sequence, err := k.icaCtlKeeper.SendTx(ctx, nil, sourceChain.ConnectionID, portID, packetData, uint64(timeoutTimestamp)) //nolint:staticcheck //
+		sequence, portID, err := k.sendIBCMsg(ctx, sendMsgs, sourceChain.ConnectionID, sourceChain.DelegateAddress)
 		if err != nil {
 			return err
 		}

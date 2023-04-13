@@ -290,19 +290,7 @@ func (k Keeper) undelegateFromSourceChain(ctx sdk.Context, sourceChain *types.So
 		))
 	}
 
-	data, err := icatypes.SerializeCosmosTx(k.cdc, undelegateMsgs)
-	if err != nil {
-		return err
-	}
-
-	packetData := icatypes.InterchainAccountPacketData{
-		Type: icatypes.EXECUTE_TX,
-		Data: data,
-	}
-
-	// TODO timeout ?
-	timeoutTimestamp := ctx.BlockTime().Add(30 * time.Minute).UnixNano()
-	sequence, err := k.icaCtlKeeper.SendTx(ctx, nil, sourceChain.ConnectionID, portID, packetData, uint64(timeoutTimestamp)) //nolint:staticcheck //
+	sequence, portID, err := k.sendIBCMsg(ctx, undelegateMsgs, sourceChain.ConnectionID, sourceChain.DelegateAddress)
 	if err != nil {
 		return err
 	}
@@ -357,18 +345,7 @@ func (k Keeper) withdrawUnbondFromSourceChain(ctx sdk.Context, sourceChain *type
 		))
 	}
 
-	data, err := icatypes.SerializeCosmosTx(k.cdc, witdrawMsgs)
-	if err != nil {
-		return err
-	}
-
-	packetData := icatypes.InterchainAccountPacketData{
-		Type: icatypes.EXECUTE_TX,
-		Data: data,
-	}
-
-	// TODO timeout ?
-	sequence, err := k.icaCtlKeeper.SendTx(ctx, nil, sourceChain.ConnectionID, portID, packetData, uint64(timeoutTimestamp)) //nolint:staticcheck //
+	sequence, portID, err := k.sendIBCMsg(ctx, witdrawMsgs, sourceChain.ConnectionID, sourceChain.DelegateAddress)
 	if err != nil {
 		return err
 	}
