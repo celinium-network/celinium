@@ -12,7 +12,7 @@ import (
 )
 
 func (suite *KeeperTestSuite) TestAddSourceChain() {
-	sourceChain := suite.mockSourceChainParams()
+	sourceChain := suite.generateSourceChainParams()
 
 	controlChainApp := getCeliniumApp(suite.controlChain)
 	channelSequence := controlChainApp.GetIBCKeeper().ChannelKeeper.GetNextChannelSequence(suite.controlChain.GetContext())
@@ -27,6 +27,50 @@ func (suite *KeeperTestSuite) TestAddSourceChain() {
 		suite.relayICACreatedPacket(channelSequence, ica)
 		channelSequence++
 	}
+}
+
+func getCreatedICAFromSourceChain(s *types.SourceChain) []string {
+	return []string{s.WithdrawAddress, s.DelegateAddress, s.UnboudAddress}
+}
+
+func (suite *KeeperTestSuite) generateSourceChainParams() *types.SourceChain {
+	sourceChainVals := len(suite.sourceChain.Vals.Validators)
+	randVals := rand.Int()%sourceChainVals + 1 //nolint:gosec
+	selectedVals := make([]types.Validator, 0)
+	maxWeight := uint64(100000)
+
+	selectedVals = append(selectedVals, types.Validator{
+		Address: sdk.ValAddress(suite.sourceChain.Vals.Proposer.Address).String(),
+		Weight:  rand.Uint64()%maxWeight + types.MinValidatorWeight, //nolint:gosec
+	})
+
+	for i := 0; i < randVals; i++ {
+		vaddr := sdk.ValAddress(suite.sourceChain.Vals.Validators[i].Address).String()
+		if vaddr == selectedVals[0].Address {
+			continue
+		}
+		selectedVals = append(selectedVals, types.Validator{
+			Address: vaddr,
+			Weight:  rand.Uint64()%maxWeight + types.MinValidatorWeight, //nolint:gosec
+		})
+	}
+
+	sourceChain := types.SourceChain{
+		ChainID:                   suite.sourceChain.ChainID,
+		ConnectionID:              suite.icaPath.EndpointB.ConnectionID,
+		TransferChannelID:         suite.transferPath.EndpointB.ChannelID,
+		Bech32ValidatorAddrPrefix: params.Bech32PrefixValAddr,
+		Validators:                selectedVals,
+		Redemptionratio:           sdk.NewDec(1),
+		IbcDenom: suite.calcuateIBCDenom(
+			suite.transferPath.EndpointB.ChannelConfig.PortID,
+			suite.transferPath.EndpointB.ChannelID,
+			params.DefaultBondDenom),
+		NativeDenom:     params.DefaultBondDenom,
+		DerivativeDenom: "DLST",
+	}
+
+	return &sourceChain
 }
 
 func (suite *KeeperTestSuite) relayICACreatedPacket(packetSequence uint64, ctlAccount string) {
@@ -65,48 +109,4 @@ func (suite *KeeperTestSuite) relayICACreatedPacket(packetSequence uint64, ctlAc
 
 	suite.True(found)
 	suite.Equal(icaFromCtlChain, icaFromSrcChain)
-}
-
-func getCreatedICAFromSourceChain(s *types.SourceChain) []string {
-	return []string{s.WithdrawAddress, s.DelegateAddress, s.UnboudAddress}
-}
-
-func (suite *KeeperTestSuite) mockSourceChainParams() *types.SourceChain {
-	sourceChainVals := len(suite.sourceChain.Vals.Validators)
-	randVals := rand.Int()%sourceChainVals + 1 //nolint:gosec
-	selectedVals := make([]types.Validator, 0)
-	maxWeight := uint64(100000)
-
-	selectedVals = append(selectedVals, types.Validator{
-		Address: sdk.ValAddress(suite.sourceChain.Vals.Proposer.Address).String(),
-		Weight:  rand.Uint64()%maxWeight + types.MinValidatorWeight, //nolint:gosec
-	})
-
-	for i := 0; i < randVals; i++ {
-		vaddr := sdk.ValAddress(suite.sourceChain.Vals.Validators[i].Address).String()
-		if vaddr == selectedVals[0].Address {
-			continue
-		}
-		selectedVals = append(selectedVals, types.Validator{
-			Address: vaddr,
-			Weight:  rand.Uint64()%maxWeight + types.MinValidatorWeight, //nolint:gosec
-		})
-	}
-
-	sourceChain := types.SourceChain{
-		ChainID:                   suite.sourceChain.ChainID,
-		ConnectionID:              suite.icaPath.EndpointB.ConnectionID,
-		TransferChannelID:         suite.transferPath.EndpointB.ChannelID,
-		Bech32ValidatorAddrPrefix: params.Bech32PrefixValAddr,
-		Validators:                selectedVals,
-		Redemptionratio:           sdk.NewDec(1),
-		IbcDenom: suite.calcuateIBCDenom(
-			suite.transferPath.EndpointB.ChannelConfig.PortID,
-			suite.transferPath.EndpointB.ChannelID,
-			params.DefaultBondDenom),
-		NativeDenom:     params.DefaultBondDenom,
-		DerivativeDenom: "DLST",
-	}
-
-	return &sourceChain
 }
