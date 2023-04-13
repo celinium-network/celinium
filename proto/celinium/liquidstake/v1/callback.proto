@@ -2,6 +2,7 @@ syntax = "proto3";
 package celinium.liquidstake.v1;
 
 import "gogoproto/gogo.proto";
+import "cosmos_proto/cosmos.proto";
 import "celinium/liquidstake/v1/source_chain.proto";
 
 option go_package = "celinium/x/liquidstake/types";
@@ -31,4 +32,21 @@ message UnbondCallbackArgs{
     
     // unbond chain ID
     string chainID = 3;
+}
+
+message TransferRewardCallbackArgs{
+    string chainID = 3;
+
+    string amount = 2[
+        (cosmos_proto.scalar)  = "cosmos.Int",
+        (gogoproto.customtype) = "Int",
+        (gogoproto.nullable)   = false];
+}
+
+message SetWithdrawMessageArgs{
+    string chainID = 1;
+}
+
+message WithdrawDelegateRewardCallbackArgs{
+    string chainID = 1;
 }

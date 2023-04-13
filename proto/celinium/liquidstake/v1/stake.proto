@@ -97,3 +97,16 @@ message EpochUnbondings{
     repeated Unbonding unbondings = 2 [(gogoproto.nullable) = false]; 
 }
 
+message IBCQuery{
+    string queryType = 1;
+
+    string queryPathKey = 2;
+
+    uint64 timeout = 3;
+
+    string chainID = 4;
+
+    string connectionID = 5;
+
+    uint64 epoch = 6;
+}

@@ -1,16 +1,13 @@
 package keeper
 
 import (
-	sdkerrors "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	icacontrollerkeeper "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/controller/keeper"
 	ibctransferkeeper "github.com/cosmos/ibc-go/v6/modules/apps/transfer/keeper"
-	ibcclientkeeper "github.com/cosmos/ibc-go/v6/modules/core/02-client/keeper"
-	ibcclienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
-	"github.com/cosmos/ibc-go/v6/modules/core/exported"
+	ibckeeper "github.com/cosmos/ibc-go/v6/modules/core/keeper"
 
 	"github.com/celinium-netwok/celinium/x/liquidstake/types"
 )
@@ -22,7 +19,7 @@ type Keeper struct {
 	accountKeeper     types.AccountKeeper
 	bankKeeper        types.BankKeeper
 	epochKeeper       types.EpochKeeper
-	ibcClientKeeper   ibcclientkeeper.Keeper
+	ibcKeeper         *ibckeeper.Keeper
 	ibcTransferKeeper ibctransferkeeper.Keeper
 	icaCtlKeeper      icacontrollerkeeper.Keeper
 }
@@ -33,7 +30,7 @@ func NewKeeper(
 	accountKeeper types.AccountKeeper,
 	bankKeeper types.BankKeeper,
 	epochKeeper types.EpochKeeper,
-	ibcClientKeeper ibcclientkeeper.Keeper,
+	ibcClientKeeper *ibckeeper.Keeper,
 	icaCtlKeeper icacontrollerkeeper.Keeper,
 	ibcTransferKeeper ibctransferkeeper.Keeper,
 ) Keeper {
@@ -43,7 +40,7 @@ func NewKeeper(
 		accountKeeper:     accountKeeper,
 		bankKeeper:        bankKeeper,
 		epochKeeper:       epochKeeper,
-		ibcClientKeeper:   ibcClientKeeper,
+		ibcKeeper:         ibcClientKeeper,
 		ibcTransferKeeper: ibcTransferKeeper,
 		icaCtlKeeper:      icaCtlKeeper,
 	}
@@ -98,8 +95,9 @@ func (k Keeper) GetAllDelegationRecord(ctx sdk.Context) []types.DelegationRecord
 	iterator := storetypes.KVStorePrefixIterator(store, types.DelegationRecordPrefix)
 
 	var records []types.DelegationRecord
-	r := types.DelegationRecord{}
 	for ; iterator.Valid(); iterator.Next() {
+		r := types.DelegationRecord{}
+
 		bz := iterator.Value()
 		k.cdc.MustUnmarshal(bz, &r)
 		records = append(records, r)
@@ -109,20 +107,20 @@ func (k Keeper) GetAllDelegationRecord(ctx sdk.Context) []types.DelegationRecord
 }
 
 // checkIBCClient check weather the ibcclient of the specific chain is active
-func (k Keeper) checkIBCClient(ctx sdk.Context, chainID string) error {
-	clientState, found := k.ibcClientKeeper.GetClientState(ctx, chainID)
-	if !found {
-		return sdkerrors.Wrapf(ibcclienttypes.ErrClientNotFound, "unknown client, ID: %s", chainID)
-	}
+// func (k Keeper) checkIBCClient(ctx sdk.Context, chainID string) error {
+// 	clientState, found := k.ibcClientKeeper.GetClientState(ctx, chainID)
+// 	if !found {
+// 		return sdkerrors.Wrapf(ibcclienttypes.ErrClientNotFound, "unknown client, ID: %s", chainID)
+// 	}
 
-	clientStore := k.ibcClientKeeper.ClientStore(ctx, chainID)
+// 	clientStore := k.ibcClientKeeper.ClientStore(ctx, chainID)
 
-	if status := clientState.Status(ctx, clientStore, k.cdc); status != exported.Active {
-		return sdkerrors.Wrapf(ibcclienttypes.ErrClientNotActive, "cannot update client (%s) with status %s", chainID, status)
-	}
+// 	if status := clientState.Status(ctx, clientStore, k.cdc); status != exported.Active {
+// 		return sdkerrors.Wrapf(ibcclienttypes.ErrClientNotActive, "cannot update client (%s) with status %s", chainID, status)
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 // sendCoinsFromAccountToAccount preform send coins form sender to receiver.
 func (k Keeper) sendCoinsFromAccountToAccount(ctx sdk.Context, senderAddr sdk.AccAddress, receiverAddr sdk.AccAddress, amt sdk.Coins) error {

@@ -5,8 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/celinium-netwok/celinium/app"
-
 	"github.com/cosmos/cosmos-sdk/simapp"
 	simulationtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
@@ -14,6 +12,8 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
+
+	"github.com/celinium-netwok/celinium/app"
 )
 
 func init() {

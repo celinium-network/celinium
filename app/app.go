@@ -204,6 +204,7 @@ var (
 		govtypes.ModuleName:            {authtypes.Burner},
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
 		ibcfeetypes.ModuleName:         nil,
+		liquidstaketypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
 	}
 )
 
@@ -459,14 +460,14 @@ func NewApp(
 	// If evidence needs to be handled for the app, set routes in router here and seal
 	app.EvidenceKeeper = *evidenceKeeper
 
-	app.EpochsKeeper = *epochskeeper.NewKeeper(appCodec, keys[epochstypes.StoreKey])
-
 	// grant capabilities for the ibc/ibc-transfer/interchain-accounts modules
 	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibchost.ModuleName)
 	scopedICAControllerKeeper := app.CapabilityKeeper.ScopeToModule(icacontrollertypes.SubModuleName)
 	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
 	scopedICAHostKeeper := app.CapabilityKeeper.ScopeToModule(icahosttypes.SubModuleName)
 	scopedLiquiStakeKeeper := app.CapabilityKeeper.ScopeToModule(liquidstaketypes.ModuleName)
+
+	app.EpochsKeeper = *epochskeeper.NewKeeper(appCodec, keys[epochstypes.StoreKey])
 
 	// Sealing prevents other modules from creating scoped sub-keepers
 	app.CapabilityKeeper.Seal()
@@ -535,10 +536,12 @@ func NewApp(
 		app.AccountKeeper,
 		app.BankKeeper,
 		app.EpochsKeeper,
-		app.IBCKeeper.ClientKeeper,
+		app.IBCKeeper,
 		app.ICAControllerKeeper,
 		app.TransferKeeper,
 	)
+
+	transferStack := liquidstake.NewIBCMiddleware(app.LiquidStakeKeeper, transferIBCModule)
 
 	liquidstakeModule := liquidstake.NewAppModule(appCodec, app.LiquidStakeKeeper)
 	liquidstakeIBCModule := liquidstake.NewIBCModule(app.LiquidStakeKeeper, appCodec)
@@ -548,7 +551,7 @@ func NewApp(
 	ibcRouter := ibcporttypes.NewRouter()
 	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostStack).
 		AddRoute(icacontrollertypes.SubModuleName, icaControllerStack).
-		AddRoute(ibctransfertypes.ModuleName, transferIBCModule).
+		AddRoute(ibctransfertypes.ModuleName, transferStack).
 		AddRoute(liquidstaketypes.ModuleName, icaControllerStack)
 
 	app.IBCKeeper.SetRouter(ibcRouter)
@@ -577,6 +580,11 @@ func NewApp(
 		app.MsgServiceRouter(),
 		govConfig,
 	)
+
+	// set epoch keeper
+	app.EpochsKeeper.SetHooks(epochskeeper.NewMultiEpochHooks(
+		app.LiquidStakeKeeper.Hooks(),
+	))
 
 	/****  Module Options ****/
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))

@@ -40,15 +40,15 @@ func (k *Keeper) Delegate(ctx sdk.Context, chainID string, amount math.Int, dele
 		return sdkerrors.Wrapf(types.ErrNoExistDelegationRecord, "chainID %s, epoch %d, recorID %d", chainID, currentEpoch, recordID)
 	}
 
-	delegatorAccAddress := sdk.MustAccAddressFromBech32(sourceChain.DelegateAddress)
+	sourceChainDelegatorAccAddress := sdk.MustAccAddressFromBech32(sourceChain.DelegateAddress)
 	// transfer ibc token to sourcechain's delegation account
-	if err := k.sendCoinsFromAccountToAccount(ctx, delegator, delegatorAccAddress, sdk.Coins{sdk.NewCoin(sourceChain.IbcDenom, amount)}); err != nil {
+	if err := k.sendCoinsFromAccountToAccount(ctx, delegator, sourceChainDelegatorAccAddress, sdk.Coins{sdk.NewCoin(sourceChain.IbcDenom, amount)}); err != nil {
 		return err
 	}
 
 	// TODO TruncateInt calculations can be huge precision error
 	derivativeCoinAmount := amount.Mul(sourceChain.Redemptionratio.TruncateInt())
-	if err := k.mintCoins(ctx, delegatorAccAddress, sdk.Coins{sdk.NewCoin(sourceChain.DerivativeDenom, derivativeCoinAmount)}); err != nil {
+	if err := k.mintCoins(ctx, delegator, sdk.Coins{sdk.NewCoin(sourceChain.DerivativeDenom, derivativeCoinAmount)}); err != nil {
 		return err
 	}
 
@@ -83,18 +83,32 @@ func (k *Keeper) ProcessDelegationRecord(ctx sdk.Context, curEpochNumber uint64,
 }
 
 func (k Keeper) handlePendingDelegationRecord(ctx sdk.Context, record types.DelegationRecord) error {
-	// TODO The errors must be hanndler
+	// TODO just delete it?
+	if record.DelegationCoin.Amount.IsZero() {
+		return nil
+	}
 	sourceChain, _ := k.GetSourceChain(ctx, record.ChainID)
-	portID, _ := icatypes.NewControllerPortID(sourceChain.DelegateAddress)
+
+	// send token from sourceChain's DelegateAddress to sourceChain's UnboudAddress
+	if err := k.sendCoinsFromAccountToAccount(ctx,
+		sdk.MustAccAddressFromBech32(sourceChain.DelegateAddress),
+		sdk.MustAccAddressFromBech32(sourceChain.UnboudAddress),
+		sdk.Coins{record.DelegationCoin},
+	); err != nil {
+		return err
+	}
+
+	// TODO The errors must be hanndler
+	portID, _ := icatypes.NewControllerPortID(sourceChain.UnboudAddress)
 	hostAddr, _ := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ConnectionID, portID)
 
 	// TODO timeout ?
 	timeoutTimestamp := ctx.BlockTime().Add(time.Minute).UnixNano()
 	msg := ibctransfertypes.MsgTransfer{
 		SourcePort:       ibctransfertypes.PortID,
-		SourceChannel:    sourceChain.TrasnferChannelID,
+		SourceChannel:    sourceChain.TransferChannelID,
 		Token:            record.DelegationCoin,
-		Sender:           sourceChain.DelegateAddress,
+		Sender:           sourceChain.UnboudAddress,
 		Receiver:         hostAddr,
 		TimeoutHeight:    ibcclienttypes.Height{},
 		TimeoutTimestamp: uint64(timeoutTimestamp),
@@ -134,7 +148,12 @@ func (k Keeper) AfterDelegateTransfer(ctx sdk.Context, record *types.DelegationR
 		return sdkerrors.Wrapf(types.ErrUnknownSourceChain, "unknown source chain, chainID: %s", record.ChainID)
 	}
 
-	sourceChainDelegateAddr, _ := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ChainID, sourceChain.DelegateAddress)
+	portID, err := icatypes.NewControllerPortID(sourceChain.UnboudAddress)
+	if err != nil {
+		return err
+	}
+
+	sourceChainDelegateAddr, _ := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ConnectionID, portID)
 	sourceChainDelegateAddress := sdk.MustAccAddressFromBech32(sourceChainDelegateAddr)
 
 	allocatedFunds := sourceChain.AllocateFundsForValidator(record.DelegationCoin.Amount)
@@ -150,7 +169,7 @@ func (k Keeper) AfterDelegateTransfer(ctx sdk.Context, record *types.DelegationR
 		stakingMsgs = append(stakingMsgs, stakingtypes.NewMsgDelegate(
 			sourceChainDelegateAddress,
 			valAddress,
-			sdk.NewCoin(sourceChain.NativeDenom, math.NewIntFromBigInt(amount)),
+			sdk.NewCoin(sourceChain.NativeDenom, amount),
 		))
 	}
 
@@ -162,11 +181,6 @@ func (k Keeper) AfterDelegateTransfer(ctx sdk.Context, record *types.DelegationR
 	packetData := icatypes.InterchainAccountPacketData{
 		Type: icatypes.EXECUTE_TX,
 		Data: data,
-	}
-
-	portID, err := icatypes.NewControllerPortID(sourceChain.DelegateAddress)
-	if err != nil {
-		return err
 	}
 
 	// TODO timeout ?
@@ -205,6 +219,10 @@ func (k Keeper) AfterCrosschainDelegate(ctx sdk.Context, record *types.Delegatio
 		return sdkerrors.Wrapf(types.ErrUnknownSourceChain, "unknown source chain, chainID: %s", record.ChainID)
 	}
 
+	record.Status = types.DelegationDone
+
+	k.SetDelegationRecord(ctx, record.Id, record)
+
 	sourceChain.UpdateWithDelegationRecord(record)
 
 	// save source chain
@@ -212,9 +230,3 @@ func (k Keeper) AfterCrosschainDelegate(ctx sdk.Context, record *types.Delegatio
 
 	return nil
 }
-
-// func (k Keeper) handleTransferFailedDelegationRecord(ctx sdk.Context, record types.DelegationRecord) {
-// }
-
-// func (k Keeper) handleDelegateFailedDelegationRecord(ctx sdk.Context, record types.DelegationRecord) {
-// }

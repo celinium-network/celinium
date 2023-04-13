@@ -25,9 +25,9 @@ func (k Keeper) Undelegate(ctx sdk.Context, chainID string, amount math.Int, del
 		return sdkerrors.Wrapf(types.ErrUnknownSourceChain, "unknown source chain, chainID: %s", chainID)
 	}
 
-	epochInfo, found := k.epochKeeper.GetEpochInfo(ctx, types.DelegationEpochIdentifier)
+	epochInfo, found := k.epochKeeper.GetEpochInfo(ctx, types.UndelegationEpochIdentifier)
 	if !found {
-		return sdkerrors.Wrapf(types.ErrUnknownEpoch, "unknown epoch, epoch identifier: %s", types.DelegationEpochIdentifier)
+		return sdkerrors.Wrapf(types.ErrUnknownEpoch, "unknown epoch, epoch identifier: %s", types.UndelegationEpochIdentifier)
 	}
 
 	// TODO, epoch should be uint64 or int64
@@ -224,7 +224,7 @@ func (k Keeper) ProcessEpochUnbondings(ctx sdk.Context, epoch uint64, unbondings
 			// retry now maybe deadloop ?
 		case types.UnbondingWaitting:
 			// TODO timestamp become int64
-			if ctx.BlockTime().Before(time.Unix(int64(unbonding.UnbondTIme), 0).Add(5 * time.Minute)) {
+			if ctx.BlockTime().Before(time.Unix(0, int64(unbonding.UnbondTIme)).Add(5 * time.Minute)) {
 				continue
 			}
 
@@ -241,17 +241,25 @@ func (k Keeper) ProcessEpochUnbondings(ctx sdk.Context, epoch uint64, unbondings
 	sort.Strings(chainIDs)
 
 	for _, chainID := range chainIDs {
-		k.submitUnbondICATransaction(ctx, sourceChainTemp[chainID], pendingUnbondAmount[chainID], epoch)
+		amount, ok := pendingUnbondAmount[chainID]
+		if !ok || amount.IsZero() {
+			continue
+		}
+		k.undelegateFromSourceChain(ctx, sourceChainTemp[chainID], pendingUnbondAmount[chainID], epoch)
 	}
 
 	for _, chainID := range chainIDs {
-		k.submitWithdrawUnbondICATransaction(ctx, sourceChainTemp[chainID], completeUnbondAmmount[chainID], epoch)
+		amount, ok := completeUnbondAmmount[chainID]
+		if !ok || amount.IsZero() {
+			continue
+		}
+		k.withdrawUnbondFromSourceChain(ctx, sourceChainTemp[chainID], completeUnbondAmmount[chainID], epoch)
 	}
 
 	return nil
 }
 
-func (k Keeper) submitUnbondICATransaction(ctx sdk.Context, sourceChain *types.SourceChain, amount math.Int, epoch uint64) error {
+func (k Keeper) undelegateFromSourceChain(ctx sdk.Context, sourceChain *types.SourceChain, amount math.Int, epoch uint64) error {
 	validatorAllocateFunds := sourceChain.AllocateFundsForValidator(amount)
 
 	// TODO, Ensuring the order of Validators seems to be easy, as long as the order is determined when modifying them.
@@ -261,8 +269,13 @@ func (k Keeper) submitUnbondICATransaction(ctx sdk.Context, sourceChain *types.S
 
 	undelegateMsgs := make([]proto.Message, 0)
 
-	sourceChainDelegateAddr, _ := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ChainID, sourceChain.DelegateAddress)
-	sourceChainDelegateAddress := sdk.MustAccAddressFromBech32(sourceChainDelegateAddr)
+	portID, err := icatypes.NewControllerPortID(sourceChain.UnboudAddress)
+	if err != nil {
+		return err
+	}
+
+	sourceChainUnbondAddr, _ := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ConnectionID, portID)
+	sourceChainUnbondAddress := sdk.MustAccAddressFromBech32(sourceChainUnbondAddr)
 
 	for _, v := range sourceChain.Validators {
 		valAddress, err := sdk.ValAddressFromBech32(v.Address)
@@ -271,9 +284,9 @@ func (k Keeper) submitUnbondICATransaction(ctx sdk.Context, sourceChain *types.S
 		}
 
 		undelegateMsgs = append(undelegateMsgs, stakingtypes.NewMsgUndelegate(
-			sourceChainDelegateAddress,
+			sourceChainUnbondAddress,
 			valAddress,
-			sdk.NewCoin(sourceChain.NativeDenom, math.NewIntFromBigInt(validatorAllocateFunds[v.Address])),
+			sdk.NewCoin(sourceChain.NativeDenom, validatorAllocateFunds[v.Address]),
 		))
 	}
 
@@ -285,11 +298,6 @@ func (k Keeper) submitUnbondICATransaction(ctx sdk.Context, sourceChain *types.S
 	packetData := icatypes.InterchainAccountPacketData{
 		Type: icatypes.EXECUTE_TX,
 		Data: data,
-	}
-
-	portID, err := icatypes.NewControllerPortID(sourceChain.DelegateAddress)
-	if err != nil {
-		return err
 	}
 
 	// TODO timeout ?
@@ -318,7 +326,7 @@ func (k Keeper) submitUnbondICATransaction(ctx sdk.Context, sourceChain *types.S
 	return nil
 }
 
-func (k Keeper) submitWithdrawUnbondICATransaction(ctx sdk.Context, sourceChain *types.SourceChain, amount math.Int, epoch uint64) error {
+func (k Keeper) withdrawUnbondFromSourceChain(ctx sdk.Context, sourceChain *types.SourceChain, amount math.Int, epoch uint64) error {
 	validatorAllocateFunds := sourceChain.AllocateFundsForValidator(amount)
 
 	// TODO, Ensuring the order of Validators seems to be easy, as long as the order is determined when modifying them.
@@ -328,15 +336,20 @@ func (k Keeper) submitWithdrawUnbondICATransaction(ctx sdk.Context, sourceChain 
 
 	witdrawMsgs := make([]proto.Message, 0)
 
-	sourceChainDelegateAddr, _ := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ChainID, sourceChain.DelegateAddress)
+	portID, err := icatypes.NewControllerPortID(sourceChain.UnboudAddress)
+	if err != nil {
+		return err
+	}
+
+	sourceChainUnbondAddr, _ := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ConnectionID, portID)
 
 	timeoutTimestamp := ctx.BlockTime().Add(30 * time.Minute).UnixNano()
 	for _, v := range sourceChain.Validators {
 		witdrawMsgs = append(witdrawMsgs, transfertypes.NewMsgTransfer(
 			transfertypes.PortID, // TODO the source chain maybe not use the default ibc transfer port. config it.
-			sourceChain.TrasnferChannelID,
-			sdk.NewCoin(sourceChain.NativeDenom, math.NewIntFromBigInt(validatorAllocateFunds[v.Address])),
-			sourceChainDelegateAddr,
+			sourceChain.TransferChannelID,
+			sdk.NewCoin(sourceChain.NativeDenom, validatorAllocateFunds[v.Address]),
+			sourceChainUnbondAddr,
 			sourceChain.UnboudAddress,
 			ibcclienttypes.Height{},
 			uint64(timeoutTimestamp),
@@ -352,11 +365,6 @@ func (k Keeper) submitWithdrawUnbondICATransaction(ctx sdk.Context, sourceChain 
 	packetData := icatypes.InterchainAccountPacketData{
 		Type: icatypes.EXECUTE_TX,
 		Data: data,
-	}
-
-	portID, err := icatypes.NewControllerPortID(sourceChain.DelegateAddress)
-	if err != nil {
-		return err
 	}
 
 	// TODO timeout ?

@@ -5,7 +5,6 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 )
@@ -16,6 +15,9 @@ const (
 	DelegateCall
 	UnbondCall
 	WithdrawUnbondCall
+	WithdrawDelegateRewardCall
+	TransferRewardCall
+	SetWithdrawAddressCall
 )
 
 // TODO don't check here
@@ -35,19 +37,21 @@ func (c *IBCCallback) CheckSuccessfulIBCAcknowledgement(cdc codec.Codec, respons
 	case DelegateCall:
 		for _, r := range responses {
 			if strings.Contains(r.TypeUrl, "MsgDelegateResponse") {
-				response := stakingtypes.MsgDelegateResponse{}
-				err := cdc.Unmarshal(r.Value, &response)
-				return err != nil
+				return true
 			}
 		}
 	case UnbondCall:
 		for _, r := range responses {
 			if strings.Contains(r.TypeUrl, "MsgUndelegateResponse") {
-				response := stakingtypes.MsgUndelegateResponse{}
-				err := cdc.Unmarshal(r.Value, &response)
-				return err != nil
+				return true
 			}
 		}
+	case WithdrawUnbondCall:
+		return true
+	case WithdrawDelegateRewardCall:
+		return true
+	case SetWithdrawAddressCall:
+		return true
 	default:
 		return false
 	}

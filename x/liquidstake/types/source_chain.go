@@ -2,7 +2,6 @@ package types
 
 import (
 	"fmt"
-	"math/big"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -24,7 +23,7 @@ const (
 // BasicVerify verify SouceChain parameters
 // todo: more verify ?
 func (s SourceChain) BasicVerify() error {
-	if len(s.Validators) <= MinValidators {
+	if len(s.Validators) < MinValidators {
 		return fmt.Errorf("min validators: %d, get: %d", MinValidators, len(s.Validators))
 	}
 
@@ -78,8 +77,8 @@ func (s *SourceChain) GenerateAndFillAccount(ctx sdk.Context) (accounts []*autht
 	return accounts
 }
 
-func (s SourceChain) AllocateFundsForValidator(amount math.Int) map[string]*big.Int {
-	validatorFunds := make(map[string]*big.Int)
+func (s SourceChain) AllocateFundsForValidator(amount math.Int) map[string]math.Int {
+	validatorFunds := make(map[string]math.Int)
 
 	// TODO weight shoudle math.Int, maybe overflow there?
 	var totalWeight uint64
@@ -89,8 +88,7 @@ func (s SourceChain) AllocateFundsForValidator(amount math.Int) map[string]*big.
 
 	// TODO the last validator get all remind funds
 	for _, v := range s.Validators {
-		dec := math.LegacyNewDec(int64(v.Weight))
-		allocateFundAmount := dec.QuoInt64(int64(totalWeight)).MulInt(amount).BigInt()
+		allocateFundAmount := amount.Mul(math.NewIntFromUint64(v.Weight)).Quo(math.NewIntFromUint64(totalWeight))
 		validatorFunds[v.Address] = allocateFundAmount
 	}
 

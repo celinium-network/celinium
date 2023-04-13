@@ -30,12 +30,12 @@ message SourceChain {
     string connectionID = 2;
 
     // ibc transfer channel id
-    string trasnferChannelID = 3;
+    string transferChannelID = 3;
 
     // validator address prefix of source chain.
     string bech32ValidatorAddrPrefix = 4;
 
-    repeated Validator validators  = 5;
+    repeated Validator validators  = 5 [(gogoproto.nullable) = false];
 
     // The address of Interchain account for receiving POS reward
     string withdrawAddress = 6 [(cosmos_proto.scalar) = "cosmos.AddressString"];
