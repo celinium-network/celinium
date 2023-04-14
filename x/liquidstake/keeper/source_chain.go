@@ -34,9 +34,9 @@ func (k Keeper) AddSouceChain(ctx sdk.Context, sourceChain *types.SourceChain) e
 	return nil
 }
 
-// CreateDelegationRecordForEpoch create a new DelegationRecord in current epoch for all available chain.
+// CreateEpochDelegationRecord create a new DelegationRecord in current epoch for all available chain.
 // If current epoch already has DelegationRecord for the chain, then do nothing
-func (k Keeper) CreateDelegationRecordForEpoch(ctx sdk.Context, epochNumber int64) {
+func (k Keeper) CreateEpochDelegationRecord(ctx sdk.Context, epochNumber uint64) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, types.SouceChainKeyPrefix)
 
@@ -49,7 +49,7 @@ func (k Keeper) CreateDelegationRecordForEpoch(ctx sdk.Context, epochNumber int6
 			continue
 		}
 
-		if _, found := k.GetChianDelegationRecordID(ctx, sourcechain.ChainID, uint64(epochNumber)); found {
+		if _, found := k.GetChianDelegationRecordID(ctx, sourcechain.ChainID, epochNumber); found {
 			continue
 		}
 
@@ -59,11 +59,11 @@ func (k Keeper) CreateDelegationRecordForEpoch(ctx sdk.Context, epochNumber int6
 			Id:             id,
 			DelegationCoin: sdk.NewCoin(sourcechain.IbcDenom, sdk.ZeroInt()),
 			Status:         types.DelegationPending,
-			EpochNumber:    uint64(epochNumber),
+			EpochNumber:    epochNumber,
 			ChainID:        sourcechain.ChainID,
 		}
 
-		k.SetChainDelegationRecordID(ctx, sourcechain.ChainID, uint64(epochNumber), id)
+		k.SetChainDelegationRecordID(ctx, sourcechain.ChainID, epochNumber, id)
 
 		k.SetDelegationRecord(ctx, id, &record)
 
@@ -72,14 +72,14 @@ func (k Keeper) CreateDelegationRecordForEpoch(ctx sdk.Context, epochNumber int6
 }
 
 // CreateEpochUnbondings a new unbonding in current epoch.
-func (k Keeper) CreateEpochUnbondings(ctx sdk.Context, epochNumber int64) {
-	_, found := k.GetEpochUnboundings(ctx, uint64(epochNumber))
+func (k Keeper) CreateEpochUnbondings(ctx sdk.Context, epochNumber uint64) {
+	_, found := k.GetEpochUnboundings(ctx, epochNumber)
 	if found {
 		return
 	}
 
 	epochUnbonding := types.EpochUnbondings{
-		Epoch:      uint64(epochNumber),
+		Epoch:      epochNumber,
 		Unbondings: []types.Unbonding{},
 	}
 

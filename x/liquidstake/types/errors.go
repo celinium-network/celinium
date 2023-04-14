@@ -17,4 +17,5 @@ var (
 	ErrEpochUnbondingNotExist  = sdkioerrors.Register(ModuleName, 10, "unbondings not found for specific epoch")
 	ErrCallbackNotExist        = sdkioerrors.Register(ModuleName, 11, "callback not find")
 	ErrIBCQueryNotExist        = sdkioerrors.Register(ModuleName, 12, "ibcquery not exist")
+	ErrICANotFound             = sdkioerrors.Register(ModuleName, 13, "can not find interchain account address")
 )

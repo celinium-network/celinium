@@ -17,20 +17,26 @@ func (Hooks) AfterEpochEnd(_ sdk.Context, _ string, _ int64) {
 
 // BeforeEpochStart implements types.EpochHooks
 func (h Hooks) BeforeEpochStart(ctx sdk.Context, epochIdentifier string, epochNumber int64) {
+	if epochNumber < 0 {
+		return
+	}
+
+	uEpochNumber := uint64(epochNumber)
+
 	switch epochIdentifier {
 	case types.DelegationEpochIdentifier:
-		h.k.CreateDelegationRecordForEpoch(ctx, epochNumber)
+		h.k.CreateEpochDelegationRecord(ctx, uEpochNumber)
 
 		delegationRecords := h.k.GetAllDelegationRecord(ctx)
-		h.k.ProcessDelegationRecord(ctx, uint64(epochNumber), delegationRecords)
+		h.k.ProcessDelegationRecord(ctx, uEpochNumber, delegationRecords)
 
 		h.k.UpdateRedeemRatio(ctx, delegationRecords)
 	case types.UndelegationEpochIdentifier:
-		h.k.CreateEpochUnbondings(ctx, epochNumber)
+		h.k.CreateEpochUnbondings(ctx, uEpochNumber)
 
-		h.k.ProcessUnbondings(ctx, uint64(epochNumber))
+		h.k.ProcessUnbondings(ctx, uEpochNumber)
 	case types.ReinvestEpochIdentifier:
-		h.k.StartReInvest(ctx)
+		h.k.Reinvest(ctx)
 	default:
 	}
 }

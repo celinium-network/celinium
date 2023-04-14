@@ -41,14 +41,14 @@ func (k *Keeper) Delegate(ctx sdk.Context, chainID string, amount math.Int, call
 	}
 
 	ecsrowAccAddress := sdk.MustAccAddressFromBech32(sourceChain.EcsrowAddress)
-	// transfer ibc token to sourcechain's delegation account
+	// transfer ibc token to sourcechain's ecsrow account
 	if err := k.sendCoinsFromAccountToAccount(ctx, caller,
 		ecsrowAccAddress, sdk.Coins{sdk.NewCoin(sourceChain.IbcDenom, amount)}); err != nil {
 		return err
 	}
 
-	// TODO TruncateInt calculations can be huge precision error
-	derivativeAmount := amount.Mul(sourceChain.Redemptionratio.TruncateInt())
+	// TODO replace TruncateInt with Ceil ?
+	derivativeAmount := sdk.NewDecFromInt(amount).Quo(sourceChain.Redemptionratio).TruncateInt()
 	if err := k.mintCoins(ctx, caller, sdk.Coins{sdk.NewCoin(sourceChain.DerivativeDenom, derivativeAmount)}); err != nil {
 		return err
 	}
@@ -60,7 +60,7 @@ func (k *Keeper) Delegate(ctx sdk.Context, chainID string, amount math.Int, call
 	return nil
 }
 
-// BeginLiquidStake start liquid stake on source chain with provide delegation records.
+// ProcessDelegationRecord start liquid stake on source chain with provide delegation records.
 // This process will continue to advance the status of the DelegationRecord according to the IBC ack.
 // So here just start and restart the process.
 func (k *Keeper) ProcessDelegationRecord(ctx sdk.Context, curEpochNumber uint64, records []types.DelegationRecord) {
@@ -99,9 +99,14 @@ func (k Keeper) handlePendingDelegationRecord(ctx sdk.Context, record types.Dele
 		return err
 	}
 
-	// TODO The errors must be hanndler
-	portID, _ := icatypes.NewControllerPortID(sourceChain.DelegateAddress)
-	hostAddr, _ := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ConnectionID, portID)
+	portID, err := icatypes.NewControllerPortID(sourceChain.DelegateAddress)
+	if err != nil {
+		return err
+	}
+	hostAddr, found := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ConnectionID, portID)
+	if !found {
+		return sdkerrors.Wrapf(types.ErrICANotFound, "address %s", sourceChain.DelegateAddress)
+	}
 
 	// TODO timeout ?
 	timeoutTimestamp := ctx.BlockTime().Add(time.Minute).UnixNano()
@@ -160,9 +165,9 @@ func (k Keeper) AfterDelegateTransfer(ctx sdk.Context, record *types.DelegationR
 	allocatedFunds := sourceChain.AllocateFundsForValidator(record.DelegationCoin.Amount)
 
 	stakingMsgs := make([]proto.Message, 0)
-	// TODO, sort map
-	for valAddr, amount := range allocatedFunds {
-		valAddress, err := sdk.ValAddressFromBech32(valAddr)
+
+	for _, valFund := range allocatedFunds {
+		valAddress, err := sdk.ValAddressFromBech32(valFund.Address)
 		if err != nil {
 			return err
 		}
@@ -170,7 +175,7 @@ func (k Keeper) AfterDelegateTransfer(ctx sdk.Context, record *types.DelegationR
 		stakingMsgs = append(stakingMsgs, stakingtypes.NewMsgDelegate(
 			sourceChainDelegateAddress,
 			valAddress,
-			sdk.NewCoin(sourceChain.NativeDenom, amount),
+			sdk.NewCoin(sourceChain.NativeDenom, valFund.Amount),
 		))
 	}
 

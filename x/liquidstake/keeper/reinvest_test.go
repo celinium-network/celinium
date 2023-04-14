@@ -11,8 +11,8 @@ func (suite *KeeperTestSuite) TestReinvest() {
 	delegationEpoch := suite.delegationEpoch()
 	suite.setSourceChainAndEpoch(sourceChainParams, delegationEpoch)
 
-	// delegation at epoch 2
-	controlChainUserAddr := suite.controlChain.SenderAccount.GetAddress()
+	ctlChainUserAccAddr := suite.controlChain.SenderAccount.GetAddress()
+	ctlChainUserAddr := ctlChainUserAccAddr.String()
 
 	testCoin := suite.testCoin
 	srcNativeDenom := sourceChainParams.NativeDenom
@@ -25,17 +25,17 @@ func (suite *KeeperTestSuite) TestReinvest() {
 	suite.NoError(err)
 	suite.controlChain.NextBlock()
 	suite.transferPath.EndpointA.UpdateClient()
-	suite.relayIBCPacketFromCtlToSrc(ctx.EventManager().ABCIEvents(), controlChainUserAddr.String())
+	suite.relayIBCPacketFromCtlToSrc(ctx.EventManager().ABCIEvents(), ctlChainUserAddr)
 
 	ctx = suite.controlChain.GetContext()
-	err = controlChainApp.LiquidStakeKeeper.Delegate(ctx, sourceChainParams.ChainID, testCoin.Amount, controlChainUserAddr)
+	err = controlChainApp.LiquidStakeKeeper.Delegate(ctx, sourceChainParams.ChainID, testCoin.Amount, ctlChainUserAccAddr)
 	suite.NoError(err)
 
 	suite.advanceEpochAndRelayIBC(delegationEpoch)
 
 	// set reward for validator in source chain.
 	rewards := sdk.DecCoins{
-		sdk.NewDecCoinFromDec(srcNativeDenom, sdk.NewDec(50000).Quo(sdk.NewDec(1))),
+		sdk.NewDecCoinFromDec(srcNativeDenom, sdk.NewDec(500000).Quo(sdk.NewDec(1))),
 	}
 	ctx = suite.sourceChain.GetContext()
 
@@ -53,10 +53,11 @@ func (suite *KeeperTestSuite) TestReinvest() {
 
 	// begin reinvest
 	ctx = suite.controlChain.GetContext()
-	controlChainApp.LiquidStakeKeeper.StartReInvest(ctx)
+	controlChainApp.LiquidStakeKeeper.Reinvest(ctx)
+
 	suite.controlChain.NextBlock()
 	suite.transferPath.EndpointA.UpdateClient()
-	suite.relayIBCPacketFromCtlToSrc(ctx.EventManager().ABCIEvents(), controlChainUserAddr.String())
+	suite.relayIBCPacketFromCtlToSrc(ctx.EventManager().ABCIEvents(), ctlChainUserAddr)
 
 	ctx = suite.controlChain.GetContext()
 	delegatorICAOnSrcChain, err := controlChainApp.LiquidStakeKeeper.GetSourceChainAddr(

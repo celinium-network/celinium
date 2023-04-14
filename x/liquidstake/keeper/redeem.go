@@ -33,7 +33,10 @@ func (k Keeper) UpdateRedeemRatio(ctx sdk.Context, records []types.DelegationRec
 
 		derivationAmount := k.bankKeeper.GetSupply(ctx, sourcechain.DerivativeDenom)
 
-		// average?
+		if derivationAmount.IsZero() {
+			continue
+		}
+
 		sourcechain.Redemptionratio = sdk.NewDecFromInt(processingAmount).Add(sdk.NewDecFromInt(doneAmount)).Quo(sdk.NewDecFromInt(derivationAmount.Amount))
 
 		k.SetSourceChain(ctx, sourcechain)

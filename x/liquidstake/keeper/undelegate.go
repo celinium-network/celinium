@@ -45,12 +45,10 @@ func (k Keeper) Undelegate(ctx sdk.Context, chainID string, amount math.Int, del
 		return sdkerrors.Wrapf(types.ErrInternalError, "undelegate too mach, max %s, get %s", sourceChain.StakedAmount, receiveAmount)
 	}
 
-	delegatorDerivativeTokenAmount := k.bankKeeper.GetBalance(ctx, delegator, sourceChain.DerivativeDenom)
-	if delegatorDerivativeTokenAmount.Amount.LT(amount) {
-		return sdkerrors.Wrapf(types.ErrInsufficientFunds, "burn %s, expectd: %s, own %s",
-			sourceChain.DerivativeDenom,
-			amount,
-			delegatorDerivativeTokenAmount.Amount)
+	// send coin from user to module account.
+	if err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, delegator, types.ModuleName,
+		sdk.Coins{sdk.NewCoin(sourceChain.DerivativeDenom, amount)}); err != nil {
+		return err
 	}
 
 	undelegationRecord := types.UndelegationRecord{
@@ -58,7 +56,6 @@ func (k Keeper) Undelegate(ctx sdk.Context, chainID string, amount math.Int, del
 		ChainID:     chainID,
 		Epoch:       currentEpoch,
 		Delegator:   delegatorAddr,
-		Receiver:    "", // TODO unused, remove,
 		RedeemToken: sdk.NewCoin(sourceChain.NativeDenom, receiveAmount),
 		CliamStatus: types.UndelegationPending,
 	}
@@ -278,16 +275,15 @@ func (k Keeper) undelegateFromSourceChain(ctx sdk.Context, sourceChain *types.So
 	sourceChainUnbondAddr, _ := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ConnectionID, portID)
 	sourceChainUnbondAddress := sdk.MustAccAddressFromBech32(sourceChainUnbondAddr)
 
-	for _, v := range sourceChain.Validators {
-		valAddress, err := sdk.ValAddressFromBech32(v.Address)
+	for _, valFund := range validatorAllocateFunds {
+		valAddress, err := sdk.ValAddressFromBech32(valFund.Address)
 		if err != nil {
 			return err
 		}
-
 		undelegateMsgs = append(undelegateMsgs, stakingtypes.NewMsgUndelegate(
 			sourceChainUnbondAddress,
 			valAddress,
-			sdk.NewCoin(sourceChain.NativeDenom, validatorAllocateFunds[v.Address]),
+			sdk.NewCoin(sourceChain.NativeDenom, valFund.Amount),
 		))
 	}
 
@@ -316,28 +312,24 @@ func (k Keeper) undelegateFromSourceChain(ctx sdk.Context, sourceChain *types.So
 }
 
 func (k Keeper) withdrawUnbondFromSourceChain(ctx sdk.Context, sourceChain *types.SourceChain, amount math.Int, epoch uint64) error {
-	validatorAllocateFunds := sourceChain.AllocateFundsForValidator(amount)
-
-	// TODO, Ensuring the order of Validators seems to be easy, as long as the order is determined when modifying them.
-	sort.Slice(sourceChain.Validators, func(i, j int) bool {
-		return strings.Compare(sourceChain.Validators[i].Address, sourceChain.Validators[j].Address) >= 0
-	})
-
-	witdrawMsgs := make([]proto.Message, 0)
-
 	portID, err := icatypes.NewControllerPortID(sourceChain.DelegateAddress)
 	if err != nil {
 		return err
 	}
+	sourceChainUnbondAddr, found := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ConnectionID, portID)
+	if !found {
+		return sdkerrors.Wrapf(types.ErrICANotFound, "address %s", sourceChain.DelegateAddress)
+	}
 
-	sourceChainUnbondAddr, _ := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ConnectionID, portID)
-
+	witdrawMsgs := make([]proto.Message, 0)
 	timeoutTimestamp := ctx.BlockTime().Add(30 * time.Minute).UnixNano()
-	for _, v := range sourceChain.Validators {
+	validatorAllocateFunds := sourceChain.AllocateFundsForValidator(amount)
+
+	for _, valFund := range validatorAllocateFunds {
 		witdrawMsgs = append(witdrawMsgs, transfertypes.NewMsgTransfer(
 			transfertypes.PortID, // TODO the source chain maybe not use the default ibc transfer port. config it.
 			sourceChain.TransferChannelID,
-			sdk.NewCoin(sourceChain.NativeDenom, validatorAllocateFunds[v.Address]),
+			sdk.NewCoin(sourceChain.NativeDenom, valFund.Amount),
 			sourceChainUnbondAddr,
 			sourceChain.DelegateAddress,
 			ibcclienttypes.Height{},

@@ -13,7 +13,7 @@ import (
 	"github.com/celinium-netwok/celinium/x/liquidstake/types"
 )
 
-func (k Keeper) StartReInvest(ctx sdk.Context) {
+func (k Keeper) Reinvest(ctx sdk.Context) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, types.SouceChainKeyPrefix)
 
