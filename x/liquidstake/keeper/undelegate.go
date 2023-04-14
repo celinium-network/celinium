@@ -278,16 +278,15 @@ func (k Keeper) undelegateFromSourceChain(ctx sdk.Context, sourceChain *types.So
 	sourceChainUnbondAddr, _ := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ConnectionID, portID)
 	sourceChainUnbondAddress := sdk.MustAccAddressFromBech32(sourceChainUnbondAddr)
 
-	for _, v := range sourceChain.Validators {
-		valAddress, err := sdk.ValAddressFromBech32(v.Address)
+	for _, valFund := range validatorAllocateFunds {
+		valAddress, err := sdk.ValAddressFromBech32(valFund.Address)
 		if err != nil {
 			return err
 		}
-
 		undelegateMsgs = append(undelegateMsgs, stakingtypes.NewMsgUndelegate(
 			sourceChainUnbondAddress,
 			valAddress,
-			sdk.NewCoin(sourceChain.NativeDenom, validatorAllocateFunds[v.Address]),
+			sdk.NewCoin(sourceChain.NativeDenom, valFund.Amount),
 		))
 	}
 
@@ -333,11 +332,12 @@ func (k Keeper) withdrawUnbondFromSourceChain(ctx sdk.Context, sourceChain *type
 	sourceChainUnbondAddr, _ := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ConnectionID, portID)
 
 	timeoutTimestamp := ctx.BlockTime().Add(30 * time.Minute).UnixNano()
-	for _, v := range sourceChain.Validators {
+
+	for _, valFund := range validatorAllocateFunds {
 		witdrawMsgs = append(witdrawMsgs, transfertypes.NewMsgTransfer(
 			transfertypes.PortID, // TODO the source chain maybe not use the default ibc transfer port. config it.
 			sourceChain.TransferChannelID,
-			sdk.NewCoin(sourceChain.NativeDenom, validatorAllocateFunds[v.Address]),
+			sdk.NewCoin(sourceChain.NativeDenom, valFund.Amount),
 			sourceChainUnbondAddr,
 			sourceChain.DelegateAddress,
 			ibcclienttypes.Height{},

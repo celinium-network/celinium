@@ -76,20 +76,35 @@ func (s *SourceChain) GenerateAccounts(ctx sdk.Context) (accounts []*authtypes.M
 	return accounts
 }
 
-func (s SourceChain) AllocateFundsForValidator(amount math.Int) map[string]math.Int {
-	validatorFunds := make(map[string]math.Int)
+type ValidatorFund struct {
+	Address string
+	Amount  math.Int
+}
 
-	// TODO weight shoudle math.Int, maybe overflow there?
-	var totalWeight uint64
+func (s SourceChain) AllocateFundsForValidator(amount math.Int) []ValidatorFund {
+	validatorFunds := make([]ValidatorFund, 0)
+
+	totalWeight := math.ZeroInt()
 	for _, v := range s.Validators {
-		totalWeight += v.Weight
+		totalWeight = totalWeight.Add(math.NewIntFromUint64(v.Weight))
 	}
 
-	// TODO the last validator get all remind funds
-	for _, v := range s.Validators {
-		allocateFundAmount := amount.Mul(math.NewIntFromUint64(v.Weight)).Quo(math.NewIntFromUint64(totalWeight))
-		validatorFunds[v.Address] = allocateFundAmount
+	valiLen := len(s.Validators)
+	reminding := amount
+	for i := 0; i < valiLen-2; i++ {
+		allocateAmt := amount.Mul(math.NewIntFromUint64(s.Validators[i].Weight)).Quo(totalWeight)
+		validatorFunds = append(validatorFunds, ValidatorFund{
+			Address: s.Validators[i].Address,
+			Amount:  amount,
+		})
+		reminding = reminding.Sub(allocateAmt)
 	}
+
+	// the last validator get all reminding amount
+	validatorFunds = append(validatorFunds, ValidatorFund{
+		Address: s.Validators[valiLen-1].Address,
+		Amount:  amount,
+	})
 
 	return validatorFunds
 }

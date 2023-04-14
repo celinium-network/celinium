@@ -160,9 +160,9 @@ func (k Keeper) AfterDelegateTransfer(ctx sdk.Context, record *types.DelegationR
 	allocatedFunds := sourceChain.AllocateFundsForValidator(record.DelegationCoin.Amount)
 
 	stakingMsgs := make([]proto.Message, 0)
-	// TODO, sort map
-	for valAddr, amount := range allocatedFunds {
-		valAddress, err := sdk.ValAddressFromBech32(valAddr)
+
+	for _, valFund := range allocatedFunds {
+		valAddress, err := sdk.ValAddressFromBech32(valFund.Address)
 		if err != nil {
 			return err
 		}
@@ -170,7 +170,7 @@ func (k Keeper) AfterDelegateTransfer(ctx sdk.Context, record *types.DelegationR
 		stakingMsgs = append(stakingMsgs, stakingtypes.NewMsgDelegate(
 			sourceChainDelegateAddress,
 			valAddress,
-			sdk.NewCoin(sourceChain.NativeDenom, amount),
+			sdk.NewCoin(sourceChain.NativeDenom, valFund.Amount),
 		))
 	}
 
