@@ -315,23 +315,18 @@ func (k Keeper) undelegateFromSourceChain(ctx sdk.Context, sourceChain *types.So
 }
 
 func (k Keeper) withdrawUnbondFromSourceChain(ctx sdk.Context, sourceChain *types.SourceChain, amount math.Int, epoch uint64) error {
-	validatorAllocateFunds := sourceChain.AllocateFundsForValidator(amount)
-
-	// TODO, Ensuring the order of Validators seems to be easy, as long as the order is determined when modifying them.
-	sort.Slice(sourceChain.Validators, func(i, j int) bool {
-		return strings.Compare(sourceChain.Validators[i].Address, sourceChain.Validators[j].Address) >= 0
-	})
-
-	witdrawMsgs := make([]proto.Message, 0)
-
 	portID, err := icatypes.NewControllerPortID(sourceChain.DelegateAddress)
 	if err != nil {
 		return err
 	}
+	sourceChainUnbondAddr, found := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ConnectionID, portID)
+	if !found {
+		return sdkerrors.Wrapf(types.ErrICANotFound, "address %s", sourceChain.DelegateAddress)
+	}
 
-	sourceChainUnbondAddr, _ := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ConnectionID, portID)
-
+	witdrawMsgs := make([]proto.Message, 0)
 	timeoutTimestamp := ctx.BlockTime().Add(30 * time.Minute).UnixNano()
+	validatorAllocateFunds := sourceChain.AllocateFundsForValidator(amount)
 
 	for _, valFund := range validatorAllocateFunds {
 		witdrawMsgs = append(witdrawMsgs, transfertypes.NewMsgTransfer(
