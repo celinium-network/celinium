@@ -41,14 +41,14 @@ func (k *Keeper) Delegate(ctx sdk.Context, chainID string, amount math.Int, call
 	}
 
 	ecsrowAccAddress := sdk.MustAccAddressFromBech32(sourceChain.EcsrowAddress)
-	// transfer ibc token to sourcechain's delegation account
+	// transfer ibc token to sourcechain's ecsrow account
 	if err := k.sendCoinsFromAccountToAccount(ctx, caller,
 		ecsrowAccAddress, sdk.Coins{sdk.NewCoin(sourceChain.IbcDenom, amount)}); err != nil {
 		return err
 	}
 
-	// TODO TruncateInt calculations can be huge precision error
-	derivativeAmount := amount.Mul(sourceChain.Redemptionratio.TruncateInt())
+	// TODO replace TruncateInt with Ceil ?
+	derivativeAmount := sdk.NewDecFromInt(amount).Quo(sourceChain.Redemptionratio).TruncateInt()
 	if err := k.mintCoins(ctx, caller, sdk.Coins{sdk.NewCoin(sourceChain.DerivativeDenom, derivativeAmount)}); err != nil {
 		return err
 	}
@@ -60,7 +60,7 @@ func (k *Keeper) Delegate(ctx sdk.Context, chainID string, amount math.Int, call
 	return nil
 }
 
-// BeginLiquidStake start liquid stake on source chain with provide delegation records.
+// ProcessDelegationRecord start liquid stake on source chain with provide delegation records.
 // This process will continue to advance the status of the DelegationRecord according to the IBC ack.
 // So here just start and restart the process.
 func (k *Keeper) ProcessDelegationRecord(ctx sdk.Context, curEpochNumber uint64, records []types.DelegationRecord) {

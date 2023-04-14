@@ -14,6 +14,7 @@ import (
 	ibchost "github.com/cosmos/ibc-go/v6/modules/core/24-host"
 	ibctesting "github.com/cosmos/ibc-go/v6/testing"
 
+	"github.com/celinium-netwok/celinium/app"
 	"github.com/celinium-netwok/celinium/app/params"
 	epochtypes "github.com/celinium-netwok/celinium/x/epochs/types"
 	"github.com/celinium-netwok/celinium/x/liquidstake/types"
@@ -103,9 +104,18 @@ func (suite *KeeperTestSuite) IBCTransfer(
 func (suite *KeeperTestSuite) setSourceChainAndEpoch(sourceChain *types.SourceChain, epochInfo *epochtypes.EpochInfo) {
 	controlChainApp := getCeliniumApp(suite.controlChain)
 
-	channelSequence := controlChainApp.GetIBCKeeper().ChannelKeeper.GetNextChannelSequence(suite.controlChain.GetContext())
+	suite.setSourceChain(controlChainApp, sourceChain)
 
-	err := controlChainApp.LiquidStakeKeeper.AddSouceChain(suite.controlChain.GetContext(), sourceChain)
+	// start epoch and update offchain light.
+	controlChainApp.EpochsKeeper.SetEpochInfo(suite.controlChain.GetContext(), *epochInfo)
+	suite.controlChain.Coordinator.IncrementTimeBy(epochInfo.Duration)
+	suite.transferPath.EndpointA.UpdateClient()
+}
+
+func (suite *KeeperTestSuite) setSourceChain(chainApp *app.App, sourceChain *types.SourceChain) {
+	channelSequence := chainApp.GetIBCKeeper().ChannelKeeper.GetNextChannelSequence(suite.controlChain.GetContext())
+
+	err := chainApp.LiquidStakeKeeper.AddSouceChain(suite.controlChain.GetContext(), sourceChain)
 	suite.NoError(err)
 	suite.controlChain.NextBlock()
 
@@ -114,11 +124,6 @@ func (suite *KeeperTestSuite) setSourceChainAndEpoch(sourceChain *types.SourceCh
 		suite.relayICACreatedPacket(channelSequence, ica)
 		channelSequence++
 	}
-	controlChainApp.EpochsKeeper.SetEpochInfo(suite.controlChain.GetContext(), *epochInfo)
-
-	// start epoch and update offchain light.
-	suite.controlChain.Coordinator.IncrementTimeBy(epochInfo.Duration)
-	suite.transferPath.EndpointA.UpdateClient()
 }
 
 func mintCoin(
