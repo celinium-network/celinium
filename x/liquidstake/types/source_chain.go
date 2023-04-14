@@ -95,7 +95,7 @@ func (s SourceChain) AllocateFundsForValidator(amount math.Int) []ValidatorFund 
 		allocateAmt := amount.Mul(math.NewIntFromUint64(s.Validators[i].Weight)).Quo(totalWeight)
 		validatorFunds = append(validatorFunds, ValidatorFund{
 			Address: s.Validators[i].Address,
-			Amount:  amount,
+			Amount:  allocateAmt,
 		})
 		reminding = reminding.Sub(allocateAmt)
 	}
@@ -103,7 +103,7 @@ func (s SourceChain) AllocateFundsForValidator(amount math.Int) []ValidatorFund 
 	// the last validator get all reminding amount
 	validatorFunds = append(validatorFunds, ValidatorFund{
 		Address: s.Validators[valiLen-1].Address,
-		Amount:  amount,
+		Amount:  reminding,
 	})
 
 	return validatorFunds
