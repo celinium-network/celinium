@@ -174,19 +174,7 @@ func (k Keeper) AfterDelegateTransfer(ctx sdk.Context, record *types.DelegationR
 		))
 	}
 
-	data, err := icatypes.SerializeCosmosTx(k.cdc, stakingMsgs)
-	if err != nil {
-		return err
-	}
-
-	packetData := icatypes.InterchainAccountPacketData{
-		Type: icatypes.EXECUTE_TX,
-		Data: data,
-	}
-
-	// TODO timeout ?
-	timeoutTimestamp := ctx.BlockTime().Add(30 * time.Minute).UnixNano()
-	sequence, err := k.icaCtlKeeper.SendTx(ctx, nil, sourceChain.ConnectionID, portID, packetData, uint64(timeoutTimestamp)) //nolint:staticcheck //
+	sequence, portID, err := k.sendIBCMsg(ctx, stakingMsgs, sourceChain.ConnectionID, sourceChain.DelegateAddress)
 	if err != nil {
 		return err
 	}

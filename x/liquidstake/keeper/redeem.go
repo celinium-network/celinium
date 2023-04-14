@@ -48,7 +48,7 @@ func (k Keeper) GetProcessingFundsFromRecords(sourceChain *types.SourceChain, re
 			continue
 		}
 
-		if !types.IsDelegationRecordProcessing(int(record.Status)) {
+		if !types.IsDelegationRecordProcessing(record.Status) {
 			continue
 		}
 		if record.DelegationCoin.Amount.IsZero() {

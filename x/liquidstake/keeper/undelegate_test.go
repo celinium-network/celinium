@@ -74,7 +74,7 @@ func (suite *KeeperTestSuite) TestUserUndelegate() {
 		if unbonding.ChainID != sourceChainParams.ChainID {
 			continue
 		}
-		suite.Equal(unbonding.Status, uint32(types.UnbondingWaitting))
+		suite.Equal(unbonding.Status, types.UnbondingWaitting)
 
 		// TODO check the unbonding.Amount will be failed
 	}
@@ -136,7 +136,7 @@ func (suite *KeeperTestSuite) TestWithdrawCompleteUnbond() {
 		if unbonding.ChainID != sourceChainParams.ChainID {
 			continue
 		}
-		suite.Equal(unbonding.Status, uint32(types.UnbondingWaitting))
+		suite.Equal(unbonding.Status, types.UnbondingWaitting)
 		unbondCompleteTime = time.Unix(0, int64(unbonding.UnbondTIme))
 	}
 
@@ -182,7 +182,7 @@ func (suite *KeeperTestSuite) TestWithdrawCompleteUnbond() {
 			continue
 		}
 		// TODO should be UndelegationCliamble
-		suite.Equal(unbonding.Status, uint32(types.UndelegationComplete))
+		suite.Equal(unbonding.Status, types.UnbondingDone)
 	}
 	amt := controlChainApp.BankKeeper.GetBalance(
 		suite.controlChain.GetContext(),
