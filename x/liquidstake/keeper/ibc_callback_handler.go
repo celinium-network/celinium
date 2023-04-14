@@ -96,13 +96,15 @@ func withdrawUnbondCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.I
 		return nil
 	}
 
-	for _, unbonding := range epochUnbondings.Unbondings {
-		if unbonding.ChainID != unbondCallArgs.ChainID {
+	unbondings := epochUnbondings.Unbondings
+	unbondingLen := len(unbondings)
+	for i := 0; i < unbondingLen; i++ {
+		if unbondings[i].ChainID != unbondCallArgs.ChainID {
 			continue
 		}
-		unbonding.Status = types.UnbondingDone
+		unbondings[i].Status = types.UnbondingDone
 
-		for _, userUnDelegationID := range unbonding.UserUnbondRecordIds {
+		for _, userUnDelegationID := range unbondings[i].UserUnbondRecordIds {
 			userUndelegation, found := k.GetUndelegationRecordByID(ctx, userUnDelegationID)
 			if !found {
 				continue

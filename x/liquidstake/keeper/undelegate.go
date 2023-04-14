@@ -178,10 +178,11 @@ func (k Keeper) ProcessUnbondings(ctx sdk.Context, epochNumber uint64) {
 		if epochUnbondings.Epoch >= epochNumber {
 			continue
 		}
-		err := k.ProcessEpochUnbondings(ctx, epochUnbondings.Epoch, epochUnbondings.Unbondings)
-		if err != nil {
-			k.SetEpochUnboundings(ctx, &epochUnbondings)
+		if err := k.ProcessEpochUnbondings(ctx, epochUnbondings.Epoch, epochUnbondings.Unbondings); err != nil {
+			continue
 		}
+		// save the changed epochUnbondings
+		k.SetEpochUnboundings(ctx, &epochUnbondings)
 	}
 }
 

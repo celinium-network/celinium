@@ -20,7 +20,3 @@ cd ..
 # Note: Proto files are suffixed with the current binary version.
 cp -r celinium/* ./
 rm -rf celinium
-
-# TODO: Uncomment once ORM/Pulsar support is needed.
-#
-# Ref: https://github.com/osmosis-labs/osmosis/pull/1589

@@ -26,7 +26,10 @@ message DelegationRecord{
     // Above is a successful state, but there are also states that represent failure.
     //   1）TransferFailed: An error occurred during the process of transferring funds back to the source chain.
     //   2) DelegateFailed: An error occurred during the process of delegating in source chain. 
-    uint32  status = 3;
+    uint32  status = 3[
+        (gogoproto.customtype) = "DelegationRecordStatus",
+        (gogoproto.nullable) = false
+    ];
 
     // The number of created epoch
     uint64 epochNumber = 4;
@@ -58,7 +61,10 @@ message UndelegationRecord{
     // 1) Pending: The undelegation request has been submitted but not yet processed or completed.
     // 2) Claimable: The undelegation has been processed and the funds are available to be claimed by the delegator.
     // 3) Complete: The funds have been successfully claimed by the delegator.
-    uint32 cliamStatus = 7;
+    uint32 cliamStatus = 7[
+        (gogoproto.customtype) = "UndelegationRecordStatus",
+        (gogoproto.nullable) = false
+    ];
 }
 
 // Represents a record of an unbonding transaction, which captures the derivative token that was burned 
@@ -82,7 +88,10 @@ message Unbonding {
     // 3) Unbonding: successfully initiated the Unbonding process
     // 4) Transfering: Unbonding period has elapsed, redeeming funds from the source chain
     // 5) Done: funds have been successfully redeemed
-    uint32 status = 5;
+    uint32 status = 5[
+        (gogoproto.customtype) = "UnbondingStatus",
+        (gogoproto.nullable) = false
+    ];
 
     // The IDs of the UserUnbondRecord entries that correspond to this unbonding entry. 
     repeated string userUnbondRecordIds = 6;
