@@ -178,6 +178,7 @@ func transferRewardCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.I
 	}
 
 	record.DelegationCoin = record.DelegationCoin.AddAmount(callbackArgs.Amount)
+	record.TransferredAmount = record.TransferredAmount.Add(callbackArgs.Amount)
 	k.SetDelegationRecord(ctx, recordID, record)
 	return nil
 }

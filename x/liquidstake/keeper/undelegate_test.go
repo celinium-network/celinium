@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"time"
 
+	"cosmossdk.io/math"
 	"github.com/celinium-netwok/celinium/app"
 	epochtypes "github.com/celinium-netwok/celinium/x/epochs/types"
 	"github.com/celinium-netwok/celinium/x/liquidstake/types"
@@ -39,6 +40,8 @@ func (suite *KeeperTestSuite) TestUndelegate() {
 
 	testCoin := suite.testCoin
 	ctlChainApp := getCeliniumApp(suite.controlChain)
+	srcChainApp := getCeliniumApp(suite.sourceChain)
+
 	ctlChainUserAccAddr := suite.controlChain.SenderAccount.GetAddress()
 	ctlChainUserAddr := ctlChainUserAccAddr.String()
 
@@ -80,8 +83,32 @@ func (suite *KeeperTestSuite) TestUndelegate() {
 		}
 		suite.Equal(unbonding.Status, types.UnbondingWaitting)
 
-		// TODO check the unbonding.Amount will be failed
+		suite.True(unbonding.BurnedDerivativeAmount.Equal(testCoin.Amount))
+		suite.True(unbonding.RedeemNativeToken.Amount.Equal(testCoin.Amount))
 	}
+
+	// check unbonding in source chain
+	delegatorOnSourceChain, _ := ctlChainApp.LiquidStakeKeeper.GetSourceChainAddr(ctx, srcChainParams.ConnectionID, srcChainParams.DelegateAddress)
+
+	ctx = suite.sourceChain.GetContext()
+	UnbondingOnSrcChain := srcChainApp.StakingKeeper.GetAllUnbondingDelegations(ctx, delegatorOnSourceChain)
+	allocatedUnbonding := srcChainParams.AllocateFundsForValidator(testCoin.Amount)
+	for _, unbonding := range UnbondingOnSrcChain {
+		for _, alloc := range allocatedUnbonding {
+			if alloc.Address != unbonding.ValidatorAddress {
+				continue
+			}
+			totalUnbondingBal := math.ZeroInt()
+			for _, e := range unbonding.Entries {
+				totalUnbondingBal = totalUnbondingBal.Add(e.InitialBalance)
+			}
+			suite.True(alloc.Amount.Equal(totalUnbondingBal))
+		}
+	}
+
+	ctx = suite.controlChain.GetContext()
+	sourceChainAfter, _ := ctlChainApp.LiquidStakeKeeper.GetSourceChain(ctx, srcChainParams.ChainID)
+	suite.True(sourceChainAfter.StakedAmount.Equal(sdk.ZeroInt()))
 }
 
 func (suite *KeeperTestSuite) TestWithdrawCompleteUnbond() {
