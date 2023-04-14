@@ -109,22 +109,23 @@ func (suite *KeeperTestSuite) TestDelegateWithDiffRedeemRatio() {
 }
 
 func (suite *KeeperTestSuite) TestProcessDelegationAfterAdvanceEpoch() {
-	sourceChainParams := suite.generateSourceChainParams()
+	srcChainParams := suite.generateSourceChainParams()
 	epochInfo := suite.delegationEpoch()
-	suite.setSourceChainAndEpoch(sourceChainParams, epochInfo)
+	suite.setSourceChainAndEpoch(srcChainParams, epochInfo)
 
 	// delegation at epoch 2
 	controlChainUserAddr := suite.controlChain.SenderAccount.GetAddress()
-	testCoin := suite.testCoin
 	controlChainApp := getCeliniumApp(suite.controlChain)
+	testCoin := suite.testCoin
 
-	err := controlChainApp.LiquidStakeKeeper.Delegate(
-		suite.controlChain.GetContext(), sourceChainParams.ChainID, testCoin.Amount, controlChainUserAddr)
+	ctx := suite.controlChain.GetContext()
+	err := controlChainApp.LiquidStakeKeeper.Delegate(ctx, srcChainParams.ChainID, testCoin.Amount, controlChainUserAddr)
 	suite.NoError(err)
 
 	suite.advanceEpochAndRelayIBC(epochInfo)
 
-	sc, found := controlChainApp.LiquidStakeKeeper.GetSourceChain(suite.controlChain.GetContext(), sourceChainParams.ChainID)
+	ctx = suite.controlChain.GetContext()
+	sc, found := controlChainApp.LiquidStakeKeeper.GetSourceChain(ctx, srcChainParams.ChainID)
 	suite.True(found)
 	suite.Equal(sc.StakedAmount, testCoin.Amount)
 }
