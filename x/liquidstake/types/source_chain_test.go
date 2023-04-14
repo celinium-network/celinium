@@ -56,7 +56,7 @@ func TestSourceChainAllocateFunds(t *testing.T) {
 		},
 	}
 
-	totalFunds := sdk.NewIntFromUint64(1010101001001)
+	totalFunds := sdk.NewIntFromUint64(rand.Uint64()%100000 + 1010101001001) //nolint:gosec
 
 	checkAlloc := func(srcChain *types.SourceChain, funds math.Int, allocFunds []types.ValidatorFund) {
 		if len(allocFunds) != len(srcChain.Validators) {
