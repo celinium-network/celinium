@@ -45,12 +45,10 @@ func (k Keeper) Undelegate(ctx sdk.Context, chainID string, amount math.Int, del
 		return sdkerrors.Wrapf(types.ErrInternalError, "undelegate too mach, max %s, get %s", sourceChain.StakedAmount, receiveAmount)
 	}
 
-	delegatorDerivativeTokenAmount := k.bankKeeper.GetBalance(ctx, delegator, sourceChain.DerivativeDenom)
-	if delegatorDerivativeTokenAmount.Amount.LT(amount) {
-		return sdkerrors.Wrapf(types.ErrInsufficientFunds, "burn %s, expectd: %s, own %s",
-			sourceChain.DerivativeDenom,
-			amount,
-			delegatorDerivativeTokenAmount.Amount)
+	// send coin from user to module account.
+	if err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, delegator, types.ModuleName,
+		sdk.Coins{sdk.NewCoin(sourceChain.DerivativeDenom, amount)}); err != nil {
+		return err
 	}
 
 	undelegationRecord := types.UndelegationRecord{
@@ -58,7 +56,6 @@ func (k Keeper) Undelegate(ctx sdk.Context, chainID string, amount math.Int, del
 		ChainID:     chainID,
 		Epoch:       currentEpoch,
 		Delegator:   delegatorAddr,
-		Receiver:    "", // TODO unused, remove,
 		RedeemToken: sdk.NewCoin(sourceChain.NativeDenom, receiveAmount),
 		CliamStatus: types.UndelegationPending,
 	}

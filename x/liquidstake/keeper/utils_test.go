@@ -327,6 +327,17 @@ func (suite *KeeperTestSuite) relayIBCPacketFromCtlToSrc(events []abci.Event, se
 	}
 }
 
+func (suite *KeeperTestSuite) advanceToNextEpoch(epochInfo *epochtypes.EpochInfo) time.Time {
+	coordTime := suite.controlChain.Coordinator.CurrentTime
+	duration := epochInfo.Duration - (coordTime.Sub(epochInfo.StartTime.Add(epochInfo.Duration)))
+	coordTime = coordTime.Add(duration + time.Minute*5)
+
+	suite.controlChain.Coordinator.CurrentTime = coordTime
+	suite.sourceChain.Coordinator.CurrentTime = coordTime
+
+	return coordTime
+}
+
 // next block with res
 func nextBlockWithRes(chain *ibctesting.TestChain, nextBlockTime time.Time) (abci.ResponseEndBlock, abci.ResponseBeginBlock) {
 	endBlockres := chain.App.EndBlock(abci.RequestEndBlock{Height: chain.CurrentHeader.Height})

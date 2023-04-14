@@ -32,18 +32,18 @@ func (suite *KeeperTestSuite) TestCreateEpochUnbonding() {
 	suite.Equal(len(unbonding.Unbondings), 0)
 }
 
-func (suite *KeeperTestSuite) TestUserUndelegate() {
-	sourceChainParams := suite.generateSourceChainParams()
+func (suite *KeeperTestSuite) TestUndelegate() {
+	srcChainParams := suite.generateSourceChainParams()
 	delegationEpochInfo := suite.delegationEpoch()
-	suite.setSourceChainAndEpoch(sourceChainParams, delegationEpochInfo)
+	suite.setSourceChainAndEpoch(srcChainParams, delegationEpochInfo)
 
 	testCoin := suite.testCoin
-	controlChainApp := getCeliniumApp(suite.controlChain)
+	ctlChainApp := getCeliniumApp(suite.controlChain)
 	ctlChainUserAccAddr := suite.controlChain.SenderAccount.GetAddress()
 	ctlChainUserAddr := ctlChainUserAccAddr.String()
 
 	ctx := suite.controlChain.GetContext()
-	err := controlChainApp.LiquidStakeKeeper.Delegate(ctx, sourceChainParams.ChainID, testCoin.Amount, ctlChainUserAccAddr)
+	err := ctlChainApp.LiquidStakeKeeper.Delegate(ctx, srcChainParams.ChainID, testCoin.Amount, ctlChainUserAccAddr)
 	suite.NoError(err)
 
 	suite.advanceEpochAndRelayIBC(delegationEpochInfo)
@@ -51,12 +51,16 @@ func (suite *KeeperTestSuite) TestUserUndelegate() {
 	// user has already delegate, then undelegate
 	unbondingEpochInfo := suite.unbondEpoch()
 	ctx = suite.controlChain.GetContext()
-	controlChainApp.EpochsKeeper.SetEpochInfo(ctx, *unbondingEpochInfo)
+	ctlChainApp.EpochsKeeper.SetEpochInfo(ctx, *unbondingEpochInfo)
 	suite.controlChain.Coordinator.IncrementTimeBy(unbondingEpochInfo.Duration)
 	suite.transferPath.EndpointA.UpdateClient()
 
 	ctx = suite.controlChain.GetContext()
-	controlChainApp.LiquidStakeKeeper.Undelegate(ctx, sourceChainParams.ChainID, testCoin.Amount, ctlChainUserAccAddr)
+	derivativeBalBefore := ctlChainApp.BankKeeper.GetBalance(ctx, ctlChainUserAccAddr, srcChainParams.DerivativeDenom)
+	ctlChainApp.LiquidStakeKeeper.Undelegate(ctx, srcChainParams.ChainID, testCoin.Amount, ctlChainUserAccAddr)
+
+	derivativeBalAfter := ctlChainApp.BankKeeper.GetBalance(ctx, ctlChainUserAccAddr, srcChainParams.DerivativeDenom)
+	suite.True(derivativeBalBefore.Sub(derivativeBalAfter).Amount.Equal(testCoin.Amount))
 
 	// process at next unbond epoch begin
 	nextBlockTime := suite.advanceToNextEpoch(unbondingEpochInfo)
@@ -68,27 +72,16 @@ func (suite *KeeperTestSuite) TestUserUndelegate() {
 	suite.relayIBCPacketFromCtlToSrc(nextBlockBeginRes.Events, ctlChainUserAddr)
 
 	ctx = suite.controlChain.GetContext()
-	epochUnbonding, found := controlChainApp.LiquidStakeKeeper.GetEpochUnboundings(ctx, 2)
+	epochUnbonding, found := ctlChainApp.LiquidStakeKeeper.GetEpochUnboundings(ctx, 2)
 	suite.True(found)
 	for _, unbonding := range epochUnbonding.Unbondings {
-		if unbonding.ChainID != sourceChainParams.ChainID {
+		if unbonding.ChainID != srcChainParams.ChainID {
 			continue
 		}
 		suite.Equal(unbonding.Status, types.UnbondingWaitting)
 
 		// TODO check the unbonding.Amount will be failed
 	}
-}
-
-func (suite *KeeperTestSuite) advanceToNextEpoch(epochInfo *epochtypes.EpochInfo) time.Time {
-	coordTime := suite.controlChain.Coordinator.CurrentTime
-	duration := epochInfo.Duration - (coordTime.Sub(epochInfo.StartTime.Add(epochInfo.Duration)))
-	coordTime = coordTime.Add(duration + time.Minute*5)
-
-	suite.controlChain.Coordinator.CurrentTime = coordTime
-	suite.sourceChain.Coordinator.CurrentTime = coordTime
-
-	return coordTime
 }
 
 func (suite *KeeperTestSuite) TestWithdrawCompleteUnbond() {

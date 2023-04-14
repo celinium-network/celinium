@@ -4,6 +4,7 @@ import (
 	"strings"
 	"time"
 
+	sdkerrors "cosmossdk.io/errors"
 	"cosmossdk.io/math"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -78,12 +79,23 @@ func unbondCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCallba
 		}
 		epochUnbondings.Unbondings[i].UnbondTIme = uint64(completeTime.UnixNano())
 		epochUnbondings.Unbondings[i].Status = types.UnbondingWaitting
+
+		// update sourcechain
+		sourceChain, found := k.GetSourceChain(ctx, unbondCallArgs.ChainID)
+		if !found {
+			return sdkerrors.Wrapf(types.ErrUnknownSourceChain, "unknown source chain, chainID: %s", unbondCallArgs.ChainID)
+		}
+		sourceChain.StakedAmount = sourceChain.StakedAmount.Sub(epochUnbondings.Unbondings[i].RedeemNativeToken.Amount)
+
+		burnedCoin := sdk.Coins{sdk.NewCoin(sourceChain.DerivativeDenom, epochUnbondings.Unbondings[i].BurnedDerivativeAmount)}
+		if err := k.bankKeeper.BurnCoins(ctx, types.ModuleName, burnedCoin); err != nil {
+			return err
+		}
+		k.SetSourceChain(ctx, sourceChain)
 	}
 
 	// save
 	k.SetEpochUnboundings(ctx, epochUnbondings)
-
-	// TODO remove SourceChain.StakedAmount
 
 	return nil
 }

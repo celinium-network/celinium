@@ -91,7 +91,7 @@ func (s SourceChain) AllocateFundsForValidator(amount math.Int) []ValidatorFund 
 
 	valiLen := len(s.Validators)
 	reminding := amount
-	for i := 0; i < valiLen-2; i++ {
+	for i := 0; i < valiLen-1; i++ {
 		allocateAmt := amount.Mul(math.NewIntFromUint64(s.Validators[i].Weight)).Quo(totalWeight)
 		validatorFunds = append(validatorFunds, ValidatorFund{
 			Address: s.Validators[i].Address,

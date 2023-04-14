@@ -99,9 +99,14 @@ func (k Keeper) handlePendingDelegationRecord(ctx sdk.Context, record types.Dele
 		return err
 	}
 
-	// TODO The errors must be hanndler
-	portID, _ := icatypes.NewControllerPortID(sourceChain.DelegateAddress)
-	hostAddr, _ := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ConnectionID, portID)
+	portID, err := icatypes.NewControllerPortID(sourceChain.DelegateAddress)
+	if err != nil {
+		return err
+	}
+	hostAddr, found := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ConnectionID, portID)
+	if !found {
+		return sdkerrors.Wrapf(types.ErrICANotFound, "address %s", sourceChain.DelegateAddress)
+	}
 
 	// TODO timeout ?
 	timeoutTimestamp := ctx.BlockTime().Add(time.Minute).UnixNano()
