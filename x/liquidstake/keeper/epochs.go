@@ -30,7 +30,7 @@ func (h Hooks) BeforeEpochStart(ctx sdk.Context, epochIdentifier string, epochNu
 
 		h.k.ProcessUnbondings(ctx, uint64(epochNumber))
 	case types.ReinvestEpochIdentifier:
-		h.k.StartReInvest(ctx)
+		h.k.Reinvest(ctx)
 	default:
 	}
 }

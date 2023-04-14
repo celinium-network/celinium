@@ -53,7 +53,7 @@ func (suite *KeeperTestSuite) TestReinvest() {
 
 	// begin reinvest
 	ctx = suite.controlChain.GetContext()
-	controlChainApp.LiquidStakeKeeper.StartReInvest(ctx)
+	controlChainApp.LiquidStakeKeeper.Reinvest(ctx)
 	suite.controlChain.NextBlock()
 	suite.transferPath.EndpointA.UpdateClient()
 	suite.relayIBCPacketFromCtlToSrc(ctx.EventManager().ABCIEvents(), controlChainUserAddr.String())
