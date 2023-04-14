@@ -49,7 +49,7 @@ func (k Keeper) CreateEpochDelegationRecord(ctx sdk.Context, epochNumber uint64)
 			continue
 		}
 
-		if _, found := k.GetChianDelegationRecordID(ctx, sourcechain.ChainID, uint64(epochNumber)); found {
+		if _, found := k.GetChianDelegationRecordID(ctx, sourcechain.ChainID, epochNumber); found {
 			continue
 		}
 
