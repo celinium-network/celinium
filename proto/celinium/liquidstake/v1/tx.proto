@@ -131,10 +131,8 @@ message MsgUndelegate{
         (gogoproto.customtype) = "Int",
         (gogoproto.nullable)   = false];
 
-    // The receiver address for the redeemed tokens.
-    string receiver = 3;
     // The delegator address.
-    string delegator = 4;
+    string delegator = 3;
 }
 
 // MsgUndelegateResponce define the MsgUndelegate response type.
@@ -173,9 +171,6 @@ message MsgClaim{
 
     // The epoch number to claim.
     uint64 epoch = 3;
-
-    // The caller of the transaction.
-    string caller = 4;
 }
 
 // MsgClaimResponse defines the response type for the MsgClaim message.
