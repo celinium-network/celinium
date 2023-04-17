@@ -64,33 +64,33 @@ func (k Keeper) GetProcessingFundsFromRecords(sourceChain *types.SourceChain, re
 	return amount
 }
 
-func (k Keeper) RedeemUndelegation(ctx sdk.Context, deletator sdk.AccAddress, epoch uint64, chainID string) error {
+func (k Keeper) ClaimUndelegation(ctx sdk.Context, deletator sdk.AccAddress, epoch uint64, chainID string) (math.Int, error) {
 	undelegationRecord, found := k.GetUndelegationRecord(ctx, chainID, epoch, deletator.String())
 	if !found {
-		return sdkerrors.Wrapf(types.ErrUserUndelegationNotExist, "chainID %s, epoch %d, address %s", chainID, epoch, deletator.String())
+		return math.ZeroInt(), sdkerrors.Wrapf(types.ErrUserUndelegationNotExist, "chainID %s, epoch %d, address %s", chainID, epoch, deletator.String())
 	}
 
 	if undelegationRecord.CliamStatus != types.UndelegationClaimable {
-		return sdkerrors.Wrapf(types.ErrUserUndelegationWatting, "chainID %s, epoch %d, address %s", chainID, epoch, deletator.String())
+		return math.ZeroInt(), sdkerrors.Wrapf(types.ErrUserUndelegationWatting, "chainID %s, epoch %d, address %s", chainID, epoch, deletator.String())
 	}
 
 	sourceChain, found := k.GetSourceChain(ctx, chainID)
 	if !found {
-		return sdkerrors.Wrapf(types.ErrUnknownSourceChain, "chainID %s", chainID)
+		return math.ZeroInt(), sdkerrors.Wrapf(types.ErrUnknownSourceChain, "chainID %s", chainID)
 	}
 
 	chainDelegatorAccAddress, err := sdk.AccAddressFromBech32(sourceChain.DelegateAddress)
 	if err != nil {
-		return err
+		return math.ZeroInt(), err
 	}
 
 	err = k.sendCoinsFromAccountToAccount(ctx, chainDelegatorAccAddress, deletator, sdk.NewCoins(undelegationRecord.RedeemToken))
 	if err != nil {
-		return err
+		return math.ZeroInt(), err
 	}
 
 	undelegationRecord.CliamStatus = types.UndelegationComplete
 
 	k.SetUndelegationRecord(ctx, undelegationRecord)
-	return nil
+	return math.ZeroInt(), nil
 }

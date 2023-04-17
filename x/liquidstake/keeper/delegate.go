@@ -18,46 +18,46 @@ import (
 
 // Delegate performs a liquid stake delegation. delegator transfer the ibcToken to module account then
 // get derivative token by the rate.
-func (k *Keeper) Delegate(ctx sdk.Context, chainID string, amount math.Int, caller sdk.AccAddress) error {
+func (k *Keeper) Delegate(ctx sdk.Context, chainID string, amount math.Int, caller sdk.AccAddress) (*types.DelegationRecord, error) {
 	sourceChain, found := k.GetSourceChain(ctx, chainID)
 	if !found {
-		return sdkerrors.Wrapf(types.ErrUnknownSourceChain, "unknown source chain, chainID: %s", chainID)
+		return nil, sdkerrors.Wrapf(types.ErrUnknownSourceChain, "unknown source chain, chainID: %s", chainID)
 	}
 
 	epochInfo, found := k.epochKeeper.GetEpochInfo(ctx, types.DelegationEpochIdentifier)
 	if !found {
-		return sdkerrors.Wrapf(types.ErrUnknownEpoch, "unknown epoch, epoch identifier: %s", types.DelegationEpochIdentifier)
+		return nil, sdkerrors.Wrapf(types.ErrUnknownEpoch, "unknown epoch, epoch identifier: %s", types.DelegationEpochIdentifier)
 	}
 
 	currentEpoch := uint64(epochInfo.CurrentEpoch)
 	recordID, found := k.GetChianDelegationRecordID(ctx, chainID, currentEpoch)
 	if !found {
-		return sdkerrors.Wrapf(types.ErrNoExistDelegationRecord, "chainID %s, epoch %d", chainID, currentEpoch)
+		return nil, sdkerrors.Wrapf(types.ErrNoExistDelegationRecord, "chainID %s, epoch %d", chainID, currentEpoch)
 	}
 
 	record, found := k.GetDelegationRecord(ctx, recordID)
 	if !found {
-		return sdkerrors.Wrapf(types.ErrNoExistDelegationRecord, "chainID %s, epoch %d, recorID %d", chainID, currentEpoch, recordID)
+		return nil, sdkerrors.Wrapf(types.ErrNoExistDelegationRecord, "chainID %s, epoch %d, recorID %d", chainID, currentEpoch, recordID)
 	}
 
 	ecsrowAccAddress := sdk.MustAccAddressFromBech32(sourceChain.EcsrowAddress)
 	// transfer ibc token to sourcechain's ecsrow account
 	if err := k.sendCoinsFromAccountToAccount(ctx, caller,
 		ecsrowAccAddress, sdk.Coins{sdk.NewCoin(sourceChain.IbcDenom, amount)}); err != nil {
-		return err
+		return nil, err
 	}
 
 	// TODO replace TruncateInt with Ceil ?
 	derivativeAmount := sdk.NewDecFromInt(amount).Quo(sourceChain.Redemptionratio).TruncateInt()
 	if err := k.mintCoins(ctx, caller, sdk.Coins{sdk.NewCoin(sourceChain.DerivativeDenom, derivativeAmount)}); err != nil {
-		return err
+		return nil, err
 	}
 
 	record.DelegationCoin = record.DelegationCoin.AddAmount(amount)
 
 	k.SetDelegationRecord(ctx, recordID, record)
 
-	return nil
+	return record, nil
 }
 
 // ProcessDelegationRecord start liquid stake on source chain with provide delegation records.

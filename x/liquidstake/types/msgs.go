@@ -94,7 +94,7 @@ func (*MsgReinvest) ValidateBasic() error {
 }
 
 func (msg *MsgClaim) GetSigners() []sdk.AccAddress {
-	signer, err := sdk.AccAddressFromBech32(msg.Caller)
+	signer, err := sdk.AccAddressFromBech32(msg.Delegator)
 	if err != nil {
 		return nil
 	}

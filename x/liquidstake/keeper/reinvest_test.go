@@ -28,7 +28,7 @@ func (suite *KeeperTestSuite) TestReinvest() {
 	suite.relayIBCPacketFromCtlToSrc(ctx.EventManager().ABCIEvents(), ctlChainUserAddr)
 
 	ctx = suite.controlChain.GetContext()
-	err = ctlChainApp.LiquidStakeKeeper.Delegate(ctx, srcChainParams.ChainID, testCoin.Amount, ctlChainUserAccAddr)
+	_, err = ctlChainApp.LiquidStakeKeeper.Delegate(ctx, srcChainParams.ChainID, testCoin.Amount, ctlChainUserAccAddr)
 	suite.NoError(err)
 
 	suite.advanceEpochAndRelayIBC(delegationEpoch)

@@ -35,7 +35,7 @@ func (suite *KeeperTestSuite) TestDelegate() {
 	bal := controlChainApp.BankKeeper.GetBalance(ctx, ctlChainUserAddr, sourceChainParams.IbcDenom)
 	derivativeBalBefore := controlChainApp.BankKeeper.GetBalance(ctx, ctlChainUserAddr, sourceChainParams.DerivativeDenom)
 
-	err := controlChainApp.LiquidStakeKeeper.Delegate(ctx, sourceChainParams.ChainID, testCoin.Amount, ctlChainUserAddr)
+	_, err := controlChainApp.LiquidStakeKeeper.Delegate(ctx, sourceChainParams.ChainID, testCoin.Amount, ctlChainUserAddr)
 	suite.NoError(err)
 
 	balAfter := controlChainApp.BankKeeper.GetBalance(ctx, ctlChainUserAddr, sourceChainParams.IbcDenom)
@@ -64,7 +64,7 @@ func (suite *KeeperTestSuite) TestDelegateWithNoDelegationRecord_ShouldFail() {
 	bal := ctlChainApp.BankKeeper.GetBalance(ctx, ctlChainUserAddr, srcChainParams.IbcDenom)
 	derivativeBalBefore := ctlChainApp.BankKeeper.GetBalance(ctx, ctlChainUserAddr, srcChainParams.DerivativeDenom)
 
-	err := ctlChainApp.LiquidStakeKeeper.Delegate(ctx, srcChainParams.ChainID, testCoin.Amount, ctlChainUserAddr)
+	_, err := ctlChainApp.LiquidStakeKeeper.Delegate(ctx, srcChainParams.ChainID, testCoin.Amount, ctlChainUserAddr)
 	suite.Error(err, sdkerrors.Wrapf(types.ErrNoExistDelegationRecord, "chainID %s, epoch %d",
 		srcChainParams.ChainID, epoch.CurrentEpoch))
 
@@ -98,7 +98,7 @@ func (suite *KeeperTestSuite) TestDelegateWithDiffRedeemRatio() {
 
 		derivativeBalBefore := ctlChainApp.BankKeeper.GetBalance(ctx, ctlChainUserAddr, srcChainParams.DerivativeDenom)
 
-		err := ctlChainApp.LiquidStakeKeeper.Delegate(ctx, srcChainParams.ChainID,
+		_, err := ctlChainApp.LiquidStakeKeeper.Delegate(ctx, srcChainParams.ChainID,
 			delegateAmont, ctlChainUserAddr)
 
 		suite.NoError(err)
@@ -119,7 +119,7 @@ func (suite *KeeperTestSuite) TestProcessDelegationAfterAdvanceEpoch() {
 	testCoin := suite.testCoin
 
 	ctx := suite.controlChain.GetContext()
-	err := controlChainApp.LiquidStakeKeeper.Delegate(ctx, srcChainParams.ChainID, testCoin.Amount, controlChainUserAddr)
+	_, err := controlChainApp.LiquidStakeKeeper.Delegate(ctx, srcChainParams.ChainID, testCoin.Amount, controlChainUserAddr)
 	suite.NoError(err)
 
 	suite.advanceEpochAndRelayIBC(epochInfo)
