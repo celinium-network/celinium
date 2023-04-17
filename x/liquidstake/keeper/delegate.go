@@ -84,10 +84,21 @@ func (k *Keeper) ProcessDelegationRecord(ctx sdk.Context, curEpochNumber uint64,
 }
 
 func (k Keeper) handlePendingDelegationRecord(ctx sdk.Context, record types.DelegationRecord) error {
-	// TODO just delete it?
 	if record.DelegationCoin.Amount.IsZero() {
 		return nil
 	}
+
+	transferCoin := record.DelegationCoin
+	if !record.TransferredAmount.IsZero() {
+		transferCoin = transferCoin.SubAmount(record.TransferredAmount)
+	}
+
+	if transferCoin.IsZero() && !record.DelegationCoin.IsZero() {
+		// Only in the Delegate Epoch, no user participates in the Delegate,
+		// but `Reinvest` has withdrawn rewards on the source chain
+		return k.AfterDelegateTransfer(ctx, &record, true)
+	}
+
 	sourceChain, _ := k.GetSourceChain(ctx, record.ChainID)
 
 	// send token from sourceChain's DelegateAddress to sourceChain's UnboudAddress

@@ -56,7 +56,7 @@ func (k Keeper) Undelegate(ctx sdk.Context, chainID string, amount math.Int, del
 		ChainID:     chainID,
 		Epoch:       currentEpoch,
 		Delegator:   delegatorAddr,
-		RedeemToken: sdk.NewCoin(sourceChain.NativeDenom, receiveAmount),
+		RedeemToken: sdk.NewCoin(sourceChain.IbcDenom, receiveAmount),
 		CliamStatus: types.UndelegationPending,
 	}
 

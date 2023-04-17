@@ -35,6 +35,14 @@ message DelegationRecord{
     uint64 epochNumber = 4;
 
     string chainID = 5;
+
+    // A portion of the `DelegationCoin` that have been transferred to the source chain.
+    // This usually happens when reinvesting to get back the source chain staking rewards,
+    string transferredAmount = 6[
+        (cosmos_proto.scalar)  = "cosmos.Int",
+        (gogoproto.customtype) = "Int",
+        (gogoproto.nullable)   = false];
+
 }
 
 // UndelegationRecord represents a record of a delegator's undelegation action.

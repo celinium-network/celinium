@@ -7,28 +7,28 @@ import (
 )
 
 func (suite *KeeperTestSuite) TestReinvest() {
-	sourceChainParams := suite.generateSourceChainParams()
+	srcChainParams := suite.generateSourceChainParams()
 	delegationEpoch := suite.delegationEpoch()
-	suite.setSourceChainAndEpoch(sourceChainParams, delegationEpoch)
+	suite.setSourceChainAndEpoch(srcChainParams, delegationEpoch)
 
 	ctlChainUserAccAddr := suite.controlChain.SenderAccount.GetAddress()
 	ctlChainUserAddr := ctlChainUserAccAddr.String()
 
 	testCoin := suite.testCoin
-	srcNativeDenom := sourceChainParams.NativeDenom
+	srcNativeDenom := srcChainParams.NativeDenom
 
-	controlChainApp := getCeliniumApp(suite.controlChain)
-	sourceChainApp := getCeliniumApp(suite.sourceChain)
+	ctlChainApp := getCeliniumApp(suite.controlChain)
+	srcChainApp := getCeliniumApp(suite.sourceChain)
 
 	ctx := suite.controlChain.GetContext()
-	err := controlChainApp.LiquidStakeKeeper.SetDistriWithdrawAddress(ctx)
+	err := ctlChainApp.LiquidStakeKeeper.SetDistriWithdrawAddress(ctx)
 	suite.NoError(err)
 	suite.controlChain.NextBlock()
 	suite.transferPath.EndpointA.UpdateClient()
 	suite.relayIBCPacketFromCtlToSrc(ctx.EventManager().ABCIEvents(), ctlChainUserAddr)
 
 	ctx = suite.controlChain.GetContext()
-	err = controlChainApp.LiquidStakeKeeper.Delegate(ctx, sourceChainParams.ChainID, testCoin.Amount, ctlChainUserAccAddr)
+	err = ctlChainApp.LiquidStakeKeeper.Delegate(ctx, srcChainParams.ChainID, testCoin.Amount, ctlChainUserAccAddr)
 	suite.NoError(err)
 
 	suite.advanceEpochAndRelayIBC(delegationEpoch)
@@ -39,37 +39,44 @@ func (suite *KeeperTestSuite) TestReinvest() {
 	}
 	ctx = suite.sourceChain.GetContext()
 
-	validatorNum := uint64(len(sourceChainParams.Validators))
+	validatorNum := uint64(len(srcChainParams.Validators))
 	rewardAmt := sdk.Coins{sdk.NewCoin(srcNativeDenom, sdk.NewIntFromUint64(50000*validatorNum))}
 
-	sourceChainApp.BankKeeper.MintCoins(ctx, minttypes.ModuleName, rewardAmt)
-	sourceChainApp.BankKeeper.SendCoinsFromModuleToModule(ctx, minttypes.ModuleName, distrtypes.ModuleName, rewardAmt)
-	for _, v := range sourceChainParams.Validators {
+	srcChainApp.BankKeeper.MintCoins(ctx, minttypes.ModuleName, rewardAmt)
+	srcChainApp.BankKeeper.SendCoinsFromModuleToModule(ctx, minttypes.ModuleName, distrtypes.ModuleName, rewardAmt)
+	for _, v := range srcChainParams.Validators {
 		valAddr, err := sdk.ValAddressFromBech32(v.Address)
 		suite.NoError(err)
-		valAcc := sourceChainApp.StakingKeeper.Validator(ctx, valAddr)
-		sourceChainApp.DistrKeeper.AllocateTokensToValidator(ctx, valAcc, rewards)
+		valAcc := srcChainApp.StakingKeeper.Validator(ctx, valAddr)
+		srcChainApp.DistrKeeper.AllocateTokensToValidator(ctx, valAcc, rewards)
 	}
 
 	// begin reinvest
 	ctx = suite.controlChain.GetContext()
-	controlChainApp.LiquidStakeKeeper.Reinvest(ctx)
+	ctlChainApp.LiquidStakeKeeper.Reinvest(ctx)
 
 	suite.controlChain.NextBlock()
 	suite.transferPath.EndpointA.UpdateClient()
 	suite.relayIBCPacketFromCtlToSrc(ctx.EventManager().ABCIEvents(), ctlChainUserAddr)
 
 	ctx = suite.controlChain.GetContext()
-	delegatorICAOnSrcChain, err := controlChainApp.LiquidStakeKeeper.GetSourceChainAddr(
-		ctx, sourceChainParams.ConnectionID, sourceChainParams.DelegateAddress)
+	delegatorICAOnSrcChain, err := ctlChainApp.LiquidStakeKeeper.GetSourceChainAddr(
+		ctx, srcChainParams.ConnectionID, srcChainParams.DelegateAddress)
 	suite.NoError(err)
 
 	// delegatorICAOnSrcChain has some reward now,
 	ctx = suite.sourceChain.GetContext()
-	balance := sourceChainApp.BankKeeper.GetBalance(ctx, delegatorICAOnSrcChain, srcNativeDenom)
-	suite.False(balance.Amount.IsZero())
+	balance := srcChainApp.BankKeeper.GetBalance(ctx, delegatorICAOnSrcChain, srcNativeDenom)
+	suite.True(balance.Amount.GT(sdk.ZeroInt()))
 
-	// TODO where check reinvest effect?
+	// no user delegate. the reinvest the reward.
+	suite.advanceEpochAndRelayIBC(suite.delegationEpoch())
+
+	ctx = suite.controlChain.GetContext()
+	srcChain, _ := ctlChainApp.LiquidStakeKeeper.GetSourceChain(ctx, srcChainParams.ChainID)
+	// redeemrate has change
+	suite.True((srcChain.Redemptionratio.GT(sdk.NewDec(1))))
+	suite.True(srcChain.StakedAmount.Sub(testCoin.Amount).Sub(balance.Amount).Equal(sdk.ZeroInt()))
 }
 
 func (suite *KeeperTestSuite) TestSetWithdrawAddress() {
