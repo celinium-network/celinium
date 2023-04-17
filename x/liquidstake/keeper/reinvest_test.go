@@ -1,8 +1,6 @@
 package keeper_test
 
 import (
-	"fmt"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
@@ -76,7 +74,9 @@ func (suite *KeeperTestSuite) TestReinvest() {
 
 	ctx = suite.controlChain.GetContext()
 	srcChain, _ := ctlChainApp.LiquidStakeKeeper.GetSourceChain(ctx, srcChainParams.ChainID)
-	fmt.Println(srcChain)
+	// redeemrate has change
+	suite.True((srcChain.Redemptionratio.GT(sdk.NewDec(1))))
+	suite.True(srcChain.StakedAmount.Sub(testCoin.Amount).Sub(balance.Amount).Equal(sdk.ZeroInt()))
 }
 
 func (suite *KeeperTestSuite) TestSetWithdrawAddress() {

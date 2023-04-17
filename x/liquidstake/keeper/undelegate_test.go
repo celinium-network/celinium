@@ -118,7 +118,6 @@ func (suite *KeeperTestSuite) TestWithdrawCompleteUnbond() {
 
 	testCoin := suite.testCoin
 	controlChainApp := getCeliniumApp(suite.controlChain)
-	sourceChainApp := getCeliniumApp(suite.sourceChain)
 	ctlChainUserAccAddr := suite.controlChain.SenderAccount.GetAddress()
 	ctlChainUserAddr := ctlChainUserAccAddr.String()
 
@@ -147,8 +146,32 @@ func (suite *KeeperTestSuite) TestWithdrawCompleteUnbond() {
 	suite.transferPath.EndpointA.UpdateClient()
 	suite.relayIBCPacketFromCtlToSrc(nextBlockBeginRes.Events, ctlChainUserAddr)
 
-	ctx = suite.controlChain.GetContext()
-	epochUnbonding, found := controlChainApp.LiquidStakeKeeper.GetEpochUnboundings(ctx, 2)
+	suite.WaitForUnbondingComplete(sourceChainParams, 2)
+
+	epochUnbonding, _ := controlChainApp.LiquidStakeKeeper.GetEpochUnboundings(suite.controlChain.GetContext(), 2)
+	for _, unbonding := range epochUnbonding.Unbondings {
+		if unbonding.ChainID != sourceChainParams.ChainID {
+			continue
+		}
+		suite.Equal(unbonding.Status, types.UnbondingDone)
+	}
+	amt := controlChainApp.BankKeeper.GetBalance(
+		suite.controlChain.GetContext(),
+		sdk.MustAccAddressFromBech32(sourceChainParams.DelegateAddress),
+		sourceChainParams.IbcDenom,
+	)
+
+	suite.False(amt.Amount.IsZero())
+}
+
+func (suite *KeeperTestSuite) WaitForUnbondingComplete(sourceChainParams *types.SourceChain, unbondingEpoch uint64) {
+	controlChainApp := getCeliniumApp(suite.controlChain)
+	sourceChainApp := getCeliniumApp(suite.sourceChain)
+	ctlChainUserAccAddr := suite.controlChain.SenderAccount.GetAddress()
+	ctlChainUserAddr := ctlChainUserAccAddr.String()
+
+	ctx := suite.controlChain.GetContext()
+	epochUnbonding, found := controlChainApp.LiquidStakeKeeper.GetEpochUnboundings(ctx, unbondingEpoch)
 	suite.True(found)
 
 	var unbondCompleteTime time.Time
@@ -174,7 +197,7 @@ func (suite *KeeperTestSuite) TestWithdrawCompleteUnbond() {
 
 	unbondCompleteTime = unbondCompleteTime.Add(time.Minute * 20)
 	nextBlockWithRes(suite.sourceChain, unbondCompleteTime)
-	_, nextBlockBeginRes = nextBlockWithRes(suite.controlChain, unbondCompleteTime)
+	_, nextBlockBeginRes := nextBlockWithRes(suite.controlChain, unbondCompleteTime)
 
 	suite.controlChain.NextBlock()
 	suite.transferPath.EndpointA.UpdateClient()
@@ -195,21 +218,4 @@ func (suite *KeeperTestSuite) TestWithdrawCompleteUnbond() {
 		controlChainApp.IBCKeeper.RecvPacket(suite.controlChain.GetContext(), &recvs[i])
 	}
 	controlChainApp.IBCKeeper.Acknowledgement(suite.controlChain.GetContext(), ack)
-
-	epochUnbonding, _ = controlChainApp.LiquidStakeKeeper.GetEpochUnboundings(suite.controlChain.GetContext(), 2)
-	for _, unbonding := range epochUnbonding.Unbondings {
-		if unbonding.ChainID != sourceChainParams.ChainID {
-			continue
-		}
-		// TODO should be UndelegationCliamble
-		suite.Equal(unbonding.Status, types.UnbondingDone)
-	}
-	amt := controlChainApp.BankKeeper.GetBalance(
-		suite.controlChain.GetContext(),
-		sdk.MustAccAddressFromBech32(sourceChainParams.DelegateAddress),
-		sourceChainParams.IbcDenom,
-	)
-
-	// TODO more check
-	suite.False(amt.Amount.IsZero())
 }

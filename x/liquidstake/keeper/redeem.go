@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	sdkerrors "cosmossdk.io/errors"
 	"cosmossdk.io/math"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -61,4 +62,35 @@ func (k Keeper) GetProcessingFundsFromRecords(sourceChain *types.SourceChain, re
 		amount = amount.Add(record.DelegationCoin.Amount)
 	}
 	return amount
+}
+
+func (k Keeper) RedeemUndelegation(ctx sdk.Context, deletator sdk.AccAddress, epoch uint64, chainID string) error {
+	undelegationRecord, found := k.GetUndelegationRecord(ctx, chainID, epoch, deletator.String())
+	if !found {
+		return sdkerrors.Wrapf(types.ErrUserUndelegationNotExist, "chainID %s, epoch %d, address %s", chainID, epoch, deletator.String())
+	}
+
+	if undelegationRecord.CliamStatus != types.UndelegationClaimable {
+		return sdkerrors.Wrapf(types.ErrUserUndelegationWatting, "chainID %s, epoch %d, address %s", chainID, epoch, deletator.String())
+	}
+
+	sourceChain, found := k.GetSourceChain(ctx, chainID)
+	if !found {
+		return sdkerrors.Wrapf(types.ErrUnknownSourceChain, "chainID %s", chainID)
+	}
+
+	chainDelegatorAccAddress, err := sdk.AccAddressFromBech32(sourceChain.DelegateAddress)
+	if err != nil {
+		return err
+	}
+
+	err = k.sendCoinsFromAccountToAccount(ctx, chainDelegatorAccAddress, deletator, sdk.NewCoins(undelegationRecord.RedeemToken))
+	if err != nil {
+		return err
+	}
+
+	undelegationRecord.CliamStatus = types.UndelegationComplete
+
+	k.SetUndelegationRecord(ctx, undelegationRecord)
+	return nil
 }
