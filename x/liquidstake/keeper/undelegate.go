@@ -19,15 +19,15 @@ import (
 	"github.com/celinium-netwok/celinium/x/liquidstake/types"
 )
 
-func (k Keeper) Undelegate(ctx sdk.Context, chainID string, amount math.Int, delegator sdk.AccAddress /*,receiver sdk.AccAddress*/) error {
+func (k Keeper) Undelegate(ctx sdk.Context, chainID string, amount math.Int, delegator sdk.AccAddress) (*types.UndelegationRecord, error) {
 	sourceChain, found := k.GetSourceChain(ctx, chainID)
 	if !found {
-		return sdkerrors.Wrapf(types.ErrUnknownSourceChain, "unknown source chain, chainID: %s", chainID)
+		return nil, sdkerrors.Wrapf(types.ErrUnknownSourceChain, "unknown source chain, chainID: %s", chainID)
 	}
 
 	epochInfo, found := k.epochKeeper.GetEpochInfo(ctx, types.UndelegationEpochIdentifier)
 	if !found {
-		return sdkerrors.Wrapf(types.ErrUnknownEpoch, "unknown epoch, epoch identifier: %s", types.UndelegationEpochIdentifier)
+		return nil, sdkerrors.Wrapf(types.ErrUnknownEpoch, "unknown epoch, epoch identifier: %s", types.UndelegationEpochIdentifier)
 	}
 
 	// TODO, epoch should be uint64 or int64
@@ -36,19 +36,19 @@ func (k Keeper) Undelegate(ctx sdk.Context, chainID string, amount math.Int, del
 
 	_, found = k.GetUndelegationRecord(ctx, chainID, currentEpoch, delegatorAddr)
 	if found {
-		return sdkerrors.Wrapf(types.ErrRepeatUndelegate, "epoch %d", currentEpoch)
+		return nil, sdkerrors.Wrapf(types.ErrRepeatUndelegate, "epoch %d", currentEpoch)
 	}
 
 	// TODO, How to confirm the accuracy of calcualate ?
 	receiveAmount := sdk.NewDecFromInt(amount).Mul(sourceChain.Redemptionratio).TruncateInt()
 	if sourceChain.StakedAmount.LT(receiveAmount) {
-		return sdkerrors.Wrapf(types.ErrInternalError, "undelegate too mach, max %s, get %s", sourceChain.StakedAmount, receiveAmount)
+		return nil, sdkerrors.Wrapf(types.ErrInternalError, "undelegate too mach, max %s, get %s", sourceChain.StakedAmount, receiveAmount)
 	}
 
 	// send coin from user to module account.
 	if err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, delegator, types.ModuleName,
 		sdk.Coins{sdk.NewCoin(sourceChain.DerivativeDenom, amount)}); err != nil {
-		return err
+		return nil, err
 	}
 
 	undelegationRecord := types.UndelegationRecord{
@@ -63,7 +63,7 @@ func (k Keeper) Undelegate(ctx sdk.Context, chainID string, amount math.Int, del
 	// update related Unbonding by chainID
 	curEpochUnbondings, found := k.GetEpochUnboundings(ctx, currentEpoch)
 	if !found {
-		return sdkerrors.Wrapf(types.ErrEpochUnbondingNotExist, "epoch %d", currentEpoch)
+		return nil, sdkerrors.Wrapf(types.ErrEpochUnbondingNotExist, "epoch %d", currentEpoch)
 	}
 
 	var curEpochSourceChainUnbonding types.Unbonding
@@ -103,7 +103,7 @@ func (k Keeper) Undelegate(ctx sdk.Context, chainID string, amount math.Int, del
 
 	k.SetEpochUnboundings(ctx, curEpochUnbondings)
 
-	return nil
+	return &undelegationRecord, nil
 }
 
 func (k Keeper) GetUndelegationRecord(ctx sdk.Context, chainID string, epoch uint64, delegator string) (*types.UndelegationRecord, bool) {

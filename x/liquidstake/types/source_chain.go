@@ -2,6 +2,8 @@ package types
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -115,6 +117,22 @@ func (s *SourceChain) UpdateWithDelegationRecord(record *DelegationRecord) {
 	// (1) should not calcaute from weight at now
 	// (2) record at callback'Args
 	// (3) only after successful delegation
+}
+
+func (s SourceChain) ValidatorsAddress() string {
+	var vs []string
+	for _, v := range s.Validators {
+		vs = append(vs, v.Address)
+	}
+	return strings.Join(vs, ",")
+}
+
+func (s SourceChain) ValidatorsWeight() string {
+	var vw []string
+	for _, v := range s.Validators {
+		vw = append(vw, strconv.FormatUint(v.Weight, 10))
+	}
+	return strings.Join(vw, ",")
 }
 
 func verifyValidatorAddress(address, addrPrefix string) bool {

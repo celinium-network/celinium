@@ -46,7 +46,7 @@ func (suite *KeeperTestSuite) TestUndelegate() {
 	ctlChainUserAddr := ctlChainUserAccAddr.String()
 
 	ctx := suite.controlChain.GetContext()
-	err := ctlChainApp.LiquidStakeKeeper.Delegate(ctx, srcChainParams.ChainID, testCoin.Amount, ctlChainUserAccAddr)
+	_, err := ctlChainApp.LiquidStakeKeeper.Delegate(ctx, srcChainParams.ChainID, testCoin.Amount, ctlChainUserAccAddr)
 	suite.NoError(err)
 
 	suite.advanceEpochAndRelayIBC(delegationEpochInfo)
@@ -122,7 +122,7 @@ func (suite *KeeperTestSuite) TestWithdrawCompleteUnbond() {
 	ctlChainUserAddr := ctlChainUserAccAddr.String()
 
 	ctx := suite.controlChain.GetContext()
-	err := controlChainApp.LiquidStakeKeeper.Delegate(ctx, sourceChainParams.ChainID, testCoin.Amount, ctlChainUserAccAddr)
+	_, err := controlChainApp.LiquidStakeKeeper.Delegate(ctx, sourceChainParams.ChainID, testCoin.Amount, ctlChainUserAccAddr)
 	suite.NoError(err)
 
 	suite.advanceEpochAndRelayIBC(delegationEpochInfo)

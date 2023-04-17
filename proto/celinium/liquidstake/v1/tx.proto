@@ -49,7 +49,7 @@ message MsgRegisterSourceChain{
     string bech32ValidatorAddrPrefix = 4;
 
     // Validators at the start
-    repeated Validator validators  = 5;
+    repeated Validator validators  = 5 [(gogoproto.nullable) = false];
 
     // The denom of source chain native token.
     string nativeDenom = 6;
