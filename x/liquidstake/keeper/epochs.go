@@ -3,8 +3,8 @@ package keeper
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	appparams "github.com/celinium-netwok/celinium/app/params"
 	epochstypes "github.com/celinium-netwok/celinium/x/epochs/types"
-	"github.com/celinium-netwok/celinium/x/liquidstake/types"
 )
 
 type Hooks struct {
@@ -24,18 +24,18 @@ func (h Hooks) BeforeEpochStart(ctx sdk.Context, epochIdentifier string, epochNu
 	uEpochNumber := uint64(epochNumber)
 
 	switch epochIdentifier {
-	case types.DelegationEpochIdentifier:
+	case appparams.DelegationEpochIdentifier:
 		h.k.CreateEpochDelegationRecord(ctx, uEpochNumber)
 
 		delegationRecords := h.k.GetAllDelegationRecord(ctx)
 		h.k.ProcessDelegationRecord(ctx, uEpochNumber, delegationRecords)
 
 		h.k.UpdateRedeemRatio(ctx, delegationRecords)
-	case types.UndelegationEpochIdentifier:
+	case appparams.UndelegationEpochIdentifier:
 		h.k.CreateEpochUnbondings(ctx, uEpochNumber)
 
 		h.k.ProcessUnbondings(ctx, uEpochNumber)
-	case types.ReinvestEpochIdentifier:
+	case appparams.ReinvestEpochIdentifier:
 		h.k.Reinvest(ctx)
 	default:
 	}

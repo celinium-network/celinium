@@ -19,11 +19,65 @@ package types
 import (
 	"fmt"
 	"time"
+
+	appparams "github.com/celinium-netwok/celinium/app/params"
 )
 
 // NewGenesisState creates a new genesis state instance
 func NewGenesisState(epochs []EpochInfo) *GenesisState {
 	return &GenesisState{Epochs: epochs}
+}
+
+// ProductionGenesisState returns the default epochs genesis state
+func ProductionGenesisState() *GenesisState {
+	epochs := []EpochInfo{
+		{
+			Identifier:              WeekEpochID,
+			StartTime:               time.Time{},
+			Duration:                time.Hour * 24 * 7,
+			CurrentEpoch:            0,
+			CurrentEpochStartHeight: 0,
+			CurrentEpochStartTime:   time.Time{},
+			EpochCountingStarted:    false,
+		},
+		{
+			Identifier:              DayEpochID,
+			StartTime:               time.Time{},
+			Duration:                time.Hour * 24,
+			CurrentEpoch:            0,
+			CurrentEpochStartHeight: 0,
+			CurrentEpochStartTime:   time.Time{},
+			EpochCountingStarted:    false,
+		},
+		{
+			Identifier:              appparams.DelegationEpochIdentifier,
+			StartTime:               time.Time{},
+			Duration:                time.Hour,
+			CurrentEpoch:            0,
+			CurrentEpochStartHeight: 0,
+			CurrentEpochStartTime:   time.Time{},
+			EpochCountingStarted:    false,
+		},
+		{
+			Identifier:              appparams.UndelegationEpochIdentifier,
+			StartTime:               time.Time{},
+			Duration:                time.Hour * 24,
+			CurrentEpoch:            0,
+			CurrentEpochStartHeight: 0,
+			CurrentEpochStartTime:   time.Time{},
+			EpochCountingStarted:    false,
+		},
+		{
+			Identifier:              appparams.ReinvestEpochIdentifier,
+			StartTime:               time.Time{},
+			Duration:                time.Hour * 1,
+			CurrentEpoch:            0,
+			CurrentEpochStartHeight: 0,
+			CurrentEpochStartTime:   time.Time{},
+			EpochCountingStarted:    false,
+		},
+	}
+	return NewGenesisState(epochs)
 }
 
 // DefaultGenesisState returns the default epochs genesis state

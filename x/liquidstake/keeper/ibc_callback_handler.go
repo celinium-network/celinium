@@ -11,6 +11,7 @@ import (
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
+	appparams "github.com/celinium-netwok/celinium/app/params"
 	"github.com/celinium-netwok/celinium/x/liquidstake/types"
 )
 
@@ -161,7 +162,7 @@ func withdrawDelegateRewardCallbackHandler(k *Keeper, ctx sdk.Context, callback 
 func transferRewardCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCallback, responses []*codectypes.Any) error {
 	var callbackArgs types.TransferRewardCallbackArgs
 	k.cdc.MustUnmarshal([]byte(callback.Args), &callbackArgs)
-	epochInfo, found := k.epochKeeper.GetEpochInfo(ctx, types.DelegationEpochIdentifier)
+	epochInfo, found := k.epochKeeper.GetEpochInfo(ctx, appparams.DelegationEpochIdentifier)
 	if !found {
 		return nil
 	}

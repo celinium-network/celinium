@@ -30,7 +30,7 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 		},
 		{
 			"default",
-			DefaultGenesisState(),
+			ProductionGenesisState(),
 			true,
 		},
 		{

@@ -18,6 +18,7 @@ import (
 	ibctesting "github.com/cosmos/ibc-go/v6/testing"
 
 	celiniumapp "github.com/celinium-netwok/celinium/app"
+	epochtypes "github.com/celinium-netwok/celinium/x/epochs/types"
 )
 
 type KeeperTestSuite struct {
@@ -43,7 +44,12 @@ func SetupTestingApp() (ibctesting.TestingApp, map[string]json.RawMessage) {
 	encCdc := celiniumapp.MakeEncodingConfig()
 
 	app := celiniumapp.NewApp(log.NewNopLogger(), db, nil, true, nil, "", 0, encCdc, celiniumapp.EmptyAppOptions{})
-	return app, celiniumapp.NewDefaultGenesisState(encCdc.Codec)
+
+	// replace production epoch module genesis by default epoch module genesis
+	genesisState := celiniumapp.NewDefaultGenesisState(encCdc.Codec)
+	genesisState[epochtypes.ModuleName] = encCdc.Codec.MustMarshalJSON(epochtypes.DefaultGenesisState())
+
+	return app, genesisState
 }
 
 func TestKeeperTestSuite(t *testing.T) {

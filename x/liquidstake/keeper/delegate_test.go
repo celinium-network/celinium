@@ -8,6 +8,7 @@ import (
 	epochtypes "github.com/celinium-netwok/celinium/x/epochs/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	appparams "github.com/celinium-netwok/celinium/app/params"
 	"github.com/celinium-netwok/celinium/x/liquidstake/types"
 )
 
@@ -132,7 +133,7 @@ func (suite *KeeperTestSuite) TestProcessDelegationAfterAdvanceEpoch() {
 
 func (suite *KeeperTestSuite) delegationEpoch() *epochtypes.EpochInfo {
 	return &epochtypes.EpochInfo{
-		Identifier:              types.DelegationEpochIdentifier,
+		Identifier:              appparams.DelegationEpochIdentifier,
 		StartTime:               suite.controlChain.CurrentHeader.Time,
 		Duration:                time.Hour,
 		CurrentEpoch:            1,

@@ -13,6 +13,7 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	abci "github.com/tendermint/tendermint/abci/types"
 
+	"github.com/celinium-netwok/celinium/x/liquidstake/client/cli"
 	"github.com/celinium-netwok/celinium/x/liquidstake/keeper"
 	"github.com/celinium-netwok/celinium/x/liquidstake/types"
 )
@@ -44,7 +45,7 @@ func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 
 // GetTxCmd implements module.AppModuleBasic
 func (AppModuleBasic) GetTxCmd() *cobra.Command {
-	return nil
+	return cli.NewTxCmd()
 }
 
 // Name implements module.AppModuleBasic

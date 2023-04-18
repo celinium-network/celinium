@@ -4,7 +4,9 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
+
 	"github.com/celinium-netwok/celinium/app"
+	appparams "github.com/celinium-netwok/celinium/app/params"
 	epochtypes "github.com/celinium-netwok/celinium/x/epochs/types"
 	"github.com/celinium-netwok/celinium/x/liquidstake/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -12,7 +14,7 @@ import (
 
 func (suite *KeeperTestSuite) unbondEpoch() *epochtypes.EpochInfo {
 	return &epochtypes.EpochInfo{
-		Identifier:              types.UndelegationEpochIdentifier,
+		Identifier:              appparams.UndelegationEpochIdentifier,
 		StartTime:               suite.controlChain.CurrentHeader.Time,
 		Duration:                time.Hour * 24,
 		CurrentEpoch:            1,
