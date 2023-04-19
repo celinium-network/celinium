@@ -1,10 +1,13 @@
 package keeper
 
 import (
+	"strings"
+
 	sdkerrors "cosmossdk.io/errors"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	icatypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/types"
+	transfertype "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
 
 	"github.com/celinium-netwok/celinium/x/liquidstake/types"
 )
@@ -18,6 +21,11 @@ func (k Keeper) AddSouceChain(ctx sdk.Context, sourceChain *types.SourceChain) e
 	if _, found := k.GetSourceChain(ctx, sourceChain.ChainID); found {
 		return sdkerrors.Wrapf(types.ErrSourceChainExist, "already exist source chain, ID: %s", sourceChain.ChainID)
 	}
+
+	parts := []string{transfertype.PortID, sourceChain.TransferChannelID, sourceChain.NativeDenom}
+	denom := strings.Join(parts, "/")
+	denomTrace := transfertype.ParseDenomTrace(denom)
+	sourceChain.IbcDenom = denomTrace.Hash().String()
 
 	icaAccounts := sourceChain.GenerateAccounts(ctx)
 
