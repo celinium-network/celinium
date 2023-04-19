@@ -7,6 +7,7 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	icatypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/types"
+
 	transfertype "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
 
 	"github.com/celinium-netwok/celinium/x/liquidstake/types"
@@ -25,7 +26,7 @@ func (k Keeper) AddSouceChain(ctx sdk.Context, sourceChain *types.SourceChain) e
 	parts := []string{transfertype.PortID, sourceChain.TransferChannelID, sourceChain.NativeDenom}
 	denom := strings.Join(parts, "/")
 	denomTrace := transfertype.ParseDenomTrace(denom)
-	sourceChain.IbcDenom = denomTrace.Hash().String()
+	sourceChain.IbcDenom = denomTrace.IBCDenom()
 
 	icaAccounts := sourceChain.GenerateAccounts(ctx)
 

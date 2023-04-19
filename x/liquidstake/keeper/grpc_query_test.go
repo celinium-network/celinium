@@ -134,7 +134,7 @@ func (suite *KeeperTestSuite) TestGRPCQueryDelegation() {
 	}
 }
 
-func (suite *KeeperTestSuite) TestChainUnbondings() {
+func (suite *KeeperTestSuite) TestGRPCQueryChainUnbondings() {
 	srcChainParams := suite.generateSourceChainParams()
 	delegationEpochInfo := suite.delegationEpoch()
 	suite.setSourceChainAndEpoch(srcChainParams, delegationEpochInfo)
@@ -217,7 +217,7 @@ func (suite *KeeperTestSuite) TestChainUnbondings() {
 	}
 }
 
-func (suite *KeeperTestSuite) TestUserUndelegationRecord() {
+func (suite *KeeperTestSuite) TestGRPCQueryUserUndelegationRecord() {
 	srcChainParams := suite.generateSourceChainParams()
 	delegationEpochInfo := suite.delegationEpoch()
 	suite.setSourceChainAndEpoch(srcChainParams, delegationEpochInfo)
