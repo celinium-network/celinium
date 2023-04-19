@@ -13,6 +13,7 @@ import (
 	ibctransfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
 
+	appparams "github.com/celinium-netwok/celinium/app/params"
 	"github.com/celinium-netwok/celinium/x/liquidstake/types"
 )
 
@@ -24,9 +25,9 @@ func (k *Keeper) Delegate(ctx sdk.Context, chainID string, amount math.Int, call
 		return nil, sdkerrors.Wrapf(types.ErrUnknownSourceChain, "unknown source chain, chainID: %s", chainID)
 	}
 
-	epochInfo, found := k.epochKeeper.GetEpochInfo(ctx, types.DelegationEpochIdentifier)
+	epochInfo, found := k.epochKeeper.GetEpochInfo(ctx, appparams.DelegationEpochIdentifier)
 	if !found {
-		return nil, sdkerrors.Wrapf(types.ErrUnknownEpoch, "unknown epoch, epoch identifier: %s", types.DelegationEpochIdentifier)
+		return nil, sdkerrors.Wrapf(types.ErrUnknownEpoch, "unknown epoch, epoch identifier: %s", appparams.DelegationEpochIdentifier)
 	}
 
 	currentEpoch := uint64(epochInfo.CurrentEpoch)

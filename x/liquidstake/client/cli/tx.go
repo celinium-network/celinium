@@ -62,7 +62,7 @@ func NewRegisterSourceChainCmd() *cobra.Command {
 			}
 
 			nativeDenom := args[5]
-			derivativeDenom := args[5]
+			derivativeDenom := args[6]
 
 			msg := types.MsgRegisterSourceChain{
 				ChainID:                   sourceChainID,
@@ -153,7 +153,7 @@ func NewClaimCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   `claim [chain_id] [epoch].`,
 		Short: `claim funds from complete undelegate `,
-		Args:  cobra.ExactArgs(7),
+		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
