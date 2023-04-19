@@ -11,6 +11,7 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
 
+	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	icatypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/types"
 	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
@@ -19,6 +20,8 @@ import (
 
 	celiniumapp "github.com/celinium-netwok/celinium/app"
 	epochtypes "github.com/celinium-netwok/celinium/x/epochs/types"
+	"github.com/celinium-netwok/celinium/x/liquidstake/keeper"
+	"github.com/celinium-netwok/celinium/x/liquidstake/types"
 )
 
 type KeeperTestSuite struct {
@@ -33,6 +36,8 @@ type KeeperTestSuite struct {
 	controlChain *ibctesting.TestChain
 
 	testCoin sdk.Coin
+
+	queryClient types.QueryClient
 }
 
 func init() {
@@ -81,6 +86,13 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.IBCTransfer(srcChainUserAccAddr.String(), ctlChainUserAccAddr.String(), testCoin, suite.transferPath, true)
 
 	suite.testCoin = testCoin
+
+	// create liquidstake query client
+	queryHelper := baseapp.NewQueryServerTestHelper(suite.controlChain.GetContext(),
+		getCeliniumApp(suite.controlChain).InterfaceRegistry())
+	querier := keeper.Querier{Keeper: getCeliniumApp(suite.controlChain).LiquidStakeKeeper}
+	types.RegisterQueryServer(queryHelper, querier)
+	suite.queryClient = types.NewQueryClient(queryHelper)
 }
 
 func newTransferPath(chainA, chainB *ibctesting.TestChain) *ibctesting.Path {

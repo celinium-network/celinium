@@ -40,7 +40,7 @@ func (AppModuleBasic) DefaultGenesis(codec.JSONCodec) json.RawMessage {
 
 // GetQueryCmd implements module.AppModuleBasic
 func (AppModuleBasic) GetQueryCmd() *cobra.Command {
-	return nil
+	return cli.NewQueryCmd()
 }
 
 // GetTxCmd implements module.AppModuleBasic
@@ -120,6 +120,8 @@ func (AppModule) RegisterInvariants(sdk.InvariantRegistry) {
 // RegisterServices implements module.EndBlockAppModule
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(&am.keeper))
+	querier := keeper.Querier{Keeper: am.keeper}
+	types.RegisterQueryServer(cfg.QueryServer(), querier)
 }
 
 // Route implements module.EndBlockAppModule
