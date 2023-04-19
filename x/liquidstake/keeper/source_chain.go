@@ -1,14 +1,10 @@
 package keeper
 
 import (
-	"strings"
-
 	sdkerrors "cosmossdk.io/errors"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	icatypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/types"
-
-	transfertype "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
 
 	"github.com/celinium-netwok/celinium/x/liquidstake/types"
 )
@@ -23,17 +19,28 @@ func (k Keeper) AddSouceChain(ctx sdk.Context, sourceChain *types.SourceChain) e
 		return sdkerrors.Wrapf(types.ErrSourceChainExist, "already exist source chain, ID: %s", sourceChain.ChainID)
 	}
 
-	parts := []string{transfertype.PortID, sourceChain.TransferChannelID, sourceChain.NativeDenom}
-	denom := strings.Join(parts, "/")
-	denomTrace := transfertype.ParseDenomTrace(denom)
-	sourceChain.IbcDenom = denomTrace.IBCDenom()
+	if err := sourceChain.GenerateIBCDeonm(); err != nil {
+		return sdkerrors.Wrapf(types.ErrSourceChainParameter, err.Error())
+	}
+
+	connection, found := k.ibcKeeper.ConnectionKeeper.GetConnection(ctx, sourceChain.ConnectionID)
+	if !found {
+		return sdkerrors.Wrapf(types.ErrSourceChainParameter, "connection not find: ID %s", sourceChain.ConnectionID)
+	}
 
 	icaAccounts := sourceChain.GenerateAccounts(ctx)
+	icaVersion := icatypes.ModuleCdc.MustMarshalJSON((&icatypes.Metadata{
+		Version:                icatypes.Version,
+		ControllerConnectionId: sourceChain.ConnectionID,
+		HostConnectionId:       connection.Counterparty.ConnectionId,
+		Encoding:               icatypes.EncodingProtobuf,
+		TxType:                 icatypes.TxTypeSDKMultiMsg,
+	}))
 
 	for _, a := range icaAccounts {
 		k.accountKeeper.NewAccount(ctx, a)
 		k.accountKeeper.SetAccount(ctx, a)
-		if err := k.icaCtlKeeper.RegisterInterchainAccount(ctx, sourceChain.ConnectionID, a.GetAddress().String(), ""); err != nil {
+		if err := k.icaCtlKeeper.RegisterInterchainAccount(ctx, sourceChain.ConnectionID, a.GetAddress().String(), string(icaVersion)); err != nil {
 			return err
 		}
 	}

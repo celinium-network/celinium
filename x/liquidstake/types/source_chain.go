@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"cosmossdk.io/math"
+	transfertype "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
@@ -76,6 +78,19 @@ func (s *SourceChain) GenerateAccounts(ctx sdk.Context) (accounts []*authtypes.M
 	accounts = append(accounts, unbondAccount)
 
 	return accounts
+}
+
+func (s *SourceChain) GenerateIBCDeonm() error {
+	parts := []string{transfertype.PortID, s.TransferChannelID, s.NativeDenom}
+	denom := strings.Join(parts, "/")
+	denomTrace := transfertype.ParseDenomTrace(denom)
+	if err := denomTrace.Validate(); err != nil {
+		return err
+	}
+
+	s.IbcDenom = denomTrace.IBCDenom()
+
+	return nil
 }
 
 type ValidatorFund struct {
