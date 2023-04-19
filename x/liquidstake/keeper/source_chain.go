@@ -6,6 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	icatypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/types"
 
+	appparams "github.com/celinium-netwok/celinium/app/params"
 	"github.com/celinium-netwok/celinium/x/liquidstake/types"
 )
 
@@ -45,6 +46,13 @@ func (k Keeper) AddSouceChain(ctx sdk.Context, sourceChain *types.SourceChain) e
 		}
 	}
 
+	delegatieEpochInfo, found := k.epochKeeper.GetEpochInfo(ctx, appparams.DelegationEpochIdentifier)
+	if !found {
+		return sdkerrors.Wrapf(types.ErrUnknownEpoch, "unknown epoch, epoch identifier: %s", appparams.DelegationEpochIdentifier)
+	}
+
+	k.createChainEpochDelegationRecord(ctx, uint64(delegatieEpochInfo.CurrentEpoch), sourceChain.ChainID, sourceChain.IbcDenom)
+
 	k.SetSourceChain(ctx, sourceChain)
 
 	return nil
@@ -69,29 +77,35 @@ func (k Keeper) CreateEpochDelegationRecord(ctx sdk.Context, epochNumber uint64)
 			continue
 		}
 
-		id := k.GetDelegationRecordID(ctx)
-
-		record := types.DelegationRecord{
-			Id:             id,
-			DelegationCoin: sdk.NewCoin(sourcechain.IbcDenom, sdk.ZeroInt()),
-			Status:         types.DelegationPending,
-			EpochNumber:    epochNumber,
-			ChainID:        sourcechain.ChainID,
-		}
-
-		k.SetChainDelegationRecordID(ctx, sourcechain.ChainID, epochNumber, id)
-
-		k.SetDelegationRecord(ctx, id, &record)
-
-		k.IncreaseDelegationRecordID(ctx)
+		k.createChainEpochDelegationRecord(ctx, epochNumber, sourcechain.ChainID, sourcechain.IbcDenom)
 	}
 }
 
+func (k Keeper) createChainEpochDelegationRecord(ctx sdk.Context, epochNumber uint64, chainID string, stakeDenom string) *types.DelegationRecord {
+	id := k.GetDelegationRecordID(ctx)
+
+	record := types.DelegationRecord{
+		Id:             id,
+		DelegationCoin: sdk.NewCoin(stakeDenom, sdk.ZeroInt()),
+		Status:         types.DelegationPending,
+		EpochNumber:    epochNumber,
+		ChainID:        chainID,
+	}
+
+	k.SetChainDelegationRecordID(ctx, chainID, epochNumber, id)
+
+	k.SetDelegationRecord(ctx, id, &record)
+
+	k.IncreaseDelegationRecordID(ctx)
+
+	return &record
+}
+
 // CreateEpochUnbondings a new unbonding in current epoch.
-func (k Keeper) CreateEpochUnbondings(ctx sdk.Context, epochNumber uint64) {
+func (k Keeper) CreateEpochUnbondings(ctx sdk.Context, epochNumber uint64) *types.EpochUnbondings {
 	_, found := k.GetEpochUnboundings(ctx, epochNumber)
 	if found {
-		return
+		return nil
 	}
 
 	epochUnbonding := types.EpochUnbondings{
@@ -100,6 +114,8 @@ func (k Keeper) CreateEpochUnbondings(ctx sdk.Context, epochNumber uint64) {
 	}
 
 	k.SetEpochUnboundings(ctx, &epochUnbonding)
+
+	return &epochUnbonding
 }
 
 // GetDelegationRecord return DelegationRecord by id
