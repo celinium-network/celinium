@@ -27,6 +27,7 @@ COPY --from=builder /go/bin/celiniumd /usr/local/bin/
 
 COPY ./docker/scripts/start_celi.sh /opt/start_celi.sh
 COPY ./docker/scripts/helper.sh /opt/helper.sh
+COPY ./docker/scripts/liquidstake.sh /opt/liquidstake.sh
 
 RUN chmod +x /opt/start_celi.sh
 RUN chmod +x /opt/helper.sh

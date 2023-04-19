@@ -84,6 +84,7 @@ gaiad tx ibc-transfer transfer transfer channel-0 celi1hqu6s5lkr370g0mcx4tg2n037
 
     docker build -t celinium -f Dockerfile .
 ```
+docker compose exec celinium /opt/liquidstake.sh register_source_chain gaia connection-0 transfer cosmosvaloper '{"Vals": [{"weight": 100000000,"address":"cosmosvaloper1hha04nf62a499fcmy4cdk3qnhdeqs9f5fgnjyd"}]}' ATOM vpATOM
 
 # docker
 构建镜像时，
