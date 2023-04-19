@@ -1,0 +1,61 @@
+version: "3.9"
+services:
+# TODO rename gaia to cosmoshub ?
+  gaia-validator-1:
+    build:
+      dockerfile: dockerfiles/Dockerfile.gaia
+      context: .
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+      - "1317:1317"
+      - "26656:26656"
+      - "26657:26657"
+    logging:
+      options:
+        max-size: "12m"
+        max-file: "5"
+    env_file:
+      .gaia_env
+    volumes:
+      - ./scripts/start_gaia.sh:/opt/start_gaia.sh
+      - ./scripts/helper.sh:/opt/helper.sh
+      - ./gaia_validator_1/config:/root/.gaia/config
+      - ./gaia_validator_1/data:/root/.gaia/data
+      - ./gaia_validator_1/keyring:/root/.gaia/keyring-test
+  celinium:
+    image: celinium:latest
+    restart: unless-stopped
+    ports:
+      - "9091:9090"
+      - "1318:1317"
+      - "26666:26656"
+      - "26667:26657"
+    logging:
+      options:
+        max-size: "12m"
+        max-file: "5"
+    volumes:
+      - ./scripts/start_celi.sh:/opt/start_celi.sh
+      - ./scripts/helper.sh:/opt/helper.sh
+      - ./celinium_node/config:/root/.celinium/config
+      - ./celinium_node/data:/root/.celinium/data
+      - ./celinium_node/keyring:/root/.celinium/keyring-test
+  relayer:
+    build:
+      dockerfile: dockerfiles/Dockerfile.relayer
+      context: .
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: "12m"
+        max-file: "5"
+    depends_on:
+      - gaia-validator-1
+      - celinium  
+    volumes:
+      - ./gaia_validator_1/keyring:/root/.relayer/keys/gaia/keyring-test
+      - ./celinium_node/keyring:/root/.relayer/keys/celinium/keyring-test
+volumes:
+  gaia_validator_1:
+  celinium_node:

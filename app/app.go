@@ -141,8 +141,7 @@ import (
 )
 
 const (
-	AccountAddressPrefix = "cosmos"
-	Name                 = "github.com/celinium-netwok/celinium"
+	Name = "celinium"
 )
 
 func getGovProposalHandlers() []govclient.ProposalHandler {
