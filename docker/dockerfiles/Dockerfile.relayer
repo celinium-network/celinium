@@ -19,7 +19,7 @@ RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g' /etc/apk/repositorie
 
 ENV GOPROXY=https://goproxy.cn,direct
 
-RUN apk add --update bash
+RUN apk add --update bash jq
 
 ENV PATH="/path/to/bash:$PATH"
 

@@ -15,8 +15,11 @@ services:
       options:
         max-size: "12m"
         max-file: "5"
-    env_file:
-      .gaia_env
+    environment:
+      - VALIDATOR_NAME=TGAIA
+      - CHAIN_NODE=gaiad
+      - CHAIN_ID=gaia
+      - DENOM=ATOM
     volumes:
       - ./scripts/start_gaia.sh:/opt/start_gaia.sh
       - ./scripts/helper.sh:/opt/helper.sh
@@ -35,6 +38,11 @@ services:
       options:
         max-size: "12m"
         max-file: "5"
+    environment:
+      - VALIDATOR_NAME=TCELINIUM
+      - CHAIN_NODE=celiniumd
+      - CHAIN_ID=celinium 
+      - DENOM=CELI   
     volumes:
       - ./scripts/start_celi.sh:/opt/start_celi.sh
       - ./scripts/helper.sh:/opt/helper.sh

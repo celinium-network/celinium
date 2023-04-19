@@ -36,7 +36,7 @@ chains:
             account-prefix: cosmos
             keyring-backend: test
             gas-adjustment: 1.2
-            gas-prices: 0.1atom
+            gas-prices: 0.1ATOM
             min-gas-amount: 0
             debug: true
             timeout: 20s
