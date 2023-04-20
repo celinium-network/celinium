@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
@@ -127,6 +128,9 @@ func (k Keeper) handlePendingDelegationRecord(ctx sdk.Context, record types.Dele
 		TimeoutTimestamp: uint64(timeoutTimestamp),
 		Memo:             "",
 	}
+
+	ctx.Logger().Info(fmt.Sprintf("transfer pending delegation record epoch: %d coin: %v",
+		record.EpochNumber, record.DelegationCoin))
 
 	resp, err := k.ibcTransferKeeper.Transfer(ctx, &msg)
 	if err != nil {
