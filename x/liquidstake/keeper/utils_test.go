@@ -104,12 +104,12 @@ func (suite *KeeperTestSuite) IBCTransfer(
 func (suite *KeeperTestSuite) setSourceChainAndEpoch(sourceChain *types.SourceChain, epochInfo *epochtypes.EpochInfo) {
 	controlChainApp := getCeliniumApp(suite.controlChain)
 
-	suite.setSourceChain(controlChainApp, sourceChain)
-
 	// start epoch and update offchain light.
 	controlChainApp.EpochsKeeper.SetEpochInfo(suite.controlChain.GetContext(), *epochInfo)
 	suite.controlChain.Coordinator.IncrementTimeBy(epochInfo.Duration)
 	suite.transferPath.EndpointA.UpdateClient()
+
+	suite.setSourceChain(controlChainApp, sourceChain)
 }
 
 func (suite *KeeperTestSuite) setSourceChain(chainApp *app.App, sourceChain *types.SourceChain) {

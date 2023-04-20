@@ -25,6 +25,10 @@ func (suite *KeeperTestSuite) unbondEpoch() *epochtypes.EpochInfo {
 }
 
 func (suite *KeeperTestSuite) TestCreateEpochUnbonding() {
+	ctlChainApp := getCeliniumApp(suite.controlChain)
+	ctx := suite.controlChain.GetContext()
+	ctlChainApp.EpochsKeeper.SetEpochInfo(ctx, *suite.delegationEpoch())
+
 	suite.setSourceChainAndEpoch(suite.generateSourceChainParams(), suite.unbondEpoch())
 
 	// check epoch unbonding at epoch 2

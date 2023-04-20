@@ -64,7 +64,7 @@ func (k Keeper) Undelegate(ctx sdk.Context, chainID string, amount math.Int, del
 	// update related Unbonding by chainID
 	curEpochUnbondings, found := k.GetEpochUnboundings(ctx, currentEpoch)
 	if !found {
-		return nil, sdkerrors.Wrapf(types.ErrEpochUnbondingNotExist, "epoch %d", currentEpoch)
+		curEpochUnbondings = k.CreateEpochUnbondings(ctx, currentEpoch)
 	}
 
 	var curEpochSourceChainUnbonding types.Unbonding

@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package celinium.liquidstake.v1;
+
+import "gogoproto/gogo.proto";
+import "cosmos_proto/cosmos.proto";
+import "google/api/annotations.proto";
+import "celinium/liquidstake/v1/source_chain.proto";
+import "celinium/liquidstake/v1/stake.proto";
+
+option go_package = "celinium/x/liquidstake/types";
+
+service Query{
+    rpc SourceChain(QuerySourceChainRequest) returns (QuerySourceChainResponse) {
+        option (google.api.http).get = "/celinium/liquidstake/v1/source_chain";
+    }
+
+    rpc ChainEpochDelegationRecord(QueryChainEpochDelegationRecordRequest) returns(QueryChainEpochDelegationRecordResponse){
+        option (google.api.http).get = "/celinium/liquidstake/v1/chain_epoch_delegation";
+    }
+
+    rpc ChainEpochUnbonding(QueryChainEpochUnbondingRequest) returns(QueryChainEpochUnbondingResponse){
+        option (google.api.http).get = "/celinium/liquidstake/v1/chain_epoch_unbonding";
+    }
+
+    rpc UserUndelegationRecord(QueryUserUndelegationRecordRequest) returns(QueryUserUndelegationRecordResponse){
+        option (google.api.http).get = "/celinium/liquidstake/v1/user_undelegation_record";
+    }
+}
+
+message QuerySourceChainRequest{
+    string ChainID = 1;
+}
+
+message QuerySourceChainResponse{
+    SourceChain sourceChain = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryChainEpochDelegationRecordRequest{
+    uint64 epoch = 1;
+    string chainID = 2;
+}
+
+message QueryChainEpochDelegationRecordResponse{
+    DelegationRecord record = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryChainEpochUnbondingRequest{
+    uint64 epoch = 1;
+    string chainID = 2;
+}
+
+message QueryChainEpochUnbondingResponse{
+    Unbonding chainUnbonding = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryUserUndelegationRecordRequest{
+    string chainID = 1;
+    string user = 2;
+}
+
+message QueryUserUndelegationRecordResponse{
+    repeated UndelegationRecord undelegationRecords = 1 [(gogoproto.nullable) = false];
+}

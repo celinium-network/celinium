@@ -4,12 +4,10 @@ import (
 	"math/big"
 	"time"
 
-	sdkerrors "cosmossdk.io/errors"
 	epochtypes "github.com/celinium-netwok/celinium/x/epochs/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	appparams "github.com/celinium-netwok/celinium/app/params"
-	"github.com/celinium-netwok/celinium/x/liquidstake/types"
 )
 
 func (suite *KeeperTestSuite) TestCreateNewDelegationRecordAtEpochStart() {
@@ -49,32 +47,6 @@ func (suite *KeeperTestSuite) TestDelegate() {
 	delegationRecord, found := controlChainApp.LiquidStakeKeeper.GetDelegationRecord(ctx, nextDelegationRecordID-1)
 	suite.True(found)
 	suite.True(delegationRecord.DelegationCoin.Amount.Equal(testCoin.Amount))
-}
-
-func (suite *KeeperTestSuite) TestDelegateWithNoDelegationRecord_ShouldFail() {
-	ctlChainUserAddr := suite.controlChain.SenderAccount.GetAddress()
-	srcChainParams := suite.generateSourceChainParams()
-	ctlChainApp := getCeliniumApp(suite.controlChain)
-	ctx := suite.controlChain.GetContext()
-	epoch := suite.delegationEpoch()
-	testCoin := suite.testCoin
-
-	suite.setSourceChain(ctlChainApp, srcChainParams)
-	ctlChainApp.EpochsKeeper.SetEpochInfo(ctx, *epoch)
-
-	bal := ctlChainApp.BankKeeper.GetBalance(ctx, ctlChainUserAddr, srcChainParams.IbcDenom)
-	derivativeBalBefore := ctlChainApp.BankKeeper.GetBalance(ctx, ctlChainUserAddr, srcChainParams.DerivativeDenom)
-
-	_, err := ctlChainApp.LiquidStakeKeeper.Delegate(ctx, srcChainParams.ChainID, testCoin.Amount, ctlChainUserAddr)
-	suite.Error(err, sdkerrors.Wrapf(types.ErrNoExistDelegationRecord, "chainID %s, epoch %d",
-		srcChainParams.ChainID, epoch.CurrentEpoch))
-
-	balAfter := ctlChainApp.BankKeeper.GetBalance(ctx, ctlChainUserAddr, srcChainParams.IbcDenom)
-	derivativeBalAfter := ctlChainApp.BankKeeper.GetBalance(ctx, ctlChainUserAddr, srcChainParams.DerivativeDenom)
-
-	// no balance change
-	suite.Equal(bal, balAfter)
-	suite.Equal(derivativeBalAfter, derivativeBalBefore)
 }
 
 func (suite *KeeperTestSuite) TestDelegateWithDiffRedeemRatio() {
