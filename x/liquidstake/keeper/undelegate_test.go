@@ -97,7 +97,7 @@ func (suite *KeeperTestSuite) TestUndelegate() {
 	delegatorOnSourceChain, _ := ctlChainApp.LiquidStakeKeeper.GetSourceChainAddr(ctx, srcChainParams.ConnectionID, srcChainParams.DelegateAddress)
 
 	ctx = suite.sourceChain.GetContext()
-	UnbondingOnSrcChain := srcChainApp.StakingKeeper.GetAllUnbondingDelegations(ctx, delegatorOnSourceChain)
+	UnbondingOnSrcChain := srcChainApp.StakingKeeper.GetAllUnbondingDelegations(ctx, sdk.MustAccAddressFromBech32(delegatorOnSourceChain))
 	allocatedUnbonding := srcChainParams.AllocateFundsForValidator(testCoin.Amount)
 	for _, unbonding := range UnbondingOnSrcChain {
 		for _, alloc := range allocatedUnbonding {

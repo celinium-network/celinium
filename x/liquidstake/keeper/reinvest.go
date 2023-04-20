@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	sdkerrors "cosmossdk.io/errors"
 	"cosmossdk.io/math"
 	"github.com/gogo/protobuf/proto"
 
@@ -40,7 +41,7 @@ func (k Keeper) WithdrawDelegateReward(ctx sdk.Context, sourceChain *types.Sourc
 
 	for _, v := range sourceChain.Validators {
 		sendMsgs = append(sendMsgs, &distrtypes.MsgWithdrawDelegatorReward{
-			DelegatorAddress: delegateAccAddr.String(),
+			DelegatorAddress: delegateAccAddr,
 			ValidatorAddress: v.Address,
 		})
 	}
@@ -70,12 +71,12 @@ func (k Keeper) WithdrawDelegateReward(ctx sdk.Context, sourceChain *types.Sourc
 }
 
 func (k Keeper) AfterWithdrawDelegateReward(ctx sdk.Context, sourceChain *types.SourceChain, reward math.Int) error {
-	delegateAccAddr, err := k.GetSourceChainAddr(ctx, sourceChain.ConnectionID, sourceChain.DelegateAddress)
+	delegateAddr, err := k.GetSourceChainAddr(ctx, sourceChain.ConnectionID, sourceChain.DelegateAddress)
 	if err != nil {
 		return err
 	}
 
-	rewardAccAddr, err := k.GetSourceChainAddr(ctx, sourceChain.ConnectionID, sourceChain.WithdrawAddress)
+	rewardAddr, err := k.GetSourceChainAddr(ctx, sourceChain.ConnectionID, sourceChain.WithdrawAddress)
 	if err != nil {
 		return err
 	}
@@ -83,8 +84,8 @@ func (k Keeper) AfterWithdrawDelegateReward(ctx sdk.Context, sourceChain *types.
 	sendMsgs := make([]proto.Message, 0)
 
 	sendMsgs = append(sendMsgs, &banktypes.MsgSend{
-		FromAddress: rewardAccAddr.String(),
-		ToAddress:   delegateAccAddr.String(),
+		FromAddress: rewardAddr,
+		ToAddress:   delegateAddr,
 		Amount:      []sdk.Coin{sdk.NewCoin(sourceChain.NativeDenom, reward)},
 	})
 
@@ -113,14 +114,17 @@ func (k Keeper) AfterWithdrawDelegateReward(ctx sdk.Context, sourceChain *types.
 	return nil
 }
 
-func (k Keeper) GetSourceChainAddr(ctx sdk.Context, connectionID string, ctlAddress string) (sdk.AccAddress, error) {
+func (k Keeper) GetSourceChainAddr(ctx sdk.Context, connectionID string, ctlAddress string) (string, error) {
 	portID, err := icatypes.NewControllerPortID(ctlAddress)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	sourceChainDelegateAddr, _ := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, connectionID, portID)
-	return sdk.AccAddressFromBech32(sourceChainDelegateAddr)
+	sourceChainAddr, found := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, connectionID, portID)
+	if !found {
+		return "", sdkerrors.Wrapf(types.ErrICANotFound, "connectionID %s ctlAddress %s", connectionID, ctlAddress)
+	}
+	return sourceChainAddr, nil
 }
 
 // SetDistriWithdrawAddress set the sourcechain staking reward recipient.
@@ -147,8 +151,8 @@ func (k Keeper) SetDistriWithdrawAddress(ctx sdk.Context) error {
 		sendMsgs := make([]proto.Message, 0)
 
 		sendMsgs = append(sendMsgs, &distrtypes.MsgSetWithdrawAddress{
-			DelegatorAddress: delegateAccAddr.String(),
-			WithdrawAddress:  rewardAccAddr.String(),
+			DelegatorAddress: delegateAccAddr,
+			WithdrawAddress:  rewardAccAddr,
 		})
 
 		sequence, portID, err := k.sendIBCMsg(ctx, sendMsgs, sourceChain.ConnectionID, sourceChain.DelegateAddress)
