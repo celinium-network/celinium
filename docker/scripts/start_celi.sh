@@ -19,4 +19,13 @@ celiniumd gentx $WALLET_KEY_NAME $STAKING_AMOUNT --chain-id $CHAIN_ID --keyring-
 
 celiniumd collect-gentxs
 
+cd ~/.celinium/config
+
+# set LiquidStakeDelegateEpoch from env
+jq "(.app_state.epochs.epochs[] | select(.identifier == \"LiquidStakeDelegateEpoch\").duration) = env.DELEGATION_EPOCH" genesis.json > genesis_tmp.json && mv genesis_tmp.json genesis.json
+
+jq "(.app_state.epochs.epochs[] | select(.identifier == \"LiquidStakeUndelegateEpoch\").duration) = env.UNDELEGATION_EPOCH" genesis.json > genesis_tmp.json && mv genesis_tmp.json genesis.json
+
+jq "(.app_state.epochs.epochs[] | select(.identifier == \"LiquidStakeReinvestEpoch\").duration) = env.REINVEST_EPOCH" genesis.json > genesis_tmp.json && mv genesis_tmp.json genesis.json
+
 celiniumd start --rpc.laddr tcp://0.0.0.0:26657 --grpc.address 0.0.0.0:9090
