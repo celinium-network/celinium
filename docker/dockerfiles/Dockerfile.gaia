@@ -26,6 +26,8 @@ COPY --from=builder /go/bin/gaiad /usr/local/bin/
 
 COPY ./scripts/start_gaia.sh /opt/start_gaia.sh
 COPY ./scripts/helper.sh /opt/helper.sh
+COPY ./scripts/config/ica.json /opt/ica.json
+
 
 RUN chmod +x /opt/start_gaia.sh
 RUN chmod +x /opt/helper.sh

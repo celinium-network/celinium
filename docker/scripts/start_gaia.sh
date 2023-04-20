@@ -10,8 +10,13 @@ STAKING_AMOUNT="100000000000000$DENOM"
 gaiad tendermint unsafe-reset-all 
 gaiad init $VALIDATOR_NAME --chain-id $CHAIN_ID 
 
-sed -i "s/stake/$DENOM/g" ~/.gaia/config/genesis.json
-sed -i 's/"unbonding_time": "1814400s"/"unbonding_time": "172800s"/g' ~/.gaia/config/genesis.json
+genesis_file=~/.gaia/config/genesis.json
+
+sed -i "s/stake/$DENOM/g" $genesis_file
+sed -i 's/"unbonding_time": "1814400s"/"unbonding_time": "172800s"/g' $genesis_file
+
+interchain_accts=$(cat /opt/ica.json)
+jq ".app_state += $interchain_accts" $genesis_file > json.tmp && mv json.tmp $genesis_file
 
 gaiad keys add $WALLET_KEY_NAME --keyring-backend test 
 gaiad add-genesis-account $WALLET_KEY_NAME $TOKEN_AMOUNT --keyring-backend test 
