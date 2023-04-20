@@ -48,9 +48,10 @@ Step 4: Register source chain on celinium
     docker compose exec celinium /opt/liquidstake.sh register_source_chain gaia connection-0 channel-0 cosmosvaloper '{"Vals": [{"weight": 100000000,"address":"cosmosvaloper1lgj6z9ujsv2pszwctcem47x8t0ys3tcmvsszte"}]}' ATOM vpATOM
 
     {"Vals": [{"weight": 100000000,"address":"cosmosvaloper1lgj6z9ujsv2pszwctcem47x8t0ys3tcmvsszte"}]}, 
-    this is the target validator for delegation on gaia,you need to search for the "validator_address" field in the 
-    ./gaia_validator_1/config/genesis.json file and use its value for subsequent replacement operations.
-    Currently, Gaia chain has only one validator.
+    this is the target validator for delegation on gaia.
+    query the gaia validators by the command:
+    docker compose exec gaia-validator-1 /opt/helper.sh query staking validators.
+    The value of "operator_address" field is validator address.
 
 step5: delegate
     docker compose exec celinium /opt/liquidstake.sh delegate gaia 500 TCELINIUM
@@ -58,7 +59,7 @@ step5: delegate
 step5: undelegate
     docker compose exec celinium /opt/liquidstake.sh undelegate gaia 250 TCELINIUM
 
-step5: claim
+step6: claim
     docker compose exec celinium /opt/liquidstake.sh claim gaia 1 TCELINIUM
     
     Where 1 represents the unbonding epoch when the undelegate occurred.    
