@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	sdkerrors "cosmossdk.io/errors"
 	"cosmossdk.io/math"
 	"github.com/gogo/protobuf/proto"
 
@@ -9,7 +8,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	icatypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/types"
 
 	"github.com/celinium-netwok/celinium/x/liquidstake/types"
 )
@@ -112,19 +110,6 @@ func (k Keeper) AfterWithdrawDelegateReward(ctx sdk.Context, sourceChain *types.
 	k.SetCallBack(ctx, sendChannelID, portID, sequence, &callback)
 
 	return nil
-}
-
-func (k Keeper) GetSourceChainAddr(ctx sdk.Context, connectionID string, ctlAddress string) (string, error) {
-	portID, err := icatypes.NewControllerPortID(ctlAddress)
-	if err != nil {
-		return "", err
-	}
-
-	sourceChainAddr, found := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, connectionID, portID)
-	if !found {
-		return "", sdkerrors.Wrapf(types.ErrICANotFound, "connectionID %s ctlAddress %s", connectionID, ctlAddress)
-	}
-	return sourceChainAddr, nil
 }
 
 // SetDistriWithdrawAddress set the sourcechain staking reward recipient.

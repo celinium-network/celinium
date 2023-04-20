@@ -9,7 +9,6 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	icatypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
 
@@ -111,13 +110,9 @@ func (k Keeper) handlePendingDelegationRecord(ctx sdk.Context, record types.Dele
 		return err
 	}
 
-	portID, err := icatypes.NewControllerPortID(sourceChain.DelegateAddress)
+	hostAddr, err := k.GetSourceChainAddr(ctx, sourceChain.ConnectionID, sourceChain.DelegateAddress)
 	if err != nil {
 		return err
-	}
-	hostAddr, found := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ConnectionID, portID)
-	if !found {
-		return sdkerrors.Wrapf(types.ErrICANotFound, "address %s", sourceChain.DelegateAddress)
 	}
 
 	// TODO timeout ?
@@ -165,17 +160,6 @@ func (k Keeper) AfterDelegateTransfer(ctx sdk.Context, record *types.DelegationR
 	if !found {
 		return sdkerrors.Wrapf(types.ErrUnknownSourceChain, "unknown source chain, chainID: %s", record.ChainID)
 	}
-
-	portID, err := icatypes.NewControllerPortID(sourceChain.DelegateAddress)
-	if err != nil {
-		return err
-	}
-
-	// sourceChainDelegateAddr, found := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ConnectionID, portID)
-	// if !found {
-	// 	return sdkerrors.Wrapf(types.ErrICANotFound, "chainID: %s, connectionID %s ctlAddress %s",
-	// 		record.ChainID, sourceChain.ConnectionID, sourceChain.DelegateAddress)
-	// }
 
 	sourceChainDelegateAddr, err := k.GetSourceChainAddr(ctx, sourceChain.ConnectionID, sourceChain.DelegateAddress)
 	if err != nil {
