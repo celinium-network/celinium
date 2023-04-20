@@ -31,6 +31,7 @@ func (ms msgServer) RegisterSourceChain(goCtx goctx.Context, msg *types.MsgRegis
 		TransferChannelID:         msg.TrasnferChannelID,
 		Bech32ValidatorAddrPrefix: msg.Bech32ValidatorAddrPrefix,
 		Validators:                msg.Validators,
+		Redemptionratio:           sdk.NewDecWithPrec(100000000, 8),
 		NativeDenom:               msg.NativeDenom,
 		DerivativeDenom:           msg.DerivativeDenom,
 		StakedAmount:              math.ZeroInt(),
