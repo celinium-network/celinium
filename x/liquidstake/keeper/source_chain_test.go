@@ -14,10 +14,13 @@ import (
 func (suite *KeeperTestSuite) TestAddSourceChain() {
 	sourceChain := suite.generateSourceChainParams()
 
-	controlChainApp := getCeliniumApp(suite.controlChain)
-	channelSequence := controlChainApp.GetIBCKeeper().ChannelKeeper.GetNextChannelSequence(suite.controlChain.GetContext())
+	ctlChainApp := getCeliniumApp(suite.controlChain)
+	ctx := suite.controlChain.GetContext()
+	ctlChainApp.EpochsKeeper.SetEpochInfo(ctx, *suite.delegationEpoch())
 
-	err := controlChainApp.LiquidStakeKeeper.AddSouceChain(suite.controlChain.GetContext(), sourceChain)
+	channelSequence := ctlChainApp.GetIBCKeeper().ChannelKeeper.GetNextChannelSequence(suite.controlChain.GetContext())
+
+	err := ctlChainApp.LiquidStakeKeeper.AddSouceChain(suite.controlChain.GetContext(), sourceChain)
 	suite.NoError(err)
 	suite.controlChain.NextBlock()
 
