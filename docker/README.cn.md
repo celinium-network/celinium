@@ -1,96 +1,62 @@
-# Plan
-## 最终测试网：
-    3 个 Gaia validator 
-    1 个 Celinium validator
-    1 个 Relayer 
- 
-## 本地可行测试
-    step0：
-        1 个 Gaia validator  
-        1 个 Celinium validator
-        设置 Gaia 的 staking 参数：
-        unbonding period: 48 小时?
+# Docker Compose Testnet
+在当前阶段，我们将通过 Docker Compose 启动一个简单的本地测试网来测试基本的功能。网络有一个 Gaia（cosmos hub） 验证节点，一个 Celinium 验证节点，一个 Relayer 程序。
+Relayer 将在 Gaia 链和 Celinium 之间建立 IBC 链接和通道，使网络可以使用 IBC-transfer和 ICS-27.
 
-
-    step1: 创建两个账户 并转账
-            gaia-user：
-            celi-user：
-
-    step2: 启动relayer，建立 IBC 通道，开始 updateclient
-
-    step3: 设置 DelegateEpoch(1小时)/UndelegateEpoch(24小时)/ReInvestEpoch（2小时）
-
-    step4: register sourcechain
-
-    step5: delegate
-
-    step6: undelegate
-
-    step7: claim
-
-# 如何启动relayer
+# Start
 ```
-    参考 https://github.com/cosmos/relayer#Basic-Usage---Relaying-Packets-Across-Chains
-
-    1. rly config init
-
-    2. 手动配置链
-    gaia:
-        type: cosmos
-        value:
-            key-directory: /home/manjaro/.relayer/keys/gaia
-            key: gaia-0
-            chain-id: gaia
-            rpc-addr: http://127.0.0.1:46659
-            account-prefix: cosmos
-            keyring-backend: test
-            gas-adjustment: 1.2
-            gas-prices: 0.1atom
-            min-gas-amount: 0
-            debug: true
-            timeout: 100s
-            block-timeout: ""
-            output-format: json
-            sign-mode: direct
-            extra-codecs: []
-            coin-type: 0
-            signing-algorithm: ""
-            broadcast-mode: batch
-            min-loop-duration: 0s   
-    3. 为每个链创建账户
-        rly keys add gaia gaia-0
-
-    4. 启动链
-
-    5. 给创建的账户转账
-         ./celiniumd tx bank send celi1hqu6s5lkr370g0mcx4tg2n037n5njpzsf722ln celi1c35lchkcnupx3etfcjr2h9pqyfrs4hen7rfdkp 1000000000CELI --fees 5000CELI --keyring-backend test --chain-id celinium
-
-    6. 配置path
-        rly paths new gaia celinium gaia-celi-path
-
-    7. 创建path
-        rly transact link gaia-celi-path
-
-    8. 启动path
-        rly start gaia-celi-path       
-```
-
-# Command
-```
-// ibc transfer
-gaiad tx ibc-transfer transfer transfer channel-0 celi1hqu6s5lkr370g0mcx4tg2n037n5njpzsf722ln 10000atom --fees 5000atom --keyring-backend test --chain-id gaia --from cosmos1p2p6y9tn7sptamkrh79mlwf484r9y5lwc7j0se
-
-快速清理docker-compose 创建的所有卷/镜像/容器 docker-compose down --volumes --remove-orphans
-
+step1: 回到项目根目录，构建 celinium 镜像
     docker build -t celinium -f Dockerfile .
+step2: 启动网络
+    docker compose up
+    执行命令后，Relayer 容器会自动执行初始化脚本，建立IBC链接。这个过程大约需要20个块。在观测到relayer日志有以下消息说明通道建立成功，
+    docker-relayer-1 | ts=2023-04-20T03:18:45.408841Z lvl=info msg="Found termination condition for channel handshake" 
+    path_name=gaia-celi-path chain_id=celinium client_id=07-tendermint-0
+   
 ```
-docker compose exec celinium /opt/liquidstake.sh register_source_chain gaia connection-0 transfer cosmosvaloper '{"Vals": [{"weight": 100000000,"address":"cosmosvaloper1cgkvd2h6xun7s4xrvre3me9psdrktxd4dj494z"}]}' ATOM vpATOM
+可以通过 clear.sh 脚快速清理 docker compose up 当中创建的卷和容器。
 
-docker compose exec celinium /opt/helper.sh wallet:balance
+# Test
+```
+step1: 查询当前 celinium 容器当中钱包地址
+    docker compose exec celinium /opt/helper.sh wallet:address
+    response: celi1gpsstdwwwzyeau7mc8q9a2vp97qu3prte46f7w
+step2: 查询当前 celinium 容器当中钱包资产
+    docker compose exec celinium /opt/helper.sh wallet:balance
+    response: 
+        balances:
+        - amount: "9999999999999999000000000"
+          denom: CELI
+        pagination:
+          next_key: null
+          total: "0"
+        
+step3: 从 gaia 转账到 celinium            
+    docker compose exec gaia-validator-1 /opt/helper.sh wallet:ibc_transfer celi12cnq5gy6vgcq93hxqlzqwpcdcvdca6nfycw3px 1000ATOM
+    再查询资产
+        balances:
+        - amount: "9999999999999999000000000"
+          denom: CELI
+        - amount: "1000"
+          denom: ibc/04C1A8B4EC211C89630916F8424F16DC9611148A5F300C122464CE8E996AABD0
+        pagination:
+          next_key: null
+          total: "0"
+    04C1A8B4EC211C89630916F8424F16DC9611148A5F300C122464CE8E996AABD0=Hash(transfer/channel-0/ATOM)
 
-docker compose exec celinium /opt/helper.sh wallet:address
+step4: 在 celinium 上注册 sourcechain，                  
+    docker compose exec celinium /opt/liquidstake.sh register_source_chain gaia connection-0 channel-0 cosmosvaloper '{"Vals": [{"weight": 100000000,"address":"cosmosvaloper1lgj6z9ujsv2pszwctcem47x8t0ys3tcmvsszte"}]}' ATOM vpATOM
 
-docker compose exec gaia-validator-1 /opt/helper.sh wallet:ibc_transfer celi1mt6dvlc777fencqyvd3n22pl3qpr4gcm8ryp68 1000ATOM
+    {"Vals": [{"weight": 100000000,"address":"cosmosvaloper1lgj6z9ujsv2pszwctcem47x8t0ys3tcmvsszte"}]}， 这是将要在gaia上进行delegate的目标validator，
+    这个地址暂时从 ./gaia_validator_1/config/genesis.json 当中搜索“validator_address”，获得的值进行替代，目前 gaia 只有一个Validator。
 
-# docker
-构建镜像时，
+step5: delegate
+    docker compose exec celinium /opt/liquidstake.sh delegate gaia 500 TCELINIUM
+
+step5: undelegate
+    docker compose exec celinium /opt/liquidstake.sh undelegate gaia 250 TCELINIUM
+
+step5: claim
+    undelegate操作后，再经过 unbond 周期，现在用户可以 claim
+    docker compose exec celinium /opt/liquidstake.sh claim gaia 1 TCELINIUM
+    1 代表的是undelegate 发生的 unbonding epoch 为 1。         
+```
