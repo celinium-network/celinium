@@ -32,7 +32,7 @@ Step 2: Query the wallet balance in the celinium container
           total: "0"
         
 Step 3: Transfer from gaia to celinium            
-    docker compose exec gaia-validator-1 /opt/helper.sh wallet:ibc_transfer celi12cnq5gy6vgcq93hxqlzqwpcdcvdca6nfycw3px 1000ATOM
+    docker compose exec gaia-validator-1 /opt/helper.sh wallet:ibc_transfer celi1s9l89h0ayksj8ve0lg72js3xcmd7a6cswpplng 1000ATOM
     Query the balance again
         balances:
         - amount: "9999999999999999000000000"
@@ -45,16 +45,42 @@ Step 3: Transfer from gaia to celinium
     04C1A8B4EC211C89630916F8424F16DC9611148A5F300C122464CE8E996AABD0=Hash(transfer/channel-0/ATOM)
 
 Step 4: Register source chain on celinium                  
-    docker compose exec celinium /opt/liquidstake.sh register_source_chain gaia connection-0 channel-0 cosmosvaloper '{"Vals": [{"weight": 100000000,"address":"cosmosvaloper1lgj6z9ujsv2pszwctcem47x8t0ys3tcmvsszte"}]}' ATOM vpATOM
+    docker compose exec celinium /opt/liquidstake.sh register_source_chain gaia connection-0 channel-0 cosmosvaloper '{"Vals": [{"weight": 100000000,"address":"cosmosvaloper1v4uh87waaek6e2wv3aq8tw5j7p090pxtkpsc8z"}]}' ATOM vpATOM
 
     {"Vals": [{"weight": 100000000,"address":"cosmosvaloper1lgj6z9ujsv2pszwctcem47x8t0ys3tcmvsszte"}]}, 
     this is the target validator for delegation on gaia.
     query the gaia validators by the command:
-    docker compose exec gaia-validator-1 /opt/helper.sh query staking validators.
+    docker compose exec gaia-validator-1 /opt/helper.sh query staking validators
     The value of "operator_address" field is validator address.
 
 step5: delegate
     docker compose exec celinium /opt/liquidstake.sh delegate gaia 500 TCELINIUM
+
+    result:
+        docker compose exec celinium /opt/helper.sh wallet:balance
+        response: 
+            balances:
+            - amount: "9999999999999998999990000"
+              denom: CELI
+            - amount: "500"
+              denom: ibc/04C1A8B4EC211C89630916F8424F16DC9611148A5F300C122464CE8E996AABD0
+            - amount: "500"
+              denom: vpATOM
+            pagination:
+              next_key: null
+              total: "0"
+            
+        docker compose exec celinium /opt/helper.sh query liquidstake delegation-record gaia 1
+        response:
+            record:
+              chainID: gaia
+              delegationCoin:
+                amount: "500"
+                denom: ibc/04C1A8B4EC211C89630916F8424F16DC9611148A5F300C122464CE8E996AABD0
+              epochNumber: "1"
+              id: "0"
+              status: 0
+              transferredAmount: "0"
 
 step5: undelegate
     docker compose exec celinium /opt/liquidstake.sh undelegate gaia 250 TCELINIUM

@@ -11,6 +11,7 @@ gaiad tendermint unsafe-reset-all
 gaiad init $VALIDATOR_NAME --chain-id $CHAIN_ID 
 
 sed -i "s/stake/$DENOM/g" ~/.gaia/config/genesis.json
+sed -i 's/"unbonding_time": "1814400s"/"unbonding_time": "172800s"/g' ~/.gaia/config/genesis.json
 
 gaiad keys add $WALLET_KEY_NAME --keyring-backend test 
 gaiad add-genesis-account $WALLET_KEY_NAME $TOKEN_AMOUNT --keyring-backend test 
