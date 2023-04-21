@@ -34,8 +34,8 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/celinium-netwok/celinium/app"
-	appparams "github.com/celinium-netwok/celinium/app/params"
+	"github.com/celinium-network/celinium/app"
+	appparams "github.com/celinium-network/celinium/app/params"
 )
 
 // NewRootCmd creates a new root command for a Cosmos SDK application
