@@ -7,7 +7,7 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/celinium-netwok/celinium/x/liquidstake/types"
+	"github.com/celinium-network/celinium/x/liquidstake/types"
 )
 
 func TestSourceChainAllocateFunds(t *testing.T) {

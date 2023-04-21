@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	appparams "github.com/celinium-netwok/celinium/app/params"
-	"github.com/celinium-netwok/celinium/x/liquidstake/types"
+	appparams "github.com/celinium-network/celinium/app/params"
+	"github.com/celinium-network/celinium/x/liquidstake/types"
 )
 
 func (suite *KeeperTestSuite) TestGRPCQuerySourceChain() {

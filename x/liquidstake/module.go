@@ -13,9 +13,9 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/celinium-netwok/celinium/x/liquidstake/client/cli"
-	"github.com/celinium-netwok/celinium/x/liquidstake/keeper"
-	"github.com/celinium-netwok/celinium/x/liquidstake/types"
+	"github.com/celinium-network/celinium/x/liquidstake/client/cli"
+	"github.com/celinium-network/celinium/x/liquidstake/keeper"
+	"github.com/celinium-network/celinium/x/liquidstake/types"
 )
 
 var (

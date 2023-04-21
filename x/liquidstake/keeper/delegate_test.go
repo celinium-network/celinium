@@ -4,10 +4,10 @@ import (
 	"math/big"
 	"time"
 
-	epochtypes "github.com/celinium-netwok/celinium/x/epochs/types"
+	epochtypes "github.com/celinium-network/celinium/x/epochs/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	appparams "github.com/celinium-netwok/celinium/app/params"
+	appparams "github.com/celinium-network/celinium/app/params"
 )
 
 func (suite *KeeperTestSuite) TestCreateNewDelegationRecordAtEpochStart() {

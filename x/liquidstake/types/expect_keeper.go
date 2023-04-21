@@ -4,7 +4,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
-	epochstypes "github.com/celinium-netwok/celinium/x/epochs/types"
+	epochstypes "github.com/celinium-network/celinium/x/epochs/types"
 )
 
 // AccountKeeper defines the expected account keeper

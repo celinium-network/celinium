@@ -20,7 +20,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/celinium-netwok/celinium/x/epochs/types"
+	"github.com/celinium-network/celinium/x/epochs/types"
 )
 
 // GetEpochInfo returns epoch info by identifier

@@ -3,12 +3,12 @@ package keeper_test
 import (
 	"math/rand"
 
-	params "github.com/celinium-netwok/celinium/app/params"
+	params "github.com/celinium-network/celinium/app/params"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	icatypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/types"
 	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
 
-	"github.com/celinium-netwok/celinium/x/liquidstake/types"
+	"github.com/celinium-network/celinium/x/liquidstake/types"
 )
 
 func (suite *KeeperTestSuite) TestAddSourceChain() {

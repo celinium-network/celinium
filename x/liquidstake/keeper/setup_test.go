@@ -18,10 +18,10 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
 	ibctesting "github.com/cosmos/ibc-go/v6/testing"
 
-	celiniumapp "github.com/celinium-netwok/celinium/app"
-	epochtypes "github.com/celinium-netwok/celinium/x/epochs/types"
-	"github.com/celinium-netwok/celinium/x/liquidstake/keeper"
-	"github.com/celinium-netwok/celinium/x/liquidstake/types"
+	celiniumapp "github.com/celinium-network/celinium/app"
+	epochtypes "github.com/celinium-network/celinium/x/epochs/types"
+	"github.com/celinium-network/celinium/x/liquidstake/keeper"
+	"github.com/celinium-network/celinium/x/liquidstake/types"
 )
 
 type KeeperTestSuite struct {

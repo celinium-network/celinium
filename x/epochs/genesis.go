@@ -21,8 +21,8 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/celinium-netwok/celinium/x/epochs/keeper"
-	"github.com/celinium-netwok/celinium/x/epochs/types"
+	"github.com/celinium-network/celinium/x/epochs/keeper"
+	"github.com/celinium-network/celinium/x/epochs/types"
 )
 
 // InitGenesis initializes the epochs module's state from a provided genesis

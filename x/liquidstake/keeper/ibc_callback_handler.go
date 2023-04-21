@@ -12,8 +12,8 @@ import (
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	appparams "github.com/celinium-netwok/celinium/app/params"
-	"github.com/celinium-netwok/celinium/x/liquidstake/types"
+	appparams "github.com/celinium-network/celinium/app/params"
+	"github.com/celinium-network/celinium/x/liquidstake/types"
 )
 
 type callbackHandler func(*Keeper, sdk.Context, *types.IBCCallback, []*codectypes.Any) error

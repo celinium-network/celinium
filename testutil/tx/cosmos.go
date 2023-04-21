@@ -26,8 +26,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 
-	"github.com/celinium-netwok/celinium/app"
-	"github.com/celinium-netwok/celinium/app/params"
+	"github.com/celinium-network/celinium/app"
+	"github.com/celinium-network/celinium/app/params"
 )
 
 var (

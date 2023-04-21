@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"time"
 
-	appparams "github.com/celinium-netwok/celinium/app/params"
+	appparams "github.com/celinium-network/celinium/app/params"
 )
 
 // NewGenesisState creates a new genesis state instance

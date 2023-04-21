@@ -3,8 +3,8 @@ package keeper
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	appparams "github.com/celinium-netwok/celinium/app/params"
-	epochstypes "github.com/celinium-netwok/celinium/x/epochs/types"
+	appparams "github.com/celinium-network/celinium/app/params"
+	epochstypes "github.com/celinium-network/celinium/x/epochs/types"
 )
 
 type Hooks struct {
