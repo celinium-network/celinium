@@ -37,7 +37,7 @@ import (
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	"github.com/celinium-netwok/celinium/app/params"
+	"github.com/celinium-network/celinium/app/params"
 )
 
 // DefaultConsensusParams defines the default Tendermint consensus params used in

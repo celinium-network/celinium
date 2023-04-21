@@ -14,10 +14,10 @@ import (
 	ibchost "github.com/cosmos/ibc-go/v6/modules/core/24-host"
 	ibctesting "github.com/cosmos/ibc-go/v6/testing"
 
-	"github.com/celinium-netwok/celinium/app"
-	"github.com/celinium-netwok/celinium/app/params"
-	epochtypes "github.com/celinium-netwok/celinium/x/epochs/types"
-	"github.com/celinium-netwok/celinium/x/liquidstake/types"
+	"github.com/celinium-network/celinium/app"
+	"github.com/celinium-network/celinium/app/params"
+	epochtypes "github.com/celinium-network/celinium/x/epochs/types"
+	"github.com/celinium-network/celinium/x/liquidstake/types"
 )
 
 func (suite *KeeperTestSuite) TestIBCTransfer() {

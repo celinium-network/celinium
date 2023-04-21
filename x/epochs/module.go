@@ -36,9 +36,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 
-	"github.com/celinium-netwok/celinium/x/epochs/client/cli"
-	"github.com/celinium-netwok/celinium/x/epochs/keeper"
-	"github.com/celinium-netwok/celinium/x/epochs/types"
+	"github.com/celinium-network/celinium/x/epochs/client/cli"
+	"github.com/celinium-network/celinium/x/epochs/keeper"
+	"github.com/celinium-network/celinium/x/epochs/types"
 )
 
 var (

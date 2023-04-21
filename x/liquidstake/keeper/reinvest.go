@@ -9,7 +9,7 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 
-	"github.com/celinium-netwok/celinium/x/liquidstake/types"
+	"github.com/celinium-network/celinium/x/liquidstake/types"
 )
 
 func (k Keeper) Reinvest(ctx sdk.Context) {

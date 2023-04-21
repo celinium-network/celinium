@@ -6,8 +6,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	icatypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/types"
 
-	appparams "github.com/celinium-netwok/celinium/app/params"
-	"github.com/celinium-netwok/celinium/x/liquidstake/types"
+	appparams "github.com/celinium-network/celinium/app/params"
+	"github.com/celinium-network/celinium/x/liquidstake/types"
 )
 
 func (k Keeper) AddSouceChain(ctx sdk.Context, sourceChain *types.SourceChain) error {

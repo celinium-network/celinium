@@ -5,9 +5,9 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 
-	"github.com/celinium-netwok/celinium/app"
-	"github.com/celinium-netwok/celinium/testutil"
-	"github.com/celinium-netwok/celinium/x/epochs/types"
+	"github.com/celinium-network/celinium/app"
+	"github.com/celinium-network/celinium/testutil"
+	"github.com/celinium-network/celinium/x/epochs/types"
 )
 
 // Test helpers

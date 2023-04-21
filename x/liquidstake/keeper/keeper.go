@@ -10,7 +10,7 @@ import (
 	ibckeeper "github.com/cosmos/ibc-go/v6/modules/core/keeper"
 	"github.com/tendermint/tendermint/libs/log"
 
-	"github.com/celinium-netwok/celinium/x/liquidstake/types"
+	"github.com/celinium-network/celinium/x/liquidstake/types"
 )
 
 type Keeper struct {

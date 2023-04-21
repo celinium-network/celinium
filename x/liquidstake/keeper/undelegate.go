@@ -15,8 +15,8 @@ import (
 	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
 
-	appparams "github.com/celinium-netwok/celinium/app/params"
-	"github.com/celinium-netwok/celinium/x/liquidstake/types"
+	appparams "github.com/celinium-network/celinium/app/params"
+	"github.com/celinium-network/celinium/x/liquidstake/types"
 )
 
 func (k Keeper) Undelegate(ctx sdk.Context, chainID string, amount math.Int, delegator sdk.AccAddress) (*types.UndelegationRecord, error) {

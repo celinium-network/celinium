@@ -129,15 +129,15 @@ import (
 	icahosttypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/host/types"
 	icatypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/types"
 
-	appparams "github.com/celinium-netwok/celinium/app/params"
+	appparams "github.com/celinium-network/celinium/app/params"
 
-	epochs "github.com/celinium-netwok/celinium/x/epochs"
-	epochskeeper "github.com/celinium-netwok/celinium/x/epochs/keeper"
-	epochstypes "github.com/celinium-netwok/celinium/x/epochs/types"
+	epochs "github.com/celinium-network/celinium/x/epochs"
+	epochskeeper "github.com/celinium-network/celinium/x/epochs/keeper"
+	epochstypes "github.com/celinium-network/celinium/x/epochs/types"
 
-	liquidstake "github.com/celinium-netwok/celinium/x/liquidstake"
-	liquidstakekeeper "github.com/celinium-netwok/celinium/x/liquidstake/keeper"
-	liquidstaketypes "github.com/celinium-netwok/celinium/x/liquidstake/types"
+	liquidstake "github.com/celinium-network/celinium/x/liquidstake"
+	liquidstakekeeper "github.com/celinium-network/celinium/x/liquidstake/keeper"
+	liquidstaketypes "github.com/celinium-network/celinium/x/liquidstake/types"
 )
 
 const (

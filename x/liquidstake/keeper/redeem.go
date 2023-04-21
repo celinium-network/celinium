@@ -6,7 +6,7 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/celinium-netwok/celinium/x/liquidstake/types"
+	"github.com/celinium-network/celinium/x/liquidstake/types"
 )
 
 // UpdateRedeemRatio update redeemrate for each source chain

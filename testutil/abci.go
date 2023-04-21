@@ -26,8 +26,8 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 
-	"github.com/celinium-netwok/celinium/app"
-	"github.com/celinium-netwok/celinium/testutil/tx"
+	"github.com/celinium-network/celinium/app"
+	"github.com/celinium-network/celinium/testutil/tx"
 )
 
 // Commit commits a block at a given time. Reminder: At the end of each
