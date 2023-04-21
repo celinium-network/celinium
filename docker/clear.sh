@@ -8,4 +8,4 @@ docker rmi docker-gaia-validator-1
 
 docker rmi docker-relayer
 
-docker rmi celinium
+# docker rmi celinium

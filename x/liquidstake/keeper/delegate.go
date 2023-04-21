@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
@@ -9,7 +10,6 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	icatypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
 
@@ -111,13 +111,9 @@ func (k Keeper) handlePendingDelegationRecord(ctx sdk.Context, record types.Dele
 		return err
 	}
 
-	portID, err := icatypes.NewControllerPortID(sourceChain.DelegateAddress)
+	hostAddr, err := k.GetSourceChainAddr(ctx, sourceChain.ConnectionID, sourceChain.DelegateAddress)
 	if err != nil {
 		return err
-	}
-	hostAddr, found := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ConnectionID, portID)
-	if !found {
-		return sdkerrors.Wrapf(types.ErrICANotFound, "address %s", sourceChain.DelegateAddress)
 	}
 
 	// TODO timeout ?
@@ -132,6 +128,9 @@ func (k Keeper) handlePendingDelegationRecord(ctx sdk.Context, record types.Dele
 		TimeoutTimestamp: uint64(timeoutTimestamp),
 		Memo:             "",
 	}
+
+	ctx.Logger().Info(fmt.Sprintf("transfer pending delegation record epoch: %d coin: %v",
+		record.EpochNumber, record.DelegationCoin))
 
 	resp, err := k.ibcTransferKeeper.Transfer(ctx, &msg)
 	if err != nil {
@@ -166,29 +165,22 @@ func (k Keeper) AfterDelegateTransfer(ctx sdk.Context, record *types.DelegationR
 		return sdkerrors.Wrapf(types.ErrUnknownSourceChain, "unknown source chain, chainID: %s", record.ChainID)
 	}
 
-	portID, err := icatypes.NewControllerPortID(sourceChain.DelegateAddress)
+	sourceChainDelegateAddr, err := k.GetSourceChainAddr(ctx, sourceChain.ConnectionID, sourceChain.DelegateAddress)
 	if err != nil {
 		return err
 	}
-
-	sourceChainDelegateAddr, _ := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ConnectionID, portID)
-	sourceChainDelegateAddress := sdk.MustAccAddressFromBech32(sourceChainDelegateAddr)
-
 	allocatedFunds := sourceChain.AllocateFundsForValidator(record.DelegationCoin.Amount)
 
 	stakingMsgs := make([]proto.Message, 0)
-
 	for _, valFund := range allocatedFunds {
-		valAddress, err := sdk.ValAddressFromBech32(valFund.Address)
-		if err != nil {
-			return err
-		}
-
-		stakingMsgs = append(stakingMsgs, stakingtypes.NewMsgDelegate(
-			sourceChainDelegateAddress,
-			valAddress,
-			sdk.NewCoin(sourceChain.NativeDenom, valFund.Amount),
-		))
+		stakingMsgs = append(stakingMsgs, &stakingtypes.MsgDelegate{
+			DelegatorAddress: sourceChainDelegateAddr,
+			ValidatorAddress: valFund.Address,
+			Amount: sdk.Coin{
+				Denom:  sourceChain.NativeDenom,
+				Amount: valFund.Amount,
+			},
+		})
 	}
 
 	sequence, portID, err := k.sendIBCMsg(ctx, stakingMsgs, sourceChain.ConnectionID, sourceChain.DelegateAddress)

@@ -12,9 +12,11 @@ services:
       - "26656:26656"
       - "26657:26657"
     logging:
+      driver: syslog
       options:
-        max-size: "12m"
-        max-file: "5"
+        syslog-address: "tcp://127.0.0.1:514"
+        syslog-facility: "local0"
+        tag: "gaia-validator-1"    
     environment:
       - VALIDATOR_NAME=TGAIA
       - CHAIN_NODE=gaiad
@@ -35,14 +37,19 @@ services:
       - "26666:26656"
       - "26667:26657"
     logging:
+      driver: syslog
       options:
-        max-size: "12m"
-        max-file: "5"
+        syslog-address: "tcp://127.0.0.1:514"
+        syslog-facility: "local1"
+        tag: "celinium"    
     environment:
       - VALIDATOR_NAME=TCELINIUM
       - CHAIN_NODE=celiniumd
       - CHAIN_ID=celinium 
-      - DENOM=CELI   
+      - DENOM=CELI
+      - DELEGATION_EPOCH=600s
+      - UNDELEGATION_EPOCH=1200s
+      - REINVEST_EPOCH=720s    
     volumes:
       - ./scripts/start_celi.sh:/opt/start_celi.sh
       - ./scripts/helper.sh:/opt/helper.sh
@@ -55,9 +62,11 @@ services:
       context: .
     restart: unless-stopped
     logging:
+      driver: syslog
       options:
-        max-size: "12m"
-        max-file: "5"
+        syslog-address: "tcp://127.0.0.1:514"
+        syslog-facility: "local2"
+        tag: "relayer"
     depends_on:
       - gaia-validator-1
       - celinium  

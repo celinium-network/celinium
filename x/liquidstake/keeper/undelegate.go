@@ -12,7 +12,6 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	icatypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/types"
 	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
 
@@ -267,25 +266,20 @@ func (k Keeper) undelegateFromSourceChain(ctx sdk.Context, sourceChain *types.So
 	})
 
 	undelegateMsgs := make([]proto.Message, 0)
-
-	portID, err := icatypes.NewControllerPortID(sourceChain.DelegateAddress)
+	sourceChainUnbondAddress, err := k.GetSourceChainAddr(ctx, sourceChain.ConnectionID, sourceChain.DelegateAddress)
 	if err != nil {
 		return err
 	}
 
-	sourceChainUnbondAddr, _ := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ConnectionID, portID)
-	sourceChainUnbondAddress := sdk.MustAccAddressFromBech32(sourceChainUnbondAddr)
-
 	for _, valFund := range validatorAllocateFunds {
-		valAddress, err := sdk.ValAddressFromBech32(valFund.Address)
-		if err != nil {
-			return err
-		}
-		undelegateMsgs = append(undelegateMsgs, stakingtypes.NewMsgUndelegate(
-			sourceChainUnbondAddress,
-			valAddress,
-			sdk.NewCoin(sourceChain.NativeDenom, valFund.Amount),
-		))
+		undelegateMsgs = append(undelegateMsgs, &stakingtypes.MsgUndelegate{
+			DelegatorAddress: sourceChainUnbondAddress,
+			ValidatorAddress: valFund.Address,
+			Amount: sdk.Coin{
+				Denom:  sourceChain.NativeDenom,
+				Amount: valFund.Amount,
+			},
+		})
 	}
 
 	sequence, portID, err := k.sendIBCMsg(ctx, undelegateMsgs, sourceChain.ConnectionID, sourceChain.DelegateAddress)
@@ -313,13 +307,9 @@ func (k Keeper) undelegateFromSourceChain(ctx sdk.Context, sourceChain *types.So
 }
 
 func (k Keeper) withdrawUnbondFromSourceChain(ctx sdk.Context, sourceChain *types.SourceChain, amount math.Int, epoch uint64) error {
-	portID, err := icatypes.NewControllerPortID(sourceChain.DelegateAddress)
+	sourceChainUnbondAddr, err := k.GetSourceChainAddr(ctx, sourceChain.ConnectionID, sourceChain.DelegateAddress)
 	if err != nil {
 		return err
-	}
-	sourceChainUnbondAddr, found := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, sourceChain.ConnectionID, portID)
-	if !found {
-		return sdkerrors.Wrapf(types.ErrICANotFound, "address %s", sourceChain.DelegateAddress)
 	}
 
 	witdrawMsgs := make([]proto.Message, 0)

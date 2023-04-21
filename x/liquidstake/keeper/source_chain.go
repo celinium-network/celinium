@@ -162,6 +162,19 @@ func (k Keeper) SetChainDelegationRecordID(ctx sdk.Context, chainID string, epoc
 	store.Set(types.GeChainDelegationRecordIDForEpochKey(epochNumber, []byte(chainID)), sdk.Uint64ToBigEndian(recordID))
 }
 
+func (k Keeper) GetSourceChainAddr(ctx sdk.Context, connectionID string, ctlAddress string) (string, error) {
+	portID, err := icatypes.NewControllerPortID(ctlAddress)
+	if err != nil {
+		return "", err
+	}
+
+	sourceChainAddr, found := k.icaCtlKeeper.GetInterchainAccountAddress(ctx, connectionID, portID)
+	if !found {
+		return "", sdkerrors.Wrapf(types.ErrICANotFound, "connectionID %s ctlAddress %s", connectionID, ctlAddress)
+	}
+	return sourceChainAddr, nil
+}
+
 // chainAvaiable wheather a chain is available. when all interchain account is registered, then it's available
 func (k Keeper) sourceChainAvaiable(ctx sdk.Context, sourceChain *types.SourceChain) bool {
 	findICA := func(addr string) bool {

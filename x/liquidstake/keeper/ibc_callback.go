@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
@@ -52,13 +54,15 @@ func GetResultFromAcknowledgement(acknowledgement []byte) ([]byte, error) {
 func (k Keeper) HandleIBCTransferAcknowledgement(ctx sdk.Context, packet *channeltypes.Packet, acknowledgement []byte) error {
 	_, err := GetResultFromAcknowledgement(acknowledgement)
 	if err != nil {
-		return err
+		k.Logger(ctx).Error(fmt.Sprintf("IBC acknowledgement has error %v", err))
+		return nil
 	}
 
 	callback, found := k.GetCallBack(ctx, packet.SourceChannel, packet.SourcePort, packet.Sequence)
 	if !found {
-		return sdkerrors.Wrapf(types.ErrCallbackNotExist, "channelID: %s, portID: %s, sequence: %d",
-			packet.SourceChannel, packet.SourcePort, packet.Sequence)
+		k.Logger(ctx).Error(fmt.Sprintf("callback not exit, channelID: %s, portID: %s, sequence: %d",
+			packet.SourceChannel, packet.SourcePort, packet.Sequence))
+		return nil
 	}
 
 	handler, ok := callbackHandlerRegistry[callback.CallType]
@@ -73,7 +77,8 @@ func (k Keeper) HandleIBCTransferAcknowledgement(ctx sdk.Context, packet *channe
 func (k Keeper) HandleICAAcknowledgement(ctx sdk.Context, packet *channeltypes.Packet, acknowledgement []byte) error {
 	res, err := GetResultFromAcknowledgement(acknowledgement)
 	if err != nil {
-		return err
+		k.Logger(ctx).Error(fmt.Sprintf("IBC acknowledgement has error %v", err))
+		return nil
 	}
 
 	var txMsgData sdk.TxMsgData
@@ -83,8 +88,9 @@ func (k Keeper) HandleICAAcknowledgement(ctx sdk.Context, packet *channeltypes.P
 
 	callback, found := k.GetCallBack(ctx, packet.SourceChannel, packet.SourcePort, packet.Sequence)
 	if !found {
-		return sdkerrors.Wrapf(types.ErrCallbackNotExist, "channelID: %s, portID: %s, sequence: %d",
-			packet.SourceChannel, packet.SourcePort, packet.Sequence)
+		k.Logger(ctx).Error(fmt.Sprintf("callback not exit, channelID: %s, portID: %s, sequence: %d",
+			packet.SourceChannel, packet.SourcePort, packet.Sequence))
+		return nil
 	}
 
 	handler, ok := callbackHandlerRegistry[callback.CallType]

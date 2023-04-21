@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -38,6 +39,7 @@ func delegateTransferCallbackHandler(k *Keeper, ctx sdk.Context, callback *types
 		return nil
 	}
 
+	k.Logger(ctx).Info(fmt.Sprintf("delegateTransferCallbackHandler, chainID %s epoch %d", record.ChainID, record.EpochNumber))
 	k.AfterDelegateTransfer(ctx, record, true)
 	return nil
 }
@@ -49,6 +51,7 @@ func delegateCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCall
 		return nil
 	}
 
+	k.Logger(ctx).Info(fmt.Sprintf("delegateCallbackHandler, chainID %s epoch %d", record.ChainID, record.EpochNumber))
 	k.AfterCrosschainDelegate(ctx, record, true)
 
 	return nil

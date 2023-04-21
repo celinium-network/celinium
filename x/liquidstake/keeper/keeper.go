@@ -8,6 +8,7 @@ import (
 	icacontrollerkeeper "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/controller/keeper"
 	ibctransferkeeper "github.com/cosmos/ibc-go/v6/modules/apps/transfer/keeper"
 	ibckeeper "github.com/cosmos/ibc-go/v6/modules/core/keeper"
+	"github.com/tendermint/tendermint/libs/log"
 
 	"github.com/celinium-netwok/celinium/x/liquidstake/types"
 )
@@ -44,6 +45,11 @@ func NewKeeper(
 		ibcTransferKeeper: ibcTransferKeeper,
 		icaCtlKeeper:      icaCtlKeeper,
 	}
+}
+
+// Logger returns a module-specific logger.
+func (k Keeper) Logger(ctx sdk.Context) log.Logger {
+	return ctx.Logger().With("module", "x/"+types.ModuleName)
 }
 
 // GetSourceChain get source chain by chainID

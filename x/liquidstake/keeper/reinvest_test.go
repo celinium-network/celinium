@@ -66,7 +66,7 @@ func (suite *KeeperTestSuite) TestReinvest() {
 
 	// delegatorICAOnSrcChain has some reward now,
 	ctx = suite.sourceChain.GetContext()
-	balance := srcChainApp.BankKeeper.GetBalance(ctx, delegatorICAOnSrcChain, srcNativeDenom)
+	balance := srcChainApp.BankKeeper.GetBalance(ctx, sdk.MustAccAddressFromBech32(delegatorICAOnSrcChain), srcNativeDenom)
 	suite.True(balance.Amount.GT(sdk.ZeroInt()))
 
 	// no user delegate. the reinvest the reward.
@@ -102,10 +102,10 @@ func (suite *KeeperTestSuite) TestSetWithdrawAddress() {
 
 	suite.relayIBCPacketFromCtlToSrc(ctx.EventManager().ABCIEvents(), controlChainUserAddr.String())
 
-	withdrawAccAddress := sourceChainApp.DistrKeeper.GetDelegatorWithdrawAddr(suite.sourceChain.GetContext(), delegatorAddr)
+	withdrawAccAddress := sourceChainApp.DistrKeeper.GetDelegatorWithdrawAddr(suite.sourceChain.GetContext(), sdk.MustAccAddressFromBech32(delegatorAddr))
 	withdrawAddr, err := controlChainApp.LiquidStakeKeeper.GetSourceChainAddr(
 		ctx, sourceChainParams.ConnectionID, sourceChainParams.WithdrawAddress)
 
 	suite.NoError(err)
-	suite.Equal(withdrawAccAddress.String(), withdrawAddr.String())
+	suite.Equal(withdrawAccAddress.String(), withdrawAddr)
 }

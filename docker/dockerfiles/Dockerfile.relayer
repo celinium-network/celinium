@@ -23,7 +23,7 @@ RUN apk add --update bash jq
 
 ENV PATH="/path/to/bash:$PATH"
 
-COPY ./scripts/relayer_config.yaml /root/.relayer/config/config.yaml
+COPY ./scripts/config/relayer_config.yaml /root/.relayer/config/config.yaml
 COPY ./scripts/start_relayer.sh /opt/start_relayer.sh
 
 COPY --from=builder /go/bin/rly /usr/local/bin/
