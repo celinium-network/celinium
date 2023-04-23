@@ -55,7 +55,7 @@ func applyOptions(c *chain, options []flagOption) map[string]interface{} {
 		flagBroadcastMode:  "sync",
 		flagGasAdjustment:  "1.5",
 		flagChainID:        c.ID,
-		flagHome:           gaiaHomePath,
+		flagHome:           celiniumHomePath,
 		flagFees:           sdk.NewCoin(c.Denom, standardFeeAmount).String(),
 	}
 	for _, apply := range options {

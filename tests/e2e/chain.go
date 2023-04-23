@@ -2,11 +2,8 @@ package e2e
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
-	"runtime"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -42,47 +39,7 @@ type chain struct {
 	DokcerImage         string
 }
 
-func newGaiaChain() (*chain, error) {
-	tmpDir, err := os.MkdirTemp("", "gaia-e2e-testnet-")
-	if err != nil {
-		return nil, err
-	}
-
-	// As we'll be connecting to real Gaia nodes, it's recommended to use the EncodingConfig from the Gaia app.
-	// However, due to complex package dependencies, we're currently using the general functions from the basic
-	// Cosmos SDK in Gaia. As a temporary solution, we're using Celinium's EncodingConfig to resolve the issue.
-	encfg := celiniumapp.MakeEncodingConfig()
-	return &chain{
-		ID:      "gaia-chain-" + tmrand.Str(6),
-		dataDir: tmpDir,
-		encfg: encodingConfig{
-			InterfaceRegistry: encfg.InterfaceRegistry,
-			Codec:             encfg.Codec,
-			TxConfig:          encfg.TxConfig,
-			Amino:             encfg.Amino,
-		},
-		InitBalance:     "110000000000stake,100000000000000000photon,100000000000000000uatom",
-		Denom:           "uatom",
-		ChainNodeBinary: "gaiad",
-		ModuleBasicsGenesis: func() (json.RawMessage, error) {
-			_, curPath, _, ok := runtime.Caller(0)
-			if !ok {
-				return nil, errors.New("can't get file path from runtime")
-			}
-
-			gaiaGenesisFilePath := filepath.Join(filepath.Dir(curPath), "config", "gaia_default_module_genesis.json")
-			genesiData, err := os.ReadFile(gaiaGenesisFilePath)
-			if err != nil {
-				return nil, err
-			}
-
-			return genesiData, nil
-		},
-		DokcerImage: "cosmos/gaiad-e2e",
-	}, nil
-}
-
-func newCeliniumChain() (*chain, error) {
+func newChain(tag string) (*chain, error) {
 	tmpDir, err := os.MkdirTemp("", "celinium-e2e-testnet-")
 	if err != nil {
 		return nil, err
@@ -90,7 +47,7 @@ func newCeliniumChain() (*chain, error) {
 
 	encfg := celiniumapp.MakeEncodingConfig()
 	return &chain{
-		ID:      "celin-chain-" + tmrand.Str(6),
+		ID:      "celin-chain-" + tag + "-" + tmrand.Str(6),
 		dataDir: tmpDir,
 		encfg: encodingConfig{
 			InterfaceRegistry: encfg.InterfaceRegistry,
@@ -98,8 +55,8 @@ func newCeliniumChain() (*chain, error) {
 			TxConfig:          encfg.TxConfig,
 			Amino:             encfg.Amino,
 		},
-		InitBalance:     "100000000000000000celi",
-		Denom:           "celi",
+		InitBalance:     "100000000000000000CELI",
+		Denom:           "CELI",
 		ChainNodeBinary: "celiniumd",
 		ModuleBasicsGenesis: func() (json.RawMessage, error) {
 			return json.MarshalIndent(celiniumapp.ModuleBasics.DefaultGenesis(encfg.Codec), "", " ")

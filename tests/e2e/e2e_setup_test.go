@@ -34,7 +34,7 @@ const (
 	numberOfEvidences   = 10
 	gas                 = 200000
 	minGasPrice         = "0.00001"
-	gaiaHomePath        = "/home/nonroot/.gaia"
+	celiniumHomePath    = "/home/nonroot/.celinium"
 	keysCommand         = "keys"
 )
 
@@ -47,8 +47,8 @@ type IntegrationTestSuite struct {
 	suite.Suite
 
 	tmpDirs         []string
-	gaiaChain       *chain
-	celiChain       *chain
+	srcChain        *chain
+	ctlChain        *chain
 	dkrPool         *dockertest.Pool
 	dkrNet          *dockertest.Network
 	relayerResource *dockertest.Resource
@@ -70,16 +70,16 @@ func (s *IntegrationTestSuite) SetupSuite() {
 	s.T().Log("setting up e2e integration test suite...")
 
 	var err error
-	s.gaiaChain, err = newGaiaChain()
+	s.srcChain, err = newChain("source")
 	s.Require().NoError(err)
 
-	s.celiChain, err = newCeliniumChain()
+	s.ctlChain, err = newChain("control")
 	s.Require().NoError(err)
 
 	s.dkrPool, err = dockertest.NewPool("")
 	s.Require().NoError(err)
 
-	s.dkrNet, err = s.dkrPool.CreateNetwork(fmt.Sprintf("%s-%s-testnet", s.gaiaChain.ID, s.celiChain.ID))
+	s.dkrNet, err = s.dkrPool.CreateNetwork(fmt.Sprintf("%s-%s-testnet", s.srcChain.ID, s.ctlChain.ID))
 	s.Require().NoError(err)
 
 	s.valResources = make(map[string][]*dockertest.Resource)
@@ -92,22 +92,22 @@ func (s *IntegrationTestSuite) SetupSuite() {
 
 	// The boostrapping phase is as follows:
 	//
-	// 1. Initialize Gaia validator nodes.
-	// 2. Create and initialize Gaia validator genesis files (both chains)
+	// 1. Initialize Celinium validator nodes.
+	// 2. Create and initialize Celinium validator genesis files (both chains)
 	// 3. Start both networks.
 	// 4. Create and run IBC relayer containers.
 
-	s.T().Logf("starting e2e infrastructure for chain A; chain-id: %s; datadir: %s", s.gaiaChain.ID, s.gaiaChain.dataDir)
-	s.initNodes(s.gaiaChain)
-	s.initGenesis(s.gaiaChain, vestingMnemonic, jailedValMnemonic)
-	s.initValidatorConfigs(s.gaiaChain)
-	s.runValidators(s.gaiaChain, 0)
+	s.T().Logf("starting e2e infrastructure for chain A; chain-id: %s; datadir: %s", s.srcChain.ID, s.srcChain.dataDir)
+	s.initNodes(s.srcChain)
+	s.initGenesis(s.srcChain, vestingMnemonic, jailedValMnemonic)
+	s.initValidatorConfigs(s.srcChain)
+	s.runValidators(s.srcChain, 0)
 
-	s.T().Logf("starting e2e infrastructure for chain B; chain-id: %s; datadir: %s", s.celiChain.ID, s.celiChain.dataDir)
-	s.initNodes(s.celiChain)
-	s.initGenesis(s.celiChain, vestingMnemonic, jailedValMnemonic)
-	s.initValidatorConfigs(s.celiChain)
-	s.runValidators(s.celiChain, 10)
+	s.T().Logf("starting e2e infrastructure for chain B; chain-id: %s; datadir: %s", s.ctlChain.ID, s.ctlChain.dataDir)
+	s.initNodes(s.ctlChain)
+	s.initGenesis(s.ctlChain, vestingMnemonic, jailedValMnemonic)
+	s.initValidatorConfigs(s.ctlChain)
+	s.runValidators(s.ctlChain, 10)
 
 	time.Sleep(10 * time.Second)
 	s.runIBCRelayer()
@@ -262,13 +262,14 @@ func (s *IntegrationTestSuite) initValidatorConfigs(c *chain) {
 
 		tmconfig.WriteConfigFile(tmCfgPath, valConfig)
 
+		appCfgPath := filepath.Join(val.configDir(), "config", "app.toml")
 		appConfig := srvconfig.DefaultConfig()
 		appConfig.API.Enable = true
 		appConfig.MinGasPrices = fmt.Sprintf("%s%s", minGasPrice, c.Denom)
 
 		customAppTemplate := `
 ###############################################################################
-###                        Custom Gaia Configuration                        ###
+###                        Custom Celinium Configuration                        ###
 ###############################################################################
 # bypass-min-fee-msg-types defines custom message types the operator may set that
 # will bypass minimum fee checks during CheckTx.
@@ -278,6 +279,7 @@ func (s *IntegrationTestSuite) initValidatorConfigs(c *chain) {
 bypass-min-fee-msg-types = ["/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward","/ibc.applications.transfer.v1.MsgTransfer"]
 ` + srvconfig.DefaultConfigTemplate
 		srvconfig.SetConfigTemplate(customAppTemplate)
+		srvconfig.WriteConfigFile(appCfgPath, appConfig)
 	}
 }
 
@@ -291,9 +293,9 @@ func (s *IntegrationTestSuite) runValidators(c *chain, portOffset int) {
 			Name:      val.instanceName(),
 			NetworkID: s.dkrNet.Network.ID,
 			Mounts: []string{
-				fmt.Sprintf("%s/:%s", val.configDir(), gaiaHomePath),
+				fmt.Sprintf("%s/:%s", val.configDir(), celiniumHomePath),
 			},
-			Repository: "cosmos/gaiad-e2e",
+			Repository: c.DokcerImage,
 		}
 
 		s.Require().NoError(exec.Command("chmod", "-R", "0777", val.configDir()).Run()) //nolint:gosec // this is a test
@@ -318,7 +320,7 @@ func (s *IntegrationTestSuite) runValidators(c *chain, portOffset int) {
 		s.Require().NoError(err)
 
 		s.valResources[c.ID][i] = resource
-		s.T().Logf("started Gaia %s validator container: %s", c.ID, resource.Container.ID)
+		s.T().Logf("started Celinium %s validator container: %s", c.ID, resource.Container.ID)
 	}
 
 	rpcClient, err := rpchttp.New("tcp://localhost:26657", "/websocket")

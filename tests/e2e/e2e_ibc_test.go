@@ -38,15 +38,15 @@ type PacketMetadata struct {
 func (s *IntegrationTestSuite) runIBCRelayer() {
 	s.T().Log("starting Hermes relayer container...")
 
-	tmpDir, err := os.MkdirTemp("", "gaia-e2e-testnet-hermes-")
+	tmpDir, err := os.MkdirTemp("", "gaia-e2e-testnet-relayer-")
 	s.Require().NoError(err)
 	s.tmpDirs = append(s.tmpDirs, tmpDir)
 
-	gaiaVal := s.gaiaChain.validators[0]
-	celiVal := s.celiChain.validators[0]
+	srcVal := s.srcChain.validators[0]
+	ctlVal := s.ctlChain.validators[0]
 
-	gaiaRly := s.gaiaChain.genesisAccounts[relayerAccountIndex]
-	celiRly := s.celiChain.genesisAccounts[relayerAccountIndex]
+	srcRly := s.srcChain.genesisAccounts[relayerAccountIndex]
+	ctlRly := s.ctlChain.genesisAccounts[relayerAccountIndex]
 
 	hermesCfgPath := path.Join(tmpDir, "hermes")
 
@@ -59,10 +59,10 @@ func (s *IntegrationTestSuite) runIBCRelayer() {
 
 	s.relayerResource, err = s.dkrPool.RunWithOptions(
 		&dockertest.RunOptions{
-			Name:       fmt.Sprintf("%s-%s-relayer", s.gaiaChain.ID, s.celiChain.ID),
-			Repository: "ghcr.io/cosmos/hermes-e2e",
-			Tag:        "1.0.0",
-			NetworkID:  s.dkrNet.Network.ID,
+			Name:       fmt.Sprintf("%s-%s-relayer", s.srcChain.ID, s.ctlChain.ID),
+			Repository: "relayer",
+			// Tag:        "1.0.0",
+			NetworkID: s.dkrNet.Network.ID,
 			Mounts: []string{
 				fmt.Sprintf("%s/:/root/hermes", hermesCfgPath),
 			},
@@ -70,14 +70,14 @@ func (s *IntegrationTestSuite) runIBCRelayer() {
 				"3031/tcp": {{HostIP: "", HostPort: "3031"}},
 			},
 			Env: []string{
-				fmt.Sprintf("GAIA_A_E2E_CHAIN_ID=%s", s.celiChain.ID),
-				fmt.Sprintf("GAIA_B_E2E_CHAIN_ID=%s", s.gaiaChain.ID),
-				fmt.Sprintf("GAIA_A_E2E_VAL_MNEMONIC=%s", gaiaVal.mnemonic),
-				fmt.Sprintf("GAIA_B_E2E_VAL_MNEMONIC=%s", celiVal.mnemonic),
-				fmt.Sprintf("GAIA_A_E2E_RLY_MNEMONIC=%s", gaiaRly.mnemonic),
-				fmt.Sprintf("GAIA_B_E2E_RLY_MNEMONIC=%s", celiRly.mnemonic),
-				fmt.Sprintf("GAIA_A_E2E_VAL_HOST=%s", s.valResources[s.gaiaChain.ID][0].Container.Name[1:]),
-				fmt.Sprintf("GAIA_B_E2E_VAL_HOST=%s", s.valResources[s.celiChain.ID][0].Container.Name[1:]),
+				fmt.Sprintf("CELI_SRC_E2E_CHAIN_ID=%s", s.srcChain.ID),
+				fmt.Sprintf("CELI_CTL_E2E_CHAIN_ID=%s", s.ctlChain.ID),
+				fmt.Sprintf("CELI_SRC_E2E_VAL_MNEMONIC=%s", srcVal.mnemonic),
+				fmt.Sprintf("CELI_CTL_E2E_VAL_MNEMONIC=%s", ctlVal.mnemonic),
+				fmt.Sprintf("CELI_SRC_E2E_RLY_MNEMONIC=%s", srcRly.mnemonic),
+				fmt.Sprintf("CELI_CTL_E2E_RLY_MNEMONIC=%s", ctlRly.mnemonic),
+				fmt.Sprintf("CELI_SRC_E2E_VAL_HOST=%s", s.valResources[s.srcChain.ID][0].Container.Name[1:]),
+				fmt.Sprintf("CELI_CTL_E2E_VAL_HOST=%s", s.valResources[s.ctlChain.ID][0].Container.Name[1:]),
 			},
 			Entrypoint: []string{
 				"sh",
@@ -125,7 +125,7 @@ func (s *IntegrationTestSuite) runIBCRelayer() {
 	// transport errors.
 	time.Sleep(10 * time.Second)
 
-	// create the client, connection and channel between the two Gaia chains
+	// create the client, connection and channel between the two Celinium chains
 	s.createConnection()
 	time.Sleep(10 * time.Second)
 	s.createChannel()
@@ -154,13 +154,13 @@ func (s *IntegrationTestSuite) sendIBC(c *chain, valIdx int, sender, recipient, 
 		"--output=json",
 		"-y",
 	}
-	s.T().Logf("sending %s from %s (%s) to %s (%s) with memo %s", token, s.gaiaChain.ID, sender, s.celiChain.ID, recipient, note)
+	s.T().Logf("sending %s from %s (%s) to %s (%s) with memo %s", token, s.srcChain.ID, sender, s.ctlChain.ID, recipient, note)
 	s.executeGaiaTxCommand(ctx, c, ibcCmd, valIdx, s.defaultExecValidation(c, valIdx))
 	s.T().Log("successfully sent IBC tokens")
 }
 
 func (s *IntegrationTestSuite) createConnection() {
-	s.T().Logf("connecting %s and %s chains via IBC", s.gaiaChain.ID, s.celiChain.ID)
+	s.T().Logf("connecting %s and %s chains via IBC", s.srcChain.ID, s.ctlChain.ID)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
@@ -176,9 +176,9 @@ func (s *IntegrationTestSuite) createConnection() {
 			"create",
 			"connection",
 			"--a-chain",
-			s.gaiaChain.ID,
+			s.srcChain.ID,
 			"--b-chain",
-			s.celiChain.ID,
+			s.ctlChain.ID,
 		},
 	})
 	s.Require().NoError(err)
@@ -199,11 +199,11 @@ func (s *IntegrationTestSuite) createConnection() {
 		"failed connect chains; stdout: %s, stderr: %s", outBuf.String(), errBuf.String(),
 	)
 
-	s.T().Logf("connected %s and %s chains via IBC", s.gaiaChain.ID, s.celiChain.ID)
+	s.T().Logf("connected %s and %s chains via IBC", s.srcChain.ID, s.ctlChain.ID)
 }
 
 func (s *IntegrationTestSuite) createChannel() {
-	s.T().Logf("connecting %s and %s chains via IBC", s.gaiaChain.ID, s.celiChain.ID)
+	s.T().Logf("connecting %s and %s chains via IBC", s.srcChain.ID, s.ctlChain.ID)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
@@ -219,9 +219,9 @@ func (s *IntegrationTestSuite) createChannel() {
 			txCommand,
 			"chan-open-init",
 			"--dst-chain",
-			s.gaiaChain.ID,
+			s.srcChain.ID,
 			"--src-chain",
-			s.celiChain.ID,
+			s.ctlChain.ID,
 			"--dst-connection",
 			"connection-0",
 			"--src-port=transfer",
@@ -246,7 +246,7 @@ func (s *IntegrationTestSuite) createChannel() {
 		"failed connect chains; stdout: %s, stderr: %s", outBuf.String(), errBuf.String(),
 	)
 
-	s.T().Logf("connected %s and %s chains via IBC", s.gaiaChain.ID, s.celiChain.ID)
+	s.T().Logf("connected %s and %s chains via IBC", s.srcChain.ID, s.ctlChain.ID)
 }
 
 func (s *IntegrationTestSuite) TestIBCTokenTransfer() {
@@ -260,14 +260,14 @@ func (s *IntegrationTestSuite) TestIBCTokenTransfer() {
 			ibcStakeDenom string
 		)
 
-		address, _ := s.gaiaChain.validators[0].keyRecord.GetAddress()
+		address, _ := s.srcChain.validators[0].keyRecord.GetAddress()
 		sender := address.String()
 
-		address, _ = s.celiChain.validators[0].keyRecord.GetAddress()
+		address, _ = s.ctlChain.validators[0].keyRecord.GetAddress()
 		recipient := address.String()
 
-		chainBAPIEndpoint := fmt.Sprintf("http://%s", s.valResources[s.celiChain.ID][0].GetHostPort("1317/tcp"))
-		cdc := s.gaiaChain.encfg.Codec
+		chainBAPIEndpoint := fmt.Sprintf("http://%s", s.valResources[s.ctlChain.ID][0].GetHostPort("1317/tcp"))
+		cdc := s.srcChain.encfg.Codec
 
 		s.Require().Eventually(
 			func() bool {
@@ -286,8 +286,8 @@ func (s *IntegrationTestSuite) TestIBCTokenTransfer() {
 		}
 
 		tokenAmt := 3300000000
-		fee := sdk.NewCoin(s.gaiaChain.Denom, standardFeeAmount)
-		s.sendIBC(s.gaiaChain, 0, sender, recipient, strconv.Itoa(tokenAmt)+s.gaiaChain.Denom, fee.String(), "")
+		fee := sdk.NewCoin(s.srcChain.Denom, standardFeeAmount)
+		s.sendIBC(s.srcChain, 0, sender, recipient, strconv.Itoa(tokenAmt)+s.srcChain.Denom, fee.String(), "")
 
 		s.Require().Eventually(
 			func() bool {
@@ -331,13 +331,13 @@ func (s *IntegrationTestSuite) testMultihopIBCTokenTransfer() {
 			err error
 		)
 
-		address, _ := s.gaiaChain.validators[0].keyRecord.GetAddress()
+		address, _ := s.srcChain.validators[0].keyRecord.GetAddress()
 		sender := address.String()
 
-		address, _ = s.celiChain.validators[0].keyRecord.GetAddress()
+		address, _ = s.ctlChain.validators[0].keyRecord.GetAddress()
 		middlehop := address.String()
 
-		address, _ = s.gaiaChain.validators[1].keyRecord.GetAddress()
+		address, _ = s.srcChain.validators[1].keyRecord.GetAddress()
 		recipient := address.String()
 
 		forwardPort := "transfer"
@@ -345,8 +345,8 @@ func (s *IntegrationTestSuite) testMultihopIBCTokenTransfer() {
 
 		tokenAmt := 3300000000
 
-		chainAAPIEndpoint := fmt.Sprintf("http://%s", s.valResources[s.gaiaChain.ID][0].GetHostPort("1317/tcp"))
-		cdc := s.gaiaChain.encfg.Codec
+		chainAAPIEndpoint := fmt.Sprintf("http://%s", s.valResources[s.srcChain.ID][0].GetHostPort("1317/tcp"))
+		cdc := s.srcChain.encfg.Codec
 
 		var (
 			beforeSenderUAtomBalance    sdk.Coin
@@ -355,11 +355,11 @@ func (s *IntegrationTestSuite) testMultihopIBCTokenTransfer() {
 
 		s.Require().Eventually(
 			func() bool {
-				beforeSenderUAtomBalance, err = getSpecificBalance(cdc, chainAAPIEndpoint, sender, s.gaiaChain.Denom)
+				beforeSenderUAtomBalance, err = getSpecificBalance(cdc, chainAAPIEndpoint, sender, s.srcChain.Denom)
 				s.Require().NoError(err)
 				fmt.Println("beforeSenderUAtomBalance", beforeSenderUAtomBalance)
 
-				beforeRecipientUAtomBalance, err = getSpecificBalance(cdc, chainAAPIEndpoint, recipient, s.gaiaChain.Denom)
+				beforeRecipientUAtomBalance, err = getSpecificBalance(cdc, chainAAPIEndpoint, recipient, s.srcChain.Denom)
 				s.Require().NoError(err)
 				fmt.Print("beforeRecipientUAtomBalance", beforeRecipientUAtomBalance)
 
@@ -381,17 +381,17 @@ func (s *IntegrationTestSuite) testMultihopIBCTokenTransfer() {
 
 		s.Require().NoError(err)
 
-		fee := sdk.NewCoin(s.gaiaChain.Denom, standardFeeAmount)
-		s.sendIBC(s.gaiaChain, 0, sender, middlehop, strconv.Itoa(tokenAmt)+s.gaiaChain.Denom, fee.String(), string(memo))
+		fee := sdk.NewCoin(s.srcChain.Denom, standardFeeAmount)
+		s.sendIBC(s.srcChain, 0, sender, middlehop, strconv.Itoa(tokenAmt)+s.srcChain.Denom, fee.String(), string(memo))
 
 		s.Require().Eventually(
 			func() bool {
-				cdc := s.gaiaChain.encfg.Codec
-				denom := s.gaiaChain.Denom
+				cdc := s.srcChain.encfg.Codec
+				denom := s.srcChain.Denom
 				tokenAmount := sdk.NewCoin(denom, math.NewIntFromUint64(uint64(tokenAmt)))
-				standardFees := sdk.NewCoin(s.gaiaChain.Denom, standardFeeAmount)
+				standardFees := sdk.NewCoin(s.srcChain.Denom, standardFeeAmount)
 
-				afterSenderUAtomBalance, err := getSpecificBalance(cdc, chainAAPIEndpoint, sender, s.gaiaChain.Denom)
+				afterSenderUAtomBalance, err := getSpecificBalance(cdc, chainAAPIEndpoint, sender, s.srcChain.Denom)
 				s.Require().NoError(err)
 
 				afterRecipientUAtomBalance, err := getSpecificBalance(cdc, chainAAPIEndpoint, recipient, denom)
@@ -416,13 +416,13 @@ func (s *IntegrationTestSuite) testFailedMultihopIBCTokenTransfer() {
 	time.Sleep(30 * time.Second)
 
 	s.Run("send_failed_multihop_uatom_to_chainA_from_chainA", func() {
-		address, _ := s.gaiaChain.validators[0].keyRecord.GetAddress()
+		address, _ := s.srcChain.validators[0].keyRecord.GetAddress()
 		sender := address.String()
 
-		address, _ = s.celiChain.validators[0].keyRecord.GetAddress()
+		address, _ = s.ctlChain.validators[0].keyRecord.GetAddress()
 		middlehop := address.String()
 
-		address, _ = s.gaiaChain.validators[1].keyRecord.GetAddress()
+		address, _ = s.srcChain.validators[1].keyRecord.GetAddress()
 		recipient := strings.Replace(address.String(), "cosmos", "foobar", 1) // this should be an invalid recipient to force the tx to fail
 
 		forwardPort := "transfer"
@@ -430,7 +430,7 @@ func (s *IntegrationTestSuite) testFailedMultihopIBCTokenTransfer() {
 
 		tokenAmt := 3300000000
 
-		chainAAPIEndpoint := fmt.Sprintf("http://%s", s.valResources[s.gaiaChain.ID][0].GetHostPort("1317/tcp"))
+		chainAAPIEndpoint := fmt.Sprintf("http://%s", s.valResources[s.srcChain.ID][0].GetHostPort("1317/tcp"))
 
 		var (
 			beforeSenderUAtomBalance sdk.Coin
@@ -439,7 +439,7 @@ func (s *IntegrationTestSuite) testFailedMultihopIBCTokenTransfer() {
 
 		s.Require().Eventually(
 			func() bool {
-				beforeSenderUAtomBalance, err = getSpecificBalance(s.gaiaChain.encfg.Codec, chainAAPIEndpoint, sender, s.gaiaChain.Denom)
+				beforeSenderUAtomBalance, err = getSpecificBalance(s.srcChain.encfg.Codec, chainAAPIEndpoint, sender, s.srcChain.Denom)
 				s.Require().NoError(err)
 
 				return beforeSenderUAtomBalance.IsValid()
@@ -459,12 +459,12 @@ func (s *IntegrationTestSuite) testFailedMultihopIBCTokenTransfer() {
 		memo, err := json.Marshal(firstHopMetadata)
 		s.Require().NoError(err)
 
-		denom := s.gaiaChain.Denom
+		denom := s.srcChain.Denom
 		tokenAmount := sdk.NewCoin(denom, math.NewIntFromUint64(uint64(tokenAmt)))
-		standardFees := sdk.NewCoin(s.gaiaChain.Denom, standardFeeAmount)
-		cdc := s.gaiaChain.encfg.Codec
+		standardFees := sdk.NewCoin(s.srcChain.Denom, standardFeeAmount)
+		cdc := s.srcChain.encfg.Codec
 
-		s.sendIBC(s.gaiaChain, 0, sender, middlehop, strconv.Itoa(tokenAmt)+denom, standardFees.String(), string(memo))
+		s.sendIBC(s.srcChain, 0, sender, middlehop, strconv.Itoa(tokenAmt)+denom, standardFees.String(), string(memo))
 
 		// Sender account should be initially decremented the full amount
 		s.Require().Eventually(
