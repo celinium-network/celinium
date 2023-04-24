@@ -72,7 +72,7 @@ func queryAllBalances(cdc codec.Codec, endpoint, addr string) (sdk.Coins, error)
 	return balancesResp.Balances, nil
 }
 
-func queryDelegation(cdc codec.Codec, endpoint string, validatorAddr string, delegatorAddr string) (stakingtypes.QueryDelegationResponse, error) {
+func queryDelegation(cdc codec.Codec, endpoint string, validatorAddr string, delegatorAddr string) (stakingtypes.QueryDelegationResponse, error) { //nolint:unused // this is called during e2e tests
 	var res stakingtypes.QueryDelegationResponse
 
 	body, err := httpGet(fmt.Sprintf("%s/cosmos/staking/v1beta1/validators/%s/delegations/%s", endpoint, validatorAddr, delegatorAddr))
@@ -86,7 +86,7 @@ func queryDelegation(cdc codec.Codec, endpoint string, validatorAddr string, del
 	return res, nil
 }
 
-func queryDelegatorWithdrawalAddress(cdc codec.Codec, endpoint string, delegatorAddr string) (disttypes.QueryDelegatorWithdrawAddressResponse, error) {
+func queryDelegatorWithdrawalAddress(cdc codec.Codec, endpoint string, delegatorAddr string) (disttypes.QueryDelegatorWithdrawAddressResponse, error) { //nolint:unused // this is called during e2e tests
 	var res disttypes.QueryDelegatorWithdrawAddressResponse
 
 	body, err := httpGet(fmt.Sprintf("%s/cosmos/distribution/v1beta1/delegators/%s/withdraw_address", endpoint, delegatorAddr))
@@ -100,7 +100,7 @@ func queryDelegatorWithdrawalAddress(cdc codec.Codec, endpoint string, delegator
 	return res, nil
 }
 
-func queryAccount(cdc codec.Codec, endpoint, address string) (acc authtypes.AccountI, err error) {
+func queryAccount(cdc codec.Codec, endpoint, address string) (acc authtypes.AccountI, err error) { //nolint:unused // this is called during e2e tests
 	var res authtypes.QueryAccountResponse
 	resp, err := http.Get(fmt.Sprintf("%s/cosmos/auth/v1beta1/accounts/%s", endpoint, address))
 	if err != nil {
@@ -118,7 +118,7 @@ func queryAccount(cdc codec.Codec, endpoint, address string) (acc authtypes.Acco
 	return acc, cdc.UnpackAny(res.Account, &acc)
 }
 
-func queryDelayedVestingAccount(cdc codec.Codec, endpoint, address string) (authvesting.DelayedVestingAccount, error) {
+func queryDelayedVestingAccount(cdc codec.Codec, endpoint, address string) (authvesting.DelayedVestingAccount, error) { //nolint:unused // this is called during e2e tests
 	baseAcc, err := queryAccount(cdc, endpoint, address)
 	if err != nil {
 		return authvesting.DelayedVestingAccount{}, err
@@ -131,7 +131,7 @@ func queryDelayedVestingAccount(cdc codec.Codec, endpoint, address string) (auth
 	return *acc, nil
 }
 
-func queryContinuousVestingAccount(cdc codec.Codec, endpoint, address string) (authvesting.ContinuousVestingAccount, error) {
+func queryContinuousVestingAccount(cdc codec.Codec, endpoint, address string) (authvesting.ContinuousVestingAccount, error) { //nolint:unused // this is called during e2e tests
 	baseAcc, err := queryAccount(cdc, endpoint, address)
 	if err != nil {
 		return authvesting.ContinuousVestingAccount{}, err
@@ -170,7 +170,7 @@ func queryPeriodicVestingAccount(cdc codec.Codec, endpoint, address string) (aut
 	return *acc, nil
 }
 
-func queryValidator(cdc codec.Codec, endpoint, address string) (stakingtypes.Validator, error) {
+func queryValidator(cdc codec.Codec, endpoint, address string) (stakingtypes.Validator, error) { //nolint:unused // this is called during e2e tests
 	var res stakingtypes.QueryValidatorResponse
 
 	body, err := httpGet(fmt.Sprintf("%s/cosmos/staking/v1beta1/validators/%s", endpoint, address))
@@ -184,7 +184,7 @@ func queryValidator(cdc codec.Codec, endpoint, address string) (stakingtypes.Val
 	return res.Validator, nil
 }
 
-func queryValidators(cdc codec.Codec, endpoint string) (stakingtypes.Validators, error) {
+func queryValidators(cdc codec.Codec, endpoint string) (stakingtypes.Validators, error) { //nolint:unused // this is called during e2e tests
 	var res stakingtypes.QueryValidatorsResponse
 	body, err := httpGet(fmt.Sprintf("%s/cosmos/staking/v1beta1/validators", endpoint))
 	if err != nil {
@@ -210,7 +210,7 @@ func queryEvidence(cdc codec.Codec, endpoint, hash string) (evidencetypes.QueryE
 	return res, nil
 }
 
-func queryAllEvidence(cdc codec.Codec, endpoint string) (evidencetypes.QueryAllEvidenceResponse, error) {
+func queryAllEvidence(cdc codec.Codec, endpoint string) (evidencetypes.QueryAllEvidenceResponse, error) { //nolint:unused // this is called during e2e tests
 	var res evidencetypes.QueryAllEvidenceResponse
 	body, err := httpGet(fmt.Sprintf("%s/cosmos/evidence/v1beta1/evidence", endpoint))
 	if err != nil {

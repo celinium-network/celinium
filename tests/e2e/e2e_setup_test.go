@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -267,17 +269,7 @@ func (s *IntegrationTestSuite) initValidatorConfigs(c *chain) {
 		appConfig.API.Enable = true
 		appConfig.MinGasPrices = fmt.Sprintf("%s%s", minGasPrice, c.Denom)
 
-		customAppTemplate := `
-###############################################################################
-###                        Custom Celinium Configuration                        ###
-###############################################################################
-# bypass-min-fee-msg-types defines custom message types the operator may set that
-# will bypass minimum fee checks during CheckTx.
-#
-# Example:
-# ["/ibc.core.channel.v1.MsgRecvPacket", "/ibc.core.channel.v1.MsgAcknowledgement", ...]
-bypass-min-fee-msg-types = ["/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward","/ibc.applications.transfer.v1.MsgTransfer"]
-` + srvconfig.DefaultConfigTemplate
+		customAppTemplate := srvconfig.DefaultConfigTemplate
 		srvconfig.SetConfigTemplate(customAppTemplate)
 		srvconfig.WriteConfigFile(appCfgPath, appConfig)
 	}
@@ -353,5 +345,35 @@ func noRestart(config *docker.HostConfig) {
 	// in this case we don't want the nodes to restart on failure
 	config.RestartPolicy = docker.RestartPolicy{
 		Name: "no",
+	}
+}
+
+func (s *IntegrationTestSuite) TearDownSuite() {
+	if str := os.Getenv("GAIA_E2E_SKIP_CLEANUP"); len(str) > 0 {
+		skipCleanup, err := strconv.ParseBool(str)
+		s.Require().NoError(err)
+
+		if skipCleanup {
+			return
+		}
+	}
+
+	s.T().Log("tearing down e2e integration test suite...")
+
+	s.Require().NoError(s.dkrPool.Purge(s.relayerResource))
+
+	for _, vr := range s.valResources {
+		for _, r := range vr {
+			s.Require().NoError(s.dkrPool.Purge(r))
+		}
+	}
+
+	s.Require().NoError(s.dkrPool.RemoveNetwork(s.dkrNet))
+
+	os.RemoveAll(s.srcChain.dataDir)
+	os.RemoveAll(s.ctlChain.dataDir)
+
+	for _, td := range s.tmpDirs {
+		os.RemoveAll(td)
 	}
 }

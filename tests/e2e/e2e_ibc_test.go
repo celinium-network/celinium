@@ -251,7 +251,7 @@ func (s *IntegrationTestSuite) createChannel() {
 
 func (s *IntegrationTestSuite) TestIBCTokenTransfer() {
 	time.Sleep(30 * time.Second)
-	s.Run("send_uatom_to_chainB", func() {
+	s.Run("send_celi_to_chainB", func() {
 		// require the recipient account receives the IBC tokens (IBC packets ACKd)
 		var (
 			balances      sdk.Coins
@@ -322,10 +322,10 @@ Steps:
 
 */
 // TODO: Add back only if packet forward middleware has a working version compatible with IBC v3.0.x
-func (s *IntegrationTestSuite) testMultihopIBCTokenTransfer() {
+func (s *IntegrationTestSuite) TestMultihopIBCTokenTransfer() {
 	time.Sleep(30 * time.Second)
 
-	s.Run("send_successful_multihop_uatom_to_chainA_from_chainA", func() {
+	s.Run("send_successful_multihop_celi_to_chainA_from_chainA", func() {
 		// require the recipient account receives the IBC tokens (IBC packets ACKd)
 		var (
 			err error
@@ -349,21 +349,21 @@ func (s *IntegrationTestSuite) testMultihopIBCTokenTransfer() {
 		cdc := s.srcChain.encfg.Codec
 
 		var (
-			beforeSenderUAtomBalance    sdk.Coin
-			beforeRecipientUAtomBalance sdk.Coin
+			beforeSenderCeliBalance    sdk.Coin
+			beforeRecipientCeliBalance sdk.Coin
 		)
 
 		s.Require().Eventually(
 			func() bool {
-				beforeSenderUAtomBalance, err = getSpecificBalance(cdc, chainAAPIEndpoint, sender, s.srcChain.Denom)
+				beforeSenderCeliBalance, err = getSpecificBalance(cdc, chainAAPIEndpoint, sender, s.srcChain.Denom)
 				s.Require().NoError(err)
-				fmt.Println("beforeSenderUAtomBalance", beforeSenderUAtomBalance)
+				fmt.Println("beforeSenderCeliBalance", beforeSenderCeliBalance)
 
-				beforeRecipientUAtomBalance, err = getSpecificBalance(cdc, chainAAPIEndpoint, recipient, s.srcChain.Denom)
+				beforeRecipientCeliBalance, err = getSpecificBalance(cdc, chainAAPIEndpoint, recipient, s.srcChain.Denom)
 				s.Require().NoError(err)
-				fmt.Print("beforeRecipientUAtomBalance", beforeRecipientUAtomBalance)
+				fmt.Print("beforeRecipientCeliBalance", beforeRecipientCeliBalance)
 
-				return beforeSenderUAtomBalance.IsValid() && beforeRecipientUAtomBalance.IsValid()
+				return beforeSenderCeliBalance.IsValid() && beforeRecipientCeliBalance.IsValid()
 			},
 			1*time.Minute,
 			5*time.Second,
@@ -391,14 +391,14 @@ func (s *IntegrationTestSuite) testMultihopIBCTokenTransfer() {
 				tokenAmount := sdk.NewCoin(denom, math.NewIntFromUint64(uint64(tokenAmt)))
 				standardFees := sdk.NewCoin(s.srcChain.Denom, standardFeeAmount)
 
-				afterSenderUAtomBalance, err := getSpecificBalance(cdc, chainAAPIEndpoint, sender, s.srcChain.Denom)
+				afterSenderCeliBalance, err := getSpecificBalance(cdc, chainAAPIEndpoint, sender, s.srcChain.Denom)
 				s.Require().NoError(err)
 
-				afterRecipientUAtomBalance, err := getSpecificBalance(cdc, chainAAPIEndpoint, recipient, denom)
+				afterRecipientCeliBalance, err := getSpecificBalance(cdc, chainAAPIEndpoint, recipient, denom)
 				s.Require().NoError(err)
 
-				decremented := beforeSenderUAtomBalance.Sub(tokenAmount).Sub(standardFees).IsEqual(afterSenderUAtomBalance)
-				incremented := beforeRecipientUAtomBalance.Add(tokenAmount).IsEqual(afterRecipientUAtomBalance)
+				decremented := beforeSenderCeliBalance.Sub(tokenAmount).Sub(standardFees).IsEqual(afterSenderCeliBalance)
+				incremented := beforeRecipientCeliBalance.Add(tokenAmount).IsEqual(afterRecipientCeliBalance)
 
 				return decremented && incremented
 			},
@@ -412,10 +412,10 @@ func (s *IntegrationTestSuite) testMultihopIBCTokenTransfer() {
 TestFailedMultihopIBCTokenTransfer tests that sending a failing IBC transfer using the IBC Packet Forward
 Middleware will send the tokens back to the original account after failing.
 */
-func (s *IntegrationTestSuite) testFailedMultihopIBCTokenTransfer() {
+func (s *IntegrationTestSuite) TestFailedMultihopIBCTokenTransfer() {
 	time.Sleep(30 * time.Second)
 
-	s.Run("send_failed_multihop_uatom_to_chainA_from_chainA", func() {
+	s.Run("send_failed_multihop_celi_to_chainA_from_chainA", func() {
 		address, _ := s.srcChain.validators[0].keyRecord.GetAddress()
 		sender := address.String()
 
@@ -433,16 +433,16 @@ func (s *IntegrationTestSuite) testFailedMultihopIBCTokenTransfer() {
 		chainAAPIEndpoint := fmt.Sprintf("http://%s", s.valResources[s.srcChain.ID][0].GetHostPort("1317/tcp"))
 
 		var (
-			beforeSenderUAtomBalance sdk.Coin
-			err                      error
+			beforeSenderCeliBalance sdk.Coin
+			err                     error
 		)
 
 		s.Require().Eventually(
 			func() bool {
-				beforeSenderUAtomBalance, err = getSpecificBalance(s.srcChain.encfg.Codec, chainAAPIEndpoint, sender, s.srcChain.Denom)
+				beforeSenderCeliBalance, err = getSpecificBalance(s.srcChain.encfg.Codec, chainAAPIEndpoint, sender, s.srcChain.Denom)
 				s.Require().NoError(err)
 
-				return beforeSenderUAtomBalance.IsValid()
+				return beforeSenderCeliBalance.IsValid()
 			},
 			1*time.Minute,
 			5*time.Second,
@@ -469,10 +469,10 @@ func (s *IntegrationTestSuite) testFailedMultihopIBCTokenTransfer() {
 		// Sender account should be initially decremented the full amount
 		s.Require().Eventually(
 			func() bool {
-				afterSenderUAtomBalance, err := getSpecificBalance(cdc, chainAAPIEndpoint, sender, denom)
+				afterSenderCeliBalance, err := getSpecificBalance(cdc, chainAAPIEndpoint, sender, denom)
 				s.Require().NoError(err)
 
-				returned := beforeSenderUAtomBalance.Sub(tokenAmount).Sub(standardFees).IsEqual(afterSenderUAtomBalance)
+				returned := beforeSenderCeliBalance.Sub(tokenAmount).Sub(standardFees).IsEqual(afterSenderCeliBalance)
 
 				return returned
 			},
@@ -483,10 +483,10 @@ func (s *IntegrationTestSuite) testFailedMultihopIBCTokenTransfer() {
 		// since the forward receiving account is invalid, it should be refunded to the original sender (minus the original fee)
 		s.Require().Eventually(
 			func() bool {
-				afterSenderUAtomBalance, err := getSpecificBalance(cdc, chainAAPIEndpoint, sender, denom)
+				afterSenderCeliBalance, err := getSpecificBalance(cdc, chainAAPIEndpoint, sender, denom)
 				s.Require().NoError(err)
 
-				returned := beforeSenderUAtomBalance.Sub(standardFees).IsEqual(afterSenderUAtomBalance)
+				returned := beforeSenderCeliBalance.Sub(standardFees).IsEqual(afterSenderCeliBalance)
 
 				return returned
 			},

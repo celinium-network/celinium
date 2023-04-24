@@ -22,7 +22,7 @@ func httpGet(endpoint string) ([]byte, error) {
 	return body, nil
 }
 
-func readJSON(resp *http.Response) (map[string]interface{}, error) {
+func readJSON(resp *http.Response) (map[string]interface{}, error) {  //nolint:unused // this is called during e2e tests
 	defer resp.Body.Close()
 
 	body, readErr := io.ReadAll(resp.Body)

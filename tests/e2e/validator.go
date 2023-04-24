@@ -35,7 +35,7 @@ type validator struct {
 	keyRecord        *keyring.Record
 	privateKey       cryptotypes.PrivKey
 	consensusKey     privval.FilePVKey
-	consensusPrivKey cryptotypes.PrivKey
+	consensusPrivKey cryptotypes.PrivKey //nolint:unused // this is called during e2e tests
 	nodeKey          p2p.NodeKey
 }
 

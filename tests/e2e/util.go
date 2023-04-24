@@ -46,7 +46,7 @@ func decodeTx(cdc codec.Codec, txBytes []byte, interfaceRegs types.InterfaceRegi
 	}, nil
 }
 
-func concatFlags(originalCollection []string, commandFlags []string, generalFlags []string) []string {
+func concatFlags(originalCollection []string, commandFlags []string, generalFlags []string) []string { //nolint:unused // this is called during e2e tests
 	originalCollection = append(originalCollection, commandFlags...)
 	originalCollection = append(originalCollection, generalFlags...)
 
