@@ -10,10 +10,10 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
+	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ory/dockertest/v3"
@@ -130,7 +130,7 @@ func (s *IntegrationTestSuite) runIBCRelayer() {
 	s.createChannel()
 }
 
-func (s *IntegrationTestSuite) sendIBC(c *chain, valIdx int, sender, recipient, token, fees, note string) { //nolint:unused // this is called during e2e tests
+func (s *IntegrationTestSuite) sendIBC(c *chain, valIdx int, sender, recipient, token, fees, note string) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
@@ -248,7 +248,7 @@ func (s *IntegrationTestSuite) createChannel() {
 	s.T().Logf("connected %s and %s chains via IBC", s.srcChain.ID, s.ctlChain.ID)
 }
 
-func (s *IntegrationTestSuite) testIBCTokenTransfer() { //nolint:unused // this is called during e2e tests
+func (s *IntegrationTestSuite) IBCTokenTransfer(tokenAmt math.Int) {
 	time.Sleep(30 * time.Second)
 	s.Run("send_celi_to_chainB", func() {
 		// require the recipient account receives the IBC tokens (IBC packets ACKd)
@@ -284,9 +284,8 @@ func (s *IntegrationTestSuite) testIBCTokenTransfer() { //nolint:unused // this 
 			}
 		}
 
-		tokenAmt := 3300000000
 		fee := sdk.NewCoin(s.srcChain.Denom, standardFeeAmount)
-		s.sendIBC(s.srcChain, 0, sender, recipient, strconv.Itoa(tokenAmt)+s.srcChain.Denom, fee.String(), "")
+		s.sendIBC(s.srcChain, 0, sender, recipient, tokenAmt.String()+s.srcChain.Denom, fee.String(), "")
 
 		s.Require().Eventually(
 			func() bool {
@@ -300,7 +299,7 @@ func (s *IntegrationTestSuite) testIBCTokenTransfer() { //nolint:unused // this 
 		for _, c := range balances {
 			if strings.Contains(c.Denom, "ibc/") {
 				ibcStakeDenom = c.Denom
-				s.Require().Equal((int64(tokenAmt) + beforeBalance), c.Amount.Int64())
+				s.Require().Equal((tokenAmt.Int64() + beforeBalance), c.Amount.Int64())
 				break
 			}
 		}

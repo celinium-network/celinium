@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -15,7 +16,9 @@ import (
 	disttypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	icacontrollertypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/controller/types"
 
+	epochtypes "github.com/celinium-network/celinium/x/epochs/types"
 	liquidstaketypes "github.com/celinium-network/celinium/x/liquidstake/types"
 )
 
@@ -45,8 +48,9 @@ func queryChainTx(endpoint, txHash string) error {
 }
 
 // if coin is zero, return empty coin.
-func getSpecificBalance(cdc codec.Codec, endpoint, addr, denom string) (amt sdk.Coin, err error) { //nolint:unused // this is called during e2e tests
+func getSpecificBalance(cdc codec.Codec, endpoint, addr, denom string) (amt sdk.Coin, err error) {
 	balances, err := queryAllBalances(cdc, endpoint, addr)
+	amt.Amount = math.ZeroInt()
 	if err != nil {
 		return amt, err
 	}
@@ -59,7 +63,7 @@ func getSpecificBalance(cdc codec.Codec, endpoint, addr, denom string) (amt sdk.
 	return amt, nil
 }
 
-func queryAllBalances(cdc codec.Codec, endpoint, addr string) (sdk.Coins, error) { //nolint:unused // this is called during e2e tests
+func queryAllBalances(cdc codec.Codec, endpoint, addr string) (sdk.Coins, error) {
 	body, err := httpGet(fmt.Sprintf("%s/cosmos/bank/v1beta1/balances/%s", endpoint, addr))
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute HTTP request: %w", err)
@@ -73,7 +77,7 @@ func queryAllBalances(cdc codec.Codec, endpoint, addr string) (sdk.Coins, error)
 	return balancesResp.Balances, nil
 }
 
-func queryDelegation(cdc codec.Codec, endpoint string, validatorAddr string, delegatorAddr string) (stakingtypes.QueryDelegationResponse, error) { //nolint:unused // this is called during e2e tests
+func queryDelegation(cdc codec.Codec, endpoint string, validatorAddr string, delegatorAddr string) (stakingtypes.QueryDelegationResponse, error) {
 	var res stakingtypes.QueryDelegationResponse
 
 	body, err := httpGet(fmt.Sprintf("%s/cosmos/staking/v1beta1/validators/%s/delegations/%s", endpoint, validatorAddr, delegatorAddr))
@@ -235,4 +239,82 @@ func queryLiquidstakeSourceChain(cdc codec.Codec, endpoint string, chainID strin
 		return res, err
 	}
 	return res, nil
+}
+
+func queryLiquidstakeDelegationRecord(cdc codec.Codec, endpoint string, chainID string, epoch uint64) (
+	liquidstaketypes.QueryChainEpochDelegationRecordResponse, error,
+) {
+	var res liquidstaketypes.QueryChainEpochDelegationRecordResponse
+	body, err := httpGet(fmt.Sprintf("%s/celinium/liquidstake/v1/chain_epoch_delegation?chainID=%s&epoch=%d", endpoint, chainID, epoch))
+	if err != nil {
+		return res, err
+	}
+
+	if err = cdc.UnmarshalJSON(body, &res); err != nil {
+		return res, err
+	}
+	return res, nil
+}
+
+func queryCurEpoch(cdc codec.Codec, endpoint string, identifier string) (epochtypes.QueryCurrentEpochResponse, error) {
+	var res epochtypes.QueryCurrentEpochResponse
+
+	body, err := httpGet(fmt.Sprintf("%s/celinium/epochs/v1/current_epoch?identifier=%s", endpoint, identifier))
+	if err != nil {
+		return res, err
+	}
+
+	if err = cdc.UnmarshalJSON(body, &res); err != nil {
+		return res, err
+	}
+	return res, nil
+}
+
+func getSpecicalEpochInfo(cdc codec.Codec, endpoint string, identifier string) (*epochtypes.EpochInfo, error) {
+	var res epochtypes.QueryEpochsInfoResponse
+	var epochInfo epochtypes.EpochInfo
+	body, err := httpGet(fmt.Sprintf("%s/celinium/epochs/v1/epochs", endpoint))
+	if err != nil {
+		return nil, err
+	}
+
+	if err = cdc.UnmarshalJSON(body, &res); err != nil {
+		return nil, err
+	}
+
+	for _, e := range res.Epochs {
+		if strings.Compare(e.Identifier, identifier) == 0 {
+			epochInfo = e
+		}
+	}
+
+	return &epochInfo, nil
+}
+
+func queryInterChainAccount(cdc codec.Codec, endpoint, owner, connectionID string) (string, error) {
+	var res icacontrollertypes.QueryInterchainAccountResponse
+
+	body, err := httpGet(fmt.Sprintf("%s/ibc/apps/interchain_accounts/controller/v1/owners/%s/connections/%s", endpoint, owner, connectionID))
+	if err != nil {
+		return "", err
+	}
+
+	if err = cdc.UnmarshalJSON(body, &res); err != nil {
+		return "", err
+	}
+	return res.Address, nil
+}
+
+func queryDelegationReward(cdc codec.Codec, endpoint, delegator, validator string) (math.Int, error) {
+	var res disttypes.QueryDelegationRewardsResponse
+
+	body, err := httpGet(fmt.Sprintf("%s/cosmos/distribution/v1beta1/delegators/%s/rewards/%s", endpoint, delegator, validator))
+	if err != nil {
+		return math.ZeroInt(), err
+	}
+
+	if err = cdc.UnmarshalJSON(body, &res); err != nil {
+		return math.ZeroInt(), err
+	}
+	return res.Rewards[0].Amount.TruncateInt(), nil
 }

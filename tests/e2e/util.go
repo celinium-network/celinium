@@ -2,11 +2,14 @@ package e2e
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/codec/unknownproto"
 	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
+
+	liquidstaketypes "github.com/celinium-network/celinium/x/liquidstake/types"
 )
 
 func decodeTx(cdc codec.Codec, txBytes []byte, interfaceRegs types.InterfaceRegistry) (*sdktx.Tx, error) {
@@ -51,4 +54,27 @@ func concatFlags(originalCollection []string, commandFlags []string, generalFlag
 	originalCollection = append(originalCollection, generalFlags...)
 
 	return originalCollection
+}
+
+func compareDelegationRecord(oriRecord, targetRecord *liquidstaketypes.DelegationRecord) bool {
+	if strings.Compare(oriRecord.ChainID, targetRecord.ChainID) != 0 {
+		return false
+	}
+	if oriRecord.EpochNumber != targetRecord.EpochNumber {
+		return false
+	}
+	if strings.Compare(oriRecord.DelegationCoin.Denom, targetRecord.DelegationCoin.GetDenom()) != 0 {
+		return false
+	}
+
+	if !oriRecord.DelegationCoin.Amount.Equal(targetRecord.DelegationCoin.Amount) {
+		return false
+	}
+	if oriRecord.Status != targetRecord.Status {
+		return false
+	}
+	if !oriRecord.TransferredAmount.Equal(targetRecord.TransferredAmount) {
+		return false
+	}
+	return true
 }

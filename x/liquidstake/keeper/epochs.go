@@ -36,6 +36,8 @@ func (h Hooks) BeforeEpochStart(ctx sdk.Context, epochIdentifier string, epochNu
 
 		h.k.ProcessUnbondings(ctx, uEpochNumber)
 	case appparams.ReinvestEpochIdentifier:
+		h.k.SetDistriWithdrawAddress(ctx)
+
 		h.k.Reinvest(ctx)
 	default:
 	}
