@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/server"
@@ -16,6 +17,8 @@ import (
 	icagenesistypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/genesis/types"
 	icatypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/types"
 
+	appparams "github.com/celinium-network/celinium/app/params"
+	epochstypes "github.com/celinium-network/celinium/x/epochs/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
@@ -155,11 +158,19 @@ func modifyGenesis(cdc codec.Codec, path, moniker, amountStr string, addrAll []s
 
 	stakingGenState := stakingtypes.GetGenesisStateFromAppState(cdc, appState)
 	stakingGenState.Params.BondDenom = denom
+	stakingGenState.Params.UnbondingTime = time.Hour * 2
 	stakingGenStateBz, err := cdc.MarshalJSON(stakingGenState)
 	if err != nil {
 		return fmt.Errorf("failed to marshal staking genesis state: %s", err)
 	}
 	appState[stakingtypes.ModuleName] = stakingGenStateBz
+
+	epochGenState := mockEpochGenesis()
+	epochGenStateBz, err := cdc.MarshalJSON(epochGenState)
+	if err != nil {
+		return fmt.Errorf("failed to marshal staking genesis state: %s", err)
+	}
+	appState[epochstypes.ModuleName] = epochGenStateBz
 
 	appStateJSON, err := json.Marshal(appState)
 	if err != nil {
@@ -168,4 +179,55 @@ func modifyGenesis(cdc codec.Codec, path, moniker, amountStr string, addrAll []s
 	genDoc.AppState = appStateJSON
 
 	return genutil.ExportGenesisFile(genDoc, genFile)
+}
+
+func mockEpochGenesis() *epochstypes.GenesisState {
+	epochs := []epochstypes.EpochInfo{
+		{
+			Identifier:              epochstypes.WeekEpochID,
+			StartTime:               time.Time{},
+			Duration:                time.Hour * 24 * 7,
+			CurrentEpoch:            0,
+			CurrentEpochStartHeight: 0,
+			CurrentEpochStartTime:   time.Time{},
+			EpochCountingStarted:    false,
+		},
+		{
+			Identifier:              epochstypes.DayEpochID,
+			StartTime:               time.Time{},
+			Duration:                time.Hour * 24,
+			CurrentEpoch:            0,
+			CurrentEpochStartHeight: 0,
+			CurrentEpochStartTime:   time.Time{},
+			EpochCountingStarted:    false,
+		},
+		{
+			Identifier:              appparams.DelegationEpochIdentifier,
+			StartTime:               time.Time{},
+			Duration:                time.Minute * 10,
+			CurrentEpoch:            0,
+			CurrentEpochStartHeight: 0,
+			CurrentEpochStartTime:   time.Time{},
+			EpochCountingStarted:    false,
+		},
+		{
+			Identifier:              appparams.UndelegationEpochIdentifier,
+			StartTime:               time.Time{},
+			Duration:                time.Minute * 20,
+			CurrentEpoch:            0,
+			CurrentEpochStartHeight: 0,
+			CurrentEpochStartTime:   time.Time{},
+			EpochCountingStarted:    false,
+		},
+		{
+			Identifier:              appparams.ReinvestEpochIdentifier,
+			StartTime:               time.Time{},
+			Duration:                time.Minute * 15,
+			CurrentEpoch:            0,
+			CurrentEpochStartHeight: 0,
+			CurrentEpochStartTime:   time.Time{},
+			EpochCountingStarted:    false,
+		},
+	}
+	return epochstypes.NewGenesisState(epochs)
 }

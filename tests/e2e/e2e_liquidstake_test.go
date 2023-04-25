@@ -14,28 +14,54 @@ import (
 	"github.com/celinium-network/celinium/x/liquidstake/types"
 )
 
-func (s *IntegrationTestSuite) TestLiquidStakeAddSourceChain() {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
+type sourceChainParams struct {
+	ChainID         string
+	ConnectionID    string
+	ChannelID       string
+	ValPrefix       string
+	CliVals         liquistakecli.CliValidators
+	NativeDeonm     string
+	DerivativeDenom string
+	registor        string
+}
 
-	var selectVals liquistakecli.CliValidators
+func (s *IntegrationTestSuite) mockRegisterSourceChain() *sourceChainParams {
+	regparams := sourceChainParams{
+		ChainID:         s.srcChain.ID,
+		ConnectionID:    "connection-0",
+		ChannelID:       "channel-0",
+		ValPrefix:       "celivaloper",
+		NativeDeonm:     "CELI",
+		DerivativeDenom: "vpCELI",
+	}
+
+	registor, err := s.ctlChain.validators[0].keyRecord.GetAddress()
+	s.NoError(err)
+
+	regparams.registor = registor.String()
 
 	for _, v := range s.srcChain.validators {
 		accAddr, _ := v.keyRecord.GetAddress()
 		valAddr := sdk.ValAddress(accAddr)
 
-		selectVals.Vals = append(selectVals.Vals, types.Validator{
+		regparams.CliVals.Vals = append(regparams.CliVals.Vals, types.Validator{
 			Address:          valAddr.String(),
 			DelegationAmount: math.ZeroInt(),
 			Weight:           1000000,
 		})
 	}
 
-	selectValsBz, err := json.Marshal(selectVals)
-	s.NoError(err)
+	return &regparams
+}
 
-	senderAccAddr, err := s.ctlChain.validators[0].keyRecord.GetAddress()
-	s.NoError(err)
+func (s *IntegrationTestSuite) LiquidStakeAddSourceChain(regparams *sourceChainParams) (*types.SourceChain, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	selectValsBz, err := json.Marshal(regparams.CliVals)
+	if err != nil {
+		return nil, err
+	}
 
 	fee := sdk.NewCoin(s.srcChain.Denom, standardFeeAmount)
 	liuidstakeCmd := []string{
@@ -43,14 +69,14 @@ func (s *IntegrationTestSuite) TestLiquidStakeAddSourceChain() {
 		txCommand,
 		"liquidstake",
 		"register-source-chain",
-		s.srcChain.ID,
-		"connection-0",
-		"channel-0",
-		"celivaloper",
+		regparams.ChainID,
+		regparams.ConnectionID,
+		regparams.ChannelID,
+		regparams.ValPrefix,
 		string(selectValsBz),
-		"CELI",
-		"vpCELI",
-		fmt.Sprintf("--from=%s", senderAccAddr.String()),
+		regparams.NativeDeonm,
+		regparams.DerivativeDenom,
+		fmt.Sprintf("--from=%s", regparams.registor),
 		fmt.Sprintf("--%s=%s", flags.FlagFees, fee.String()),
 		fmt.Sprintf("--%s=%d", flags.FlagGas, gas*10),
 		fmt.Sprintf("--%s=%s", flags.FlagChainID, s.ctlChain.ID),
@@ -64,9 +90,13 @@ func (s *IntegrationTestSuite) TestLiquidStakeAddSourceChain() {
 	chainBAPIEndpoint := fmt.Sprintf("http://%s", s.valResources[s.ctlChain.ID][0].GetHostPort("1317/tcp"))
 
 	resp, err := queryLiquidstakeSourceChain(s.ctlChain.encfg.Codec, chainBAPIEndpoint, s.srcChain.ID)
-	s.NoError(err)
-	// TODO more check
-	s.Equal(resp.SourceChain.ChainID, s.srcChain.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO check registe result ?
+	return &resp.SourceChain, nil
 }
 
-
+func (s *IntegrationTestSuite) Delegate(chainID string) {
+}
