@@ -130,7 +130,7 @@ func (s *IntegrationTestSuite) runIBCRelayer() {
 	s.createChannel()
 }
 
-func (s *IntegrationTestSuite) sendIBC(c *chain, valIdx int, sender, recipient, token, fees, note string) {
+func (s *IntegrationTestSuite) sendIBC(c *chain, valIdx int, sender, recipient, token, fees, note string) { //nolint:unused // this is called during e2e tests
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
@@ -154,7 +154,7 @@ func (s *IntegrationTestSuite) sendIBC(c *chain, valIdx int, sender, recipient, 
 		"-y",
 	}
 	s.T().Logf("sending %s from %s (%s) to %s (%s) with memo %s", token, s.srcChain.ID, sender, s.ctlChain.ID, recipient, note)
-	s.executeGaiaTxCommand(ctx, c, ibcCmd, valIdx, s.defaultExecValidation(c, valIdx))
+	s.executeCeliniumTxCommand(ctx, c, ibcCmd, valIdx, s.defaultExecValidation(c, valIdx))
 	s.T().Log("successfully sent IBC tokens")
 }
 
@@ -248,7 +248,7 @@ func (s *IntegrationTestSuite) createChannel() {
 	s.T().Logf("connected %s and %s chains via IBC", s.srcChain.ID, s.ctlChain.ID)
 }
 
-func (s *IntegrationTestSuite) TestIBCTokenTransfer() {
+func (s *IntegrationTestSuite) testIBCTokenTransfer() { //nolint:unused // this is called during e2e tests
 	time.Sleep(30 * time.Second)
 	s.Run("send_celi_to_chainB", func() {
 		// require the recipient account receives the IBC tokens (IBC packets ACKd)

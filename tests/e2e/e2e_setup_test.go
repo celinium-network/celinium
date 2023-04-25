@@ -41,7 +41,7 @@ const (
 )
 
 var (
-	stakingAmount     = sdk.NewInt(100000000000)
+	stakingAmount     = sdk.NewInt(200000000000)
 	standardFeeAmount = sdk.NewInt(330000)
 )
 
@@ -189,7 +189,12 @@ func (s *IntegrationTestSuite) initGenesis(c *chain, vestingMnemonic, jailedValM
 	// generate genesis txs
 	genTxs := make([]json.RawMessage, len(c.validators))
 	for i, val := range c.validators {
-		createValmsg, err := val.buildCreateValidatorMsg(sdk.NewCoin(c.Denom, stakingAmount))
+		// the first validator vote power >= 2/3 * totolPower
+		stAmt := stakingAmount
+		if i != 0 {
+			stAmt = stakingAmount.QuoRaw(2).SubRaw(1)
+		}
+		createValmsg, err := val.buildCreateValidatorMsg(sdk.NewCoin(c.Denom, stAmt))
 		s.Require().NoError(err)
 		signedTx, err := val.signMsg(createValmsg)
 

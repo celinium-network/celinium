@@ -85,7 +85,7 @@ func (s *IntegrationTestSuite) execEncode(
 	}
 
 	var encoded string
-	s.executeGaiaTxCommand(ctx, c, command, 0, func(stdOut []byte, stdErr []byte) bool {
+	s.executeCeliniumTxCommand(ctx, c, command, 0, func(stdOut []byte, stdErr []byte) bool {
 		if stdErr != nil {
 			return false
 		}
@@ -117,7 +117,7 @@ func (s *IntegrationTestSuite) execDecode(
 	}
 
 	var decoded string
-	s.executeGaiaTxCommand(ctx, c, chainCommand, 0, func(stdOut []byte, stdErr []byte) bool {
+	s.executeCeliniumTxCommand(ctx, c, chainCommand, 0, func(stdOut []byte, stdErr []byte) bool {
 		if stdErr != nil {
 			return false
 		}
@@ -152,7 +152,7 @@ func (s *IntegrationTestSuite) execVestingTx(
 		chainCommand = append(chainCommand, fmt.Sprintf("--%s=%v", flag, value))
 	}
 
-	s.executeGaiaTxCommand(ctx, c, chainCommand, 0, s.defaultExecValidation(c, 0))
+	s.executeCeliniumTxCommand(ctx, c, chainCommand, 0, s.defaultExecValidation(c, 0))
 	s.T().Logf("successfully %s with %v", method, args)
 }
 
@@ -188,7 +188,7 @@ func (s *IntegrationTestSuite) execUnjail(
 		chainCommand = append(chainCommand, fmt.Sprintf("--%s=%v", flag, value))
 	}
 
-	s.executeGaiaTxCommand(ctx, c, chainCommand, 0, s.defaultExecValidation(c, 0))
+	s.executeCeliniumTxCommand(ctx, c, chainCommand, 0, s.defaultExecValidation(c, 0))
 	s.T().Logf("successfully unjail with options %v", opt)
 }
 
@@ -215,7 +215,7 @@ func (s *IntegrationTestSuite) execFeeGrant(c *chain, valIdx int, granter, grant
 		chainCommand = append(chainCommand, fmt.Sprintf("--%s=%v", flag, value))
 	}
 
-	s.executeGaiaTxCommand(ctx, c, chainCommand, valIdx, s.defaultExecValidation(c, valIdx))
+	s.executeCeliniumTxCommand(ctx, c, chainCommand, valIdx, s.defaultExecValidation(c, valIdx))
 }
 
 func (s *IntegrationTestSuite) execFeeGrantRevoke(c *chain, valIdx int, granter, grantee string, opt ...flagOption) {
@@ -240,7 +240,7 @@ func (s *IntegrationTestSuite) execFeeGrantRevoke(c *chain, valIdx int, granter,
 		chainCommand = append(chainCommand, fmt.Sprintf("--%s=%v", flag, value))
 	}
 
-	s.executeGaiaTxCommand(ctx, c, chainCommand, valIdx, s.defaultExecValidation(c, valIdx))
+	s.executeCeliniumTxCommand(ctx, c, chainCommand, valIdx, s.defaultExecValidation(c, valIdx))
 }
 
 func (s *IntegrationTestSuite) execBankSend(
@@ -277,7 +277,7 @@ func (s *IntegrationTestSuite) execBankSend(
 		chainCommand = append(chainCommand, fmt.Sprintf("--%s=%v", flag, value))
 	}
 
-	s.executeGaiaTxCommand(ctx, c, chainCommand, valIdx, s.expectErrExecValidation(c, valIdx, expectErr))
+	s.executeCeliniumTxCommand(ctx, c, chainCommand, valIdx, s.expectErrExecValidation(c, valIdx, expectErr))
 }
 
 type txBankSend struct {
@@ -327,7 +327,7 @@ func (s *IntegrationTestSuite) execWithdrawAllRewards(c *chain, valIdx int, paye
 		"-y",
 	}
 
-	s.executeGaiaTxCommand(ctx, c, chainCommand, valIdx, s.expectErrExecValidation(c, valIdx, expectErr))
+	s.executeCeliniumTxCommand(ctx, c, chainCommand, valIdx, s.expectErrExecValidation(c, valIdx, expectErr))
 }
 
 func (s *IntegrationTestSuite) execDistributionFundCommunityPool(c *chain, valIdx int, from, amt, fees string) {
@@ -350,7 +350,7 @@ func (s *IntegrationTestSuite) execDistributionFundCommunityPool(c *chain, valId
 		"-y",
 	}
 
-	s.executeGaiaTxCommand(ctx, c, chainCommand, valIdx, s.defaultExecValidation(c, valIdx))
+	s.executeCeliniumTxCommand(ctx, c, chainCommand, valIdx, s.defaultExecValidation(c, valIdx))
 	s.T().Logf("Successfully funded community pool")
 }
 
@@ -377,7 +377,7 @@ func (s *IntegrationTestSuite) runGovExec(c *chain, valIdx int, submitterAddr, g
 	chainCommand = concatFlags(chainCommand, proposalFlags, generalFlags)
 
 	s.T().Logf("Executing gaiad tx gov %s on chain %s", govCommand, c.ID)
-	s.executeGaiaTxCommand(ctx, c, chainCommand, valIdx, s.defaultExecValidation(c, valIdx))
+	s.executeCeliniumTxCommand(ctx, c, chainCommand, valIdx, s.defaultExecValidation(c, valIdx))
 	s.T().Logf("Successfully executed %s", govCommand)
 }
 
@@ -396,7 +396,7 @@ func (s *IntegrationTestSuite) executeGKeysAddCommand(c *chain, valIdx int, name
 	}
 
 	var addrRecord AddressResponse
-	s.executeGaiaTxCommand(ctx, c, chainCommand, valIdx, func(stdOut []byte, stdErr []byte) bool {
+	s.executeCeliniumTxCommand(ctx, c, chainCommand, valIdx, func(stdOut []byte, stdErr []byte) bool {
 		// Gaiad keys add by default returns payload to stdErr
 		if err := json.Unmarshal(stdErr, &addrRecord); err != nil {
 			return false
@@ -419,7 +419,7 @@ func (s *IntegrationTestSuite) executeKeysList(c *chain, valIdx int, home string
 		"--output=json",
 	}
 
-	s.executeGaiaTxCommand(ctx, c, chainCommand, valIdx, func([]byte, []byte) bool {
+	s.executeCeliniumTxCommand(ctx, c, chainCommand, valIdx, func([]byte, []byte) bool {
 		return true
 	})
 }
@@ -447,7 +447,7 @@ func (s *IntegrationTestSuite) executeDelegate(c *chain, valIdx int, amount, val
 		"-y",
 	}
 
-	s.executeGaiaTxCommand(ctx, c, chainCommand, valIdx, s.defaultExecValidation(c, valIdx))
+	s.executeCeliniumTxCommand(ctx, c, chainCommand, valIdx, s.defaultExecValidation(c, valIdx))
 	s.T().Logf("%s successfully delegated %s to %s", delegatorAddr, amount, valOperAddress)
 }
 
@@ -477,7 +477,7 @@ func (s *IntegrationTestSuite) executeRedelegate(c *chain, valIdx int, amount, o
 		"-y",
 	}
 
-	s.executeGaiaTxCommand(ctx, c, chainCommand, valIdx, s.defaultExecValidation(c, valIdx))
+	s.executeCeliniumTxCommand(ctx, c, chainCommand, valIdx, s.defaultExecValidation(c, valIdx))
 	s.T().Logf("%s successfully redelegated %s from %s to %s", delegatorAddr, amount, originalValOperAddress, newValOperAddress)
 }
 
@@ -493,7 +493,7 @@ func (s *IntegrationTestSuite) getLatestBlockHeight(c *chain, valIdx int) int {
 
 	var currentHeight int
 	chainCommand := []string{c.ChainNodeBinary, "status"}
-	s.executeGaiaTxCommand(ctx, c, chainCommand, valIdx, func(stdOut []byte, stdErr []byte) bool {
+	s.executeCeliniumTxCommand(ctx, c, chainCommand, valIdx, func(stdOut []byte, stdErr []byte) bool {
 		var (
 			err   error
 			block syncInfo
@@ -533,7 +533,7 @@ func (s *IntegrationTestSuite) execSetWithdrawAddress(
 		"-y",
 	}
 
-	s.executeGaiaTxCommand(ctx, c, chainCommand, valIdx, s.defaultExecValidation(c, valIdx))
+	s.executeCeliniumTxCommand(ctx, c, chainCommand, valIdx, s.defaultExecValidation(c, valIdx))
 	s.T().Logf("Successfully set new distribution withdrawal address for %s to %s", delegatorAddress, newWithdrawalAddress)
 }
 
@@ -565,11 +565,11 @@ func (s *IntegrationTestSuite) execWithdrawReward(
 		"-y",
 	}
 
-	s.executeGaiaTxCommand(ctx, c, chainCommand, valIdx, s.defaultExecValidation(c, valIdx))
+	s.executeCeliniumTxCommand(ctx, c, chainCommand, valIdx, s.defaultExecValidation(c, valIdx))
 	s.T().Logf("Successfully withdrew distribution rewards for delegator %s from validator %s", delegatorAddress, validatorAddress)
 }
 
-func (s *IntegrationTestSuite) executeGaiaTxCommand(ctx context.Context, c *chain, chainCommand []string, valIdx int, validation func([]byte, []byte) bool) {
+func (s *IntegrationTestSuite) executeCeliniumTxCommand(ctx context.Context, c *chain, chainCommand []string, valIdx int, validation func([]byte, []byte) bool) {
 	if validation == nil {
 		validation = s.defaultExecValidation(c, 0)
 	}

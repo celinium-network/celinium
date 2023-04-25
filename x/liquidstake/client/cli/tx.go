@@ -30,7 +30,7 @@ func NewTxCmd() *cobra.Command {
 	return liquidStakeTxCmd
 }
 
-type validators struct {
+type CliValidators struct {
 	Vals []types.Validator
 }
 
@@ -55,7 +55,7 @@ func NewRegisterSourceChainCmd() *cobra.Command {
 			transferChannelID := args[2]
 			valAddrPrefix := args[3]
 
-			var vals validators
+			var vals CliValidators
 			err = json.Unmarshal([]byte(args[4]), &vals)
 			if err != nil {
 				return err

@@ -14,8 +14,9 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	disttypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
-
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	liquidstaketypes "github.com/celinium-network/celinium/x/liquidstake/types"
 )
 
 func queryChainTx(endpoint, txHash string) error {
@@ -44,7 +45,7 @@ func queryChainTx(endpoint, txHash string) error {
 }
 
 // if coin is zero, return empty coin.
-func getSpecificBalance(cdc codec.Codec, endpoint, addr, denom string) (amt sdk.Coin, err error) {
+func getSpecificBalance(cdc codec.Codec, endpoint, addr, denom string) (amt sdk.Coin, err error) { //nolint:unused // this is called during e2e tests
 	balances, err := queryAllBalances(cdc, endpoint, addr)
 	if err != nil {
 		return amt, err
@@ -58,7 +59,7 @@ func getSpecificBalance(cdc codec.Codec, endpoint, addr, denom string) (amt sdk.
 	return amt, nil
 }
 
-func queryAllBalances(cdc codec.Codec, endpoint, addr string) (sdk.Coins, error) {
+func queryAllBalances(cdc codec.Codec, endpoint, addr string) (sdk.Coins, error) { //nolint:unused // this is called during e2e tests
 	body, err := httpGet(fmt.Sprintf("%s/cosmos/bank/v1beta1/balances/%s", endpoint, addr))
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute HTTP request: %w", err)
@@ -213,6 +214,19 @@ func queryEvidence(cdc codec.Codec, endpoint, hash string) (evidencetypes.QueryE
 func queryAllEvidence(cdc codec.Codec, endpoint string) (evidencetypes.QueryAllEvidenceResponse, error) { //nolint:unused // this is called during e2e tests
 	var res evidencetypes.QueryAllEvidenceResponse
 	body, err := httpGet(fmt.Sprintf("%s/cosmos/evidence/v1beta1/evidence", endpoint))
+	if err != nil {
+		return res, err
+	}
+
+	if err = cdc.UnmarshalJSON(body, &res); err != nil {
+		return res, err
+	}
+	return res, nil
+}
+
+func queryLiquidstakeSourceChain(cdc codec.Codec, endpoint string, chainID string) (liquidstaketypes.QuerySourceChainResponse, error) {
+	var res liquidstaketypes.QuerySourceChainResponse
+	body, err := httpGet(fmt.Sprintf("%s/celinium/liquidstake/v1/source_chain?ChainID=%s", endpoint, chainID))
 	if err != nil {
 		return res, err
 	}
