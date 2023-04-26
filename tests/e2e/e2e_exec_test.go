@@ -73,7 +73,7 @@ func (s *IntegrationTestSuite) execEncode(
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	s.T().Logf("%s - Executing gaiad encoding with %v", c.ID, txPath)
+	s.Logf("%s - Executing gaiad encoding with %v", c.ID, txPath)
 	command := []string{
 		c.ChainNodeBinary,
 		txCommand,
@@ -92,7 +92,7 @@ func (s *IntegrationTestSuite) execEncode(
 		encoded = strings.TrimSuffix(string(stdOut), "\n")
 		return true
 	})
-	s.T().Logf("successfully encode with %v", txPath)
+	s.Logf("successfully encode with %v", txPath)
 	return encoded
 }
 
@@ -105,7 +105,7 @@ func (s *IntegrationTestSuite) execDecode(
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	s.T().Logf("%s - Executing gaiad decoding with %v", c.ID, txPath)
+	s.Logf("%s - Executing gaiad decoding with %v", c.ID, txPath)
 	chainCommand := []string{
 		c.ChainNodeBinary,
 		txCommand,
@@ -124,7 +124,7 @@ func (s *IntegrationTestSuite) execDecode(
 		decoded = strings.TrimSuffix(string(stdOut), "\n")
 		return true
 	})
-	s.T().Logf("successfully decode %v", txPath)
+	s.Logf("successfully decode %v", txPath)
 	return decoded
 }
 
@@ -138,7 +138,7 @@ func (s *IntegrationTestSuite) execVestingTx(
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	s.T().Logf("%s - Executing gaiad %s with %v", c.ID, method, args)
+	s.Logf("%s - Executing gaiad %s with %v", c.ID, method, args)
 	chainCommand := []string{
 		c.ChainNodeBinary,
 		txCommand,
@@ -153,7 +153,7 @@ func (s *IntegrationTestSuite) execVestingTx(
 	}
 
 	s.executeCeliniumTxCommand(ctx, c, chainCommand, 0, s.defaultExecValidation(c, 0))
-	s.T().Logf("successfully %s with %v", method, args)
+	s.Logf("successfully %s with %v", method, args)
 }
 
 func (s *IntegrationTestSuite) execCreatePeriodicVestingAccount(
@@ -162,9 +162,9 @@ func (s *IntegrationTestSuite) execCreatePeriodicVestingAccount(
 	jsonPath string,
 	opt ...flagOption,
 ) {
-	s.T().Logf("Executing gaiad create periodic vesting account %s", c.ID)
+	s.Logf("Executing gaiad create periodic vesting account %s", c.ID)
 	s.execVestingTx(c, "create-periodic-vesting-account", []string{address, jsonPath}, opt...)
-	s.T().Logf("successfully created periodic vesting account %s with %s", address, jsonPath)
+	s.Logf("successfully created periodic vesting account %s with %s", address, jsonPath)
 }
 
 func (s *IntegrationTestSuite) execUnjail(
@@ -175,7 +175,7 @@ func (s *IntegrationTestSuite) execUnjail(
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	s.T().Logf("Executing gaiad slashing unjail %s with options: %v", c.ID, opt)
+	s.Logf("Executing gaiad slashing unjail %s with options: %v", c.ID, opt)
 	chainCommand := []string{
 		c.ChainNodeBinary,
 		txCommand,
@@ -189,7 +189,7 @@ func (s *IntegrationTestSuite) execUnjail(
 	}
 
 	s.executeCeliniumTxCommand(ctx, c, chainCommand, 0, s.defaultExecValidation(c, 0))
-	s.T().Logf("successfully unjail with options %v", opt)
+	s.Logf("successfully unjail with options %v", opt)
 }
 
 func (s *IntegrationTestSuite) execFeeGrant(c *chain, valIdx int, granter, grantee, spendLimit string, opt ...flagOption) {
@@ -200,7 +200,7 @@ func (s *IntegrationTestSuite) execFeeGrant(c *chain, valIdx int, granter, grant
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	s.T().Logf("granting %s fee from %s on chain %s", grantee, granter, c.ID)
+	s.Logf("granting %s fee from %s on chain %s", grantee, granter, c.ID)
 
 	chainCommand := []string{
 		c.ChainNodeBinary,
@@ -225,7 +225,7 @@ func (s *IntegrationTestSuite) execFeeGrantRevoke(c *chain, valIdx int, granter,
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	s.T().Logf("revoking %s fee grant from %s on chain %s", grantee, granter, c.ID)
+	s.Logf("revoking %s fee grant from %s on chain %s", grantee, granter, c.ID)
 
 	chainCommand := []string{
 		c.ChainNodeBinary,
@@ -261,7 +261,7 @@ func (s *IntegrationTestSuite) execBankSend(
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	s.T().Logf("sending %s tokens from %s to %s on chain %s", amt, from, to, c.ID)
+	s.Logf("sending %s tokens from %s to %s on chain %s", amt, from, to, c.ID)
 
 	chainCommand := []string{
 		c.ChainNodeBinary,
@@ -297,7 +297,7 @@ func (s *IntegrationTestSuite) execBankSendBatch(
 	sucessBankSendCount := 0
 
 	for i := range txs {
-		s.T().Logf(txs[i].log)
+		s.Logf(txs[i].log)
 
 		s.execBankSend(c, valIdx, txs[i].from, txs[i].to, txs[i].amt, txs[i].fees, txs[i].expectErr)
 		if !txs[i].expectErr {
@@ -334,7 +334,7 @@ func (s *IntegrationTestSuite) execDistributionFundCommunityPool(c *chain, valId
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	s.T().Logf("Executing gaiad tx distribution fund-community-pool on chain %s", c.ID)
+	s.Logf("Executing gaiad tx distribution fund-community-pool on chain %s", c.ID)
 
 	chainCommand := []string{
 		c.ChainNodeBinary,
@@ -351,7 +351,7 @@ func (s *IntegrationTestSuite) execDistributionFundCommunityPool(c *chain, valId
 	}
 
 	s.executeCeliniumTxCommand(ctx, c, chainCommand, valIdx, s.defaultExecValidation(c, valIdx))
-	s.T().Logf("Successfully funded community pool")
+	s.Logf("Successfully funded community pool")
 }
 
 func (s *IntegrationTestSuite) runGovExec(c *chain, valIdx int, submitterAddr, govCommand string, proposalFlags []string, fees string) {
@@ -376,9 +376,9 @@ func (s *IntegrationTestSuite) runGovExec(c *chain, valIdx int, submitterAddr, g
 
 	chainCommand = concatFlags(chainCommand, proposalFlags, generalFlags)
 
-	s.T().Logf("Executing gaiad tx gov %s on chain %s", govCommand, c.ID)
+	s.Logf("Executing gaiad tx gov %s on chain %s", govCommand, c.ID)
 	s.executeCeliniumTxCommand(ctx, c, chainCommand, valIdx, s.defaultExecValidation(c, valIdx))
-	s.T().Logf("Successfully executed %s", govCommand)
+	s.Logf("Successfully executed %s", govCommand)
 }
 
 func (s *IntegrationTestSuite) executeGKeysAddCommand(c *chain, valIdx int, name string, home string) string {
@@ -428,7 +428,7 @@ func (s *IntegrationTestSuite) executeDelegate(c *chain, valIdx int, amount, val
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	s.T().Logf("Executing gaiad tx staking delegate %s", c.ID)
+	s.Logf("Executing gaiad tx staking delegate %s", c.ID)
 
 	chainCommand := []string{
 		c.ChainNodeBinary,
@@ -448,7 +448,7 @@ func (s *IntegrationTestSuite) executeDelegate(c *chain, valIdx int, amount, val
 	}
 
 	s.executeCeliniumTxCommand(ctx, c, chainCommand, valIdx, s.defaultExecValidation(c, valIdx))
-	s.T().Logf("%s successfully delegated %s to %s", delegatorAddr, amount, valOperAddress)
+	s.Logf("%s successfully delegated %s to %s", delegatorAddr, amount, valOperAddress)
 }
 
 func (s *IntegrationTestSuite) executeRedelegate(c *chain, valIdx int, amount, originalValOperAddress,
@@ -457,7 +457,7 @@ func (s *IntegrationTestSuite) executeRedelegate(c *chain, valIdx int, amount, o
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	s.T().Logf("Executing gaiad tx staking redelegate %s", c.ID)
+	s.Logf("Executing gaiad tx staking redelegate %s", c.ID)
 
 	chainCommand := []string{
 		c.ChainNodeBinary,
@@ -478,7 +478,7 @@ func (s *IntegrationTestSuite) executeRedelegate(c *chain, valIdx int, amount, o
 	}
 
 	s.executeCeliniumTxCommand(ctx, c, chainCommand, valIdx, s.defaultExecValidation(c, valIdx))
-	s.T().Logf("%s successfully redelegated %s from %s to %s", delegatorAddr, amount, originalValOperAddress, newValOperAddress)
+	s.Logf("%s successfully redelegated %s from %s to %s", delegatorAddr, amount, originalValOperAddress, newValOperAddress)
 }
 
 func (s *IntegrationTestSuite) getLatestBlockHeight(c *chain, valIdx int) int {
@@ -517,7 +517,7 @@ func (s *IntegrationTestSuite) execSetWithdrawAddress(
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	s.T().Logf("Setting distribution withdrawal address on chain %s for %s to %s", c.ID, delegatorAddress, newWithdrawalAddress)
+	s.Logf("Setting distribution withdrawal address on chain %s for %s to %s", c.ID, delegatorAddress, newWithdrawalAddress)
 	chainCommand := []string{
 		c.ChainNodeBinary,
 		txCommand,
@@ -534,7 +534,7 @@ func (s *IntegrationTestSuite) execSetWithdrawAddress(
 	}
 
 	s.executeCeliniumTxCommand(ctx, c, chainCommand, valIdx, s.defaultExecValidation(c, valIdx))
-	s.T().Logf("Successfully set new distribution withdrawal address for %s to %s", delegatorAddress, newWithdrawalAddress)
+	s.Logf("Successfully set new distribution withdrawal address for %s to %s", delegatorAddress, newWithdrawalAddress)
 }
 
 func (s *IntegrationTestSuite) execWithdrawReward(
@@ -547,7 +547,7 @@ func (s *IntegrationTestSuite) execWithdrawReward(
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	s.T().Logf("Withdrawing distribution rewards on chain %s for delegator %s from %s validator", c.ID, delegatorAddress, validatorAddress)
+	s.Logf("Withdrawing distribution rewards on chain %s for delegator %s from %s validator", c.ID, delegatorAddress, validatorAddress)
 	chainCommand := []string{
 		c.ChainNodeBinary,
 		txCommand,
@@ -566,7 +566,7 @@ func (s *IntegrationTestSuite) execWithdrawReward(
 	}
 
 	s.executeCeliniumTxCommand(ctx, c, chainCommand, valIdx, s.defaultExecValidation(c, valIdx))
-	s.T().Logf("Successfully withdrew distribution rewards for delegator %s from validator %s", delegatorAddress, validatorAddress)
+	s.Logf("Successfully withdrew distribution rewards for delegator %s from validator %s", delegatorAddress, validatorAddress)
 }
 
 func (s *IntegrationTestSuite) executeCeliniumTxCommand(ctx context.Context, c *chain, chainCommand []string, valIdx int, validation func([]byte, []byte) bool) {

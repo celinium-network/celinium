@@ -69,7 +69,7 @@ func TestIntegrationTestSuite(t *testing.T) {
 }
 
 func (s *IntegrationTestSuite) SetupSuite() {
-	s.T().Log("setting up e2e integration test suite...")
+	s.Logf("setting up e2e integration test suite...")
 
 	var err error
 	s.srcChain, err = newChain("source")
@@ -99,13 +99,13 @@ func (s *IntegrationTestSuite) SetupSuite() {
 	// 3. Start both networks.
 	// 4. Create and run IBC relayer containers.
 
-	s.T().Logf("starting e2e infrastructure for chain A; chain-id: %s; datadir: %s", s.srcChain.ID, s.srcChain.dataDir)
+	s.Logf("starting e2e infrastructure for chain A; chain-id: %s; datadir: %s", s.srcChain.ID, s.srcChain.dataDir)
 	s.initNodes(s.srcChain)
 	s.initGenesis(s.srcChain, vestingMnemonic, jailedValMnemonic)
 	s.initValidatorConfigs(s.srcChain)
 	s.runValidators(s.srcChain, 0)
 
-	s.T().Logf("starting e2e infrastructure for chain B; chain-id: %s; datadir: %s", s.ctlChain.ID, s.ctlChain.dataDir)
+	s.Logf("starting e2e infrastructure for chain B; chain-id: %s; datadir: %s", s.ctlChain.ID, s.ctlChain.dataDir)
 	s.initNodes(s.ctlChain)
 	s.initGenesis(s.ctlChain, vestingMnemonic, jailedValMnemonic)
 	s.initValidatorConfigs(s.ctlChain)
@@ -282,7 +282,7 @@ func (s *IntegrationTestSuite) initValidatorConfigs(c *chain) {
 
 // runValidators runs the validators in the chain
 func (s *IntegrationTestSuite) runValidators(c *chain, portOffset int) {
-	s.T().Logf("starting chain %s validator containers...", c.ID)
+	s.Logf("starting chain %s validator containers...", c.ID)
 
 	s.valResources[c.ID] = make([]*dockertest.Resource, len(c.validators))
 	for i, val := range c.validators {
@@ -317,7 +317,7 @@ func (s *IntegrationTestSuite) runValidators(c *chain, portOffset int) {
 		s.Require().NoError(err)
 
 		s.valResources[c.ID][i] = resource
-		s.T().Logf("started Celinium %s validator container: %s", c.ID, resource.Container.ID)
+		s.Logf("started Celinium %s validator container: %s", c.ID, resource.Container.ID)
 	}
 
 	rpcClient, err := rpchttp.New("tcp://localhost:26657", "/websocket")
@@ -363,7 +363,7 @@ func (s *IntegrationTestSuite) TearDownSuite() {
 		}
 	}
 
-	s.T().Log("tearing down e2e integration test suite...")
+	s.Logf("tearing down e2e integration test suite...")
 
 	s.Require().NoError(s.dkrPool.Purge(s.relayerResource))
 
@@ -381,4 +381,8 @@ func (s *IntegrationTestSuite) TearDownSuite() {
 	for _, td := range s.tmpDirs {
 		os.RemoveAll(td)
 	}
+}
+
+func (s *IntegrationTestSuite) Logf(format string, args ...any) {
+	s.T().Log(time.Now().Format(time.RFC3339) + ": " + fmt.Sprintf(format, args...))
 }

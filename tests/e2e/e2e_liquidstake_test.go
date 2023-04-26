@@ -88,6 +88,7 @@ func (s *IntegrationTestSuite) LiquidStakeAddSourceChain(regparams *sourceChainP
 		"-y",
 	}
 
+	s.Logf("Liquistake regisor source chain, chainID %s", regparams.ChainID)
 	s.executeCeliniumTxCommand(ctx, s.ctlChain, liuidstakeCmd, 0, s.defaultExecValidation(s.ctlChain, 0))
 	chainBAPIEndpoint := fmt.Sprintf("http://%s", s.valResources[s.ctlChain.ID][0].GetHostPort("1317/tcp"))
 
@@ -95,7 +96,7 @@ func (s *IntegrationTestSuite) LiquidStakeAddSourceChain(regparams *sourceChainP
 	if err != nil {
 		return nil, err
 	}
-
+	s.Logf("Liquistake regisor source chain successful, chainID %s", regparams.ChainID)
 	// TODO check registe result ?
 	return &resp.SourceChain, nil
 }
@@ -139,6 +140,9 @@ func (s *IntegrationTestSuite) LiquistakeDelegate(sourceChain *types.SourceChain
 	ibcBalBefore, err := getSpecificBalance(s.ctlChain.encfg.Codec, chainBAPIEndpoint, ctlUser, sourceChain.IbcDenom)
 	s.NoError(err)
 
+	s.Logf("Liquistake begin delegate, chainID %s, amount %s ,user: %s , epoch %d",
+		sourceChain.ChainID, amount.String(), ctlUser, curEpoch)
+
 	s.executeCeliniumTxCommand(ctx, s.ctlChain, liuidstakeDelegateCmd, 0, s.defaultExecValidation(s.ctlChain, 0))
 	ibcBalAfter, err := getSpecificBalance(s.ctlChain.encfg.Codec, chainBAPIEndpoint, ctlUser, sourceChain.IbcDenom)
 	s.NoError(err)
@@ -159,9 +163,12 @@ func (s *IntegrationTestSuite) LiquistakeDelegate(sourceChain *types.SourceChain
 	}
 
 	s.True(compareDelegationRecord(&resp.Record, &targetDelegationRecord))
+	s.Logf("Liquistake begin delegate successful")
 }
 
 func (s *IntegrationTestSuite) CheckChainDelegate(sourceChain *types.SourceChain) {
+	s.Logf("Begin check chain Delegation")
+
 	ctlAPIEndpoint := fmt.Sprintf("http://%s", s.valResources[s.ctlChain.ID][0].GetHostPort("1317/tcp"))
 	srcAPIEndpoint := fmt.Sprintf("http://%s", s.valResources[s.srcChain.ID][0].GetHostPort("1317/tcp"))
 
@@ -184,6 +191,8 @@ func (s *IntegrationTestSuite) CheckChainDelegate(sourceChain *types.SourceChain
 
 	s.NoError(err)
 	s.True(res.SourceChain.StakedAmount.Equal(totalDelegateAmt))
+
+	s.Logf("Liquidstake Chain Delegation Successful. SourceChain %v", res.SourceChain)
 }
 
 func (s *IntegrationTestSuite) LiquidstakeReinvest(sourceChain *types.SourceChain) math.Int {
@@ -206,6 +215,7 @@ func (s *IntegrationTestSuite) LiquidstakeReinvest(sourceChain *types.SourceChai
 		s.NoError(err)
 		delegateReward = delegateReward.Add(rewardAmt)
 	}
+	s.Logf("Begin reinvest, reward %s", delegateReward.String())
 
 	s.waitForNextEpoch(ctlAPIEndpoint, appparams.ReinvestEpochIdentifier, time.Second*5)
 	time.Sleep(time.Second * 10)
@@ -238,6 +248,7 @@ func (s *IntegrationTestSuite) LiquidstakeReinvest(sourceChain *types.SourceChai
 	s.NoError(err)
 	s.True(rcResp.Record.TransferredAmount.Equal(balance.Amount))
 
+	s.Logf("Reinvest successfully")
 	return balance.Amount
 }
 
@@ -246,6 +257,8 @@ func (s *IntegrationTestSuite) CheckChainReinvest(srcChain *types.SourceChain, d
 	// 1) check redeem rate
 	// 2) check delegation in source chain
 	// 3) check source chain stakedamount
+
+	s.Logf("Begin check reinvest")
 
 	ctlAPIEndpoint := fmt.Sprintf("http://%s", s.valResources[s.ctlChain.ID][0].GetHostPort("1317/tcp"))
 	srcAPIEndpoint := fmt.Sprintf("http://%s", s.valResources[s.srcChain.ID][0].GetHostPort("1317/tcp"))
@@ -272,9 +285,13 @@ func (s *IntegrationTestSuite) CheckChainReinvest(srcChain *types.SourceChain, d
 
 	rate := sdk.NewDecFromInt(res.SourceChain.StakedAmount).QuoInt(delegateAmount)
 	s.True(res.SourceChain.Redemptionratio.Equal(rate))
+
+	s.Logf("Check reinvest successful")
 }
 
 func (s *IntegrationTestSuite) LiquistakeUndelegate(srcChain *types.SourceChain, undelegateAmount math.Int, rewardAmount math.Int) uint64 {
+	s.Logf("Begin LiquistakeUndelegate ...")
+
 	ctlAPIEndpoint := fmt.Sprintf("http://%s", s.valResources[s.ctlChain.ID][0].GetHostPort("1317/tcp"))
 	// srcAPIEndpoint := fmt.Sprintf("http://%s", s.valResources[s.srcChain.ID][0].GetHostPort("1317/tcp"))
 	address, _ := s.ctlChain.validators[0].keyRecord.GetAddress()
@@ -336,6 +353,8 @@ func (s *IntegrationTestSuite) LiquistakeUndelegate(srcChain *types.SourceChain,
 	completeTimeStamp := chainUnbondingResp.ChainUnbonding.UnbondTIme
 	completeTime := time.Unix(0, int64(completeTimeStamp))
 
+	s.Logf("Undelegate complete time %s", completeTime.Format(time.RFC3339))
+
 	time.Sleep(time.Until(completeTime) + time.Minute*2)
 
 	userUnbondingResp, err = queryLiquidstakeUserUnbonding(s.ctlChain.encfg.Codec, ctlAPIEndpoint, srcChain.ChainID, ctlUser)
@@ -373,6 +392,7 @@ func (s *IntegrationTestSuite) LiquidstakeClaim(claimableCoin sdk.Coin, chainID 
 		"--output=json",
 		"-y",
 	}
+	s.Logf("Begin Liquidstake Claim, amount %s", claimableCoin.Amount.String())
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
@@ -385,6 +405,8 @@ func (s *IntegrationTestSuite) LiquidstakeClaim(claimableCoin sdk.Coin, chainID 
 	s.NoError(err)
 
 	s.True(ibcBalAfter.Amount.Sub(ibcBalBefore.Amount).Equal(claimableCoin.Amount))
+
+	s.Logf("Liquidstake claim successful %s", claimableCoin.Amount.String())
 }
 
 func (s *IntegrationTestSuite) waitForNextEpoch(endpoint, identifier string, interval time.Duration) {
@@ -392,6 +414,7 @@ func (s *IntegrationTestSuite) waitForNextEpoch(endpoint, identifier string, int
 	s.NoError(err)
 
 	for {
+		s.Logf("Waitting next %s epoch", identifier)
 		resp, err := queryCurEpoch(s.ctlChain.encfg.Codec, endpoint, identifier)
 		s.NoError(err)
 		if curResp.CurrentEpoch < resp.CurrentEpoch {
@@ -399,4 +422,5 @@ func (s *IntegrationTestSuite) waitForNextEpoch(endpoint, identifier string, int
 		}
 		time.Sleep(time.Second * 30)
 	}
+	s.Logf("reaching the next %s epoch", identifier)
 }

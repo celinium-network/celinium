@@ -35,7 +35,7 @@ type PacketMetadata struct {
 }
 
 func (s *IntegrationTestSuite) runIBCRelayer() {
-	s.T().Log("starting Hermes relayer container...")
+	s.Logf("starting Hermes relayer container...")
 
 	tmpDir, err := os.MkdirTemp("", "gaia-e2e-testnet-relayer-")
 	s.Require().NoError(err)
@@ -118,7 +118,7 @@ func (s *IntegrationTestSuite) runIBCRelayer() {
 		"hermes relayer not healthy",
 	)
 
-	s.T().Logf("started Hermes relayer container: %s", s.relayerResource.Container.ID)
+	s.Logf("started Hermes relayer container: %s", s.relayerResource.Container.ID)
 
 	// XXX: Give time to both networks to start, otherwise we might see gRPC
 	// transport errors.
@@ -153,13 +153,13 @@ func (s *IntegrationTestSuite) sendIBC(c *chain, valIdx int, sender, recipient, 
 		"--output=json",
 		"-y",
 	}
-	s.T().Logf("sending %s from %s (%s) to %s (%s) with memo %s", token, s.srcChain.ID, sender, s.ctlChain.ID, recipient, note)
+	s.Logf("sending %s from %s (%s) to %s (%s) with memo %s", token, s.srcChain.ID, sender, s.ctlChain.ID, recipient, note)
 	s.executeCeliniumTxCommand(ctx, c, ibcCmd, valIdx, s.defaultExecValidation(c, valIdx))
-	s.T().Log("successfully sent IBC tokens")
+	s.Logf("successfully sent IBC tokens")
 }
 
 func (s *IntegrationTestSuite) createConnection() {
-	s.T().Logf("connecting %s and %s chains via IBC", s.srcChain.ID, s.ctlChain.ID)
+	s.Logf("connecting %s and %s chains via IBC", s.srcChain.ID, s.ctlChain.ID)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
@@ -198,11 +198,11 @@ func (s *IntegrationTestSuite) createConnection() {
 		"failed connect chains; stdout: %s, stderr: %s", outBuf.String(), errBuf.String(),
 	)
 
-	s.T().Logf("connected %s and %s chains via IBC", s.srcChain.ID, s.ctlChain.ID)
+	s.Logf("connected %s and %s chains via IBC", s.srcChain.ID, s.ctlChain.ID)
 }
 
 func (s *IntegrationTestSuite) createChannel() {
-	s.T().Logf("connecting %s and %s chains via IBC", s.srcChain.ID, s.ctlChain.ID)
+	s.Logf("connecting %s and %s chains via IBC", s.srcChain.ID, s.ctlChain.ID)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
@@ -245,7 +245,7 @@ func (s *IntegrationTestSuite) createChannel() {
 		"failed connect chains; stdout: %s, stderr: %s", outBuf.String(), errBuf.String(),
 	)
 
-	s.T().Logf("connected %s and %s chains via IBC", s.srcChain.ID, s.ctlChain.ID)
+	s.Logf("connected %s and %s chains via IBC", s.srcChain.ID, s.ctlChain.ID)
 }
 
 func (s *IntegrationTestSuite) IBCTokenTransfer(tokenAmt math.Int) {
