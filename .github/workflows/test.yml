@@ -24,6 +24,9 @@ jobs:
     - name: Build
       run: go build -v ./...
 
+    - name: Docker login
+        run: docker login -u ${{ secrets.TMP_DOCKER_ACCESS_USR }} -p ${{ secrets.TMP_DOCKER_ACCESS_TOKEN }}
+        
     - name: Test
       run: go test -v ./...
     - name: Benchmark
