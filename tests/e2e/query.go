@@ -91,7 +91,7 @@ func queryDelegation(cdc codec.Codec, endpoint string, validatorAddr string, del
 	return res, nil
 }
 
-func queryDelegatorWithdrawalAddress(cdc codec.Codec, endpoint string, delegatorAddr string) (disttypes.QueryDelegatorWithdrawAddressResponse, error) { //nolint:unused // this is called during e2e tests
+func queryDelegatorWithdrawalAddress(cdc codec.Codec, endpoint string, delegatorAddr string) (disttypes.QueryDelegatorWithdrawAddressResponse, error) {
 	var res disttypes.QueryDelegatorWithdrawAddressResponse
 
 	body, err := httpGet(fmt.Sprintf("%s/cosmos/distribution/v1beta1/delegators/%s/withdraw_address", endpoint, delegatorAddr))
@@ -246,6 +246,36 @@ func queryLiquidstakeDelegationRecord(cdc codec.Codec, endpoint string, chainID 
 ) {
 	var res liquidstaketypes.QueryChainEpochDelegationRecordResponse
 	body, err := httpGet(fmt.Sprintf("%s/celinium/liquidstake/v1/chain_epoch_delegation?chainID=%s&epoch=%d", endpoint, chainID, epoch))
+	if err != nil {
+		return res, err
+	}
+
+	if err = cdc.UnmarshalJSON(body, &res); err != nil {
+		return res, err
+	}
+	return res, nil
+}
+
+func queryLiquidstakeChainUnbonding(cdc codec.Codec, endpoint string, chainID string, epoch uint64) (
+	liquidstaketypes.QueryChainEpochUnbondingResponse, error,
+) {
+	var res liquidstaketypes.QueryChainEpochUnbondingResponse
+	body, err := httpGet(fmt.Sprintf("%s/celinium/liquidstake/v1/chain_epoch_unbonding?chainID=%s&epoch=%d", endpoint, chainID, epoch))
+	if err != nil {
+		return res, err
+	}
+
+	if err = cdc.UnmarshalJSON(body, &res); err != nil {
+		return res, err
+	}
+	return res, nil
+}
+
+func queryLiquidstakeUserUnbonding(cdc codec.Codec, endpoint, chainID, userAddr string) (
+	liquidstaketypes.QueryUserUndelegationRecordResponse, error,
+) {
+	var res liquidstaketypes.QueryUserUndelegationRecordResponse
+	body, err := httpGet(fmt.Sprintf("%s/celinium/liquidstake/v1/user_undelegation_record?chainID=%s&user=%s", endpoint, chainID, userAddr))
 	if err != nil {
 		return res, err
 	}

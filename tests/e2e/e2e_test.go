@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"cosmossdk.io/math"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 func (s *IntegrationTestSuite) TestLiquidStake() {
@@ -19,5 +20,11 @@ func (s *IntegrationTestSuite) TestLiquidStake() {
 
 	s.CheckChainDelegate(srcChain)
 
-	s.CheckChainReinvest(srcChain)
+	rewardAmount := s.LiquidstakeReinvest(srcChain)
+
+	s.CheckChainReinvest(srcChain, delegateAmt, rewardAmount)
+
+	undelegateEpoch := s.LiquistakeUndelegate(srcChain, delegateAmt, rewardAmount)
+
+	s.LiquidstakeClaim(sdk.NewCoin(srcChain.IbcDenom, delegateAmt.Add(rewardAmount)), srcChain.ChainID, undelegateEpoch)
 }

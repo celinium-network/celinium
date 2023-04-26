@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"cosmossdk.io/math"
@@ -161,21 +162,10 @@ func (s *IntegrationTestSuite) LiquistakeDelegate(sourceChain *types.SourceChain
 }
 
 func (s *IntegrationTestSuite) CheckChainDelegate(sourceChain *types.SourceChain) {
-	// wait for next delegate epoch
 	ctlAPIEndpoint := fmt.Sprintf("http://%s", s.valResources[s.ctlChain.ID][0].GetHostPort("1317/tcp"))
 	srcAPIEndpoint := fmt.Sprintf("http://%s", s.valResources[s.srcChain.ID][0].GetHostPort("1317/tcp"))
 
-	curDelegationEpochResp, err := queryCurEpoch(s.ctlChain.encfg.Codec, ctlAPIEndpoint, appparams.DelegationEpochIdentifier)
-	s.NoError(err)
-
-	for {
-		resp, err := queryCurEpoch(s.ctlChain.encfg.Codec, ctlAPIEndpoint, appparams.DelegationEpochIdentifier)
-		s.NoError(err)
-		if curDelegationEpochResp.CurrentEpoch < resp.CurrentEpoch {
-			break
-		}
-		time.Sleep(time.Second * 30)
-	}
+	s.waitForNextEpoch(ctlAPIEndpoint, appparams.DelegationEpochIdentifier, time.Second*15)
 
 	time.Sleep(time.Minute)
 
@@ -196,7 +186,7 @@ func (s *IntegrationTestSuite) CheckChainDelegate(sourceChain *types.SourceChain
 	s.True(res.SourceChain.StakedAmount.Equal(totalDelegateAmt))
 }
 
-func (s *IntegrationTestSuite) CheckChainReinvest(sourceChain *types.SourceChain) {
+func (s *IntegrationTestSuite) LiquidstakeReinvest(sourceChain *types.SourceChain) math.Int {
 	ctlAPIEndpoint := fmt.Sprintf("http://%s", s.valResources[s.ctlChain.ID][0].GetHostPort("1317/tcp"))
 	srcAPIEndpoint := fmt.Sprintf("http://%s", s.valResources[s.srcChain.ID][0].GetHostPort("1317/tcp"))
 
@@ -216,5 +206,197 @@ func (s *IntegrationTestSuite) CheckChainReinvest(sourceChain *types.SourceChain
 		s.NoError(err)
 		delegateReward = delegateReward.Add(rewardAmt)
 	}
-	fmt.Println(delegateReward)
+
+	s.waitForNextEpoch(ctlAPIEndpoint, appparams.ReinvestEpochIdentifier, time.Second*5)
+	time.Sleep(time.Second * 10)
+
+	// The current state should be as follows:
+	// 1) The withdrawal account of delegation has been set to the interchain account corresponding to
+	//	  the withdrawal address in the source chain.
+	// 2) The withdrawal account withdraws the reward and transfers it to the delegate address.
+	// 3) The DelegationRecord belonging to the current epoch has recorded the transferred reward funds.
+
+	/* begin check */
+	resp, err := queryCurEpoch(s.ctlChain.encfg.Codec, ctlAPIEndpoint, appparams.DelegationEpochIdentifier)
+	s.NoError(err)
+
+	// check trannferred amount
+	rcResp, err := queryLiquidstakeDelegationRecord(s.ctlChain.encfg.Codec, ctlAPIEndpoint, sourceChain.ChainID, uint64(resp.CurrentEpoch))
+	s.NoError(err)
+	s.True(rcResp.Record.TransferredAmount.GT(delegateReward))
+
+	// check withdraw address has been correctly setted.
+	withdrawAddressResp, err := queryDelegatorWithdrawalAddress(s.srcChain.encfg.Codec, srcAPIEndpoint, delegateICA)
+	s.NoError(err)
+	witdrawICA, err := queryInterChainAccount(s.ctlChain.encfg.Codec, ctlAPIEndpoint,
+		sourceChain.WithdrawAddress, sourceChain.ConnectionID)
+	s.NoError(err)
+	s.Equal(withdrawAddressResp.WithdrawAddress, witdrawICA)
+
+	// check all reward has transferred to delegatorICA and correctly record.
+	balance, err := getSpecificBalance(s.srcChain.encfg.Codec, srcAPIEndpoint, delegateICA, sourceChain.NativeDenom)
+	s.NoError(err)
+	s.True(rcResp.Record.TransferredAmount.Equal(balance.Amount))
+
+	return balance.Amount
+}
+
+func (s *IntegrationTestSuite) CheckChainReinvest(srcChain *types.SourceChain, delegateAmount, rewadAmount math.Int) {
+	// wait for next delegation epoch
+	// 1) check redeem rate
+	// 2) check delegation in source chain
+	// 3) check source chain stakedamount
+
+	ctlAPIEndpoint := fmt.Sprintf("http://%s", s.valResources[s.ctlChain.ID][0].GetHostPort("1317/tcp"))
+	srcAPIEndpoint := fmt.Sprintf("http://%s", s.valResources[s.srcChain.ID][0].GetHostPort("1317/tcp"))
+
+	s.waitForNextEpoch(ctlAPIEndpoint, appparams.DelegationEpochIdentifier, time.Second*10)
+	time.Sleep(time.Second * 10)
+
+	res, err := queryLiquidstakeSourceChain(s.srcChain.encfg.Codec, ctlAPIEndpoint, srcChain.ChainID)
+	s.NoError(err)
+
+	s.True(res.SourceChain.StakedAmount.Equal(delegateAmount.Add(rewadAmount)))
+
+	delegateICA, err := queryInterChainAccount(s.ctlChain.encfg.Codec, ctlAPIEndpoint,
+		srcChain.DelegateAddress, srcChain.ConnectionID)
+	s.NoError(err)
+
+	totalDelegateAmt := math.ZeroInt()
+	for _, v := range srcChain.Validators {
+		srcDelegation, err := queryDelegation(s.srcChain.encfg.Codec, srcAPIEndpoint, v.Address, delegateICA)
+		s.NoError(err)
+		totalDelegateAmt = totalDelegateAmt.Add(srcDelegation.DelegationResponse.Balance.Amount)
+	}
+	s.True(res.SourceChain.StakedAmount.Equal(totalDelegateAmt))
+
+	rate := sdk.NewDecFromInt(res.SourceChain.StakedAmount).QuoInt(delegateAmount)
+	s.True(res.SourceChain.Redemptionratio.Equal(rate))
+}
+
+func (s *IntegrationTestSuite) LiquistakeUndelegate(srcChain *types.SourceChain, undelegateAmount math.Int, rewardAmount math.Int) uint64 {
+	ctlAPIEndpoint := fmt.Sprintf("http://%s", s.valResources[s.ctlChain.ID][0].GetHostPort("1317/tcp"))
+	// srcAPIEndpoint := fmt.Sprintf("http://%s", s.valResources[s.srcChain.ID][0].GetHostPort("1317/tcp"))
+	address, _ := s.ctlChain.validators[0].keyRecord.GetAddress()
+	ctlUser := address.String()
+	fee := sdk.NewCoin(s.srcChain.Denom, standardFeeAmount)
+
+	liuidstakeUndelegateCmd := []string{
+		s.ctlChain.ChainNodeBinary,
+		txCommand,
+		"liquidstake",
+		"undelegate",
+		srcChain.ChainID,
+		undelegateAmount.String(),
+		fmt.Sprintf("--from=%s", ctlUser),
+		fmt.Sprintf("--%s=%s", flags.FlagFees, fee.String()),
+		fmt.Sprintf("--%s=%d", flags.FlagGas, gas*10),
+		fmt.Sprintf("--%s=%s", flags.FlagChainID, s.ctlChain.ID),
+		"--keyring-backend=test",
+		"--broadcast-mode=sync",
+		"--output=json",
+		"-y",
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	ibcBalBefore, err := getSpecificBalance(s.ctlChain.encfg.Codec, ctlAPIEndpoint, ctlUser, srcChain.DerivativeDenom)
+	s.NoError(err)
+
+	s.executeCeliniumTxCommand(ctx, s.ctlChain, liuidstakeUndelegateCmd, 0, s.defaultExecValidation(s.ctlChain, 0))
+	ibcBalAfter, err := getSpecificBalance(s.ctlChain.encfg.Codec, ctlAPIEndpoint, ctlUser, srcChain.DerivativeDenom)
+	s.NoError(err)
+
+	// derivative denom should be reduce from the caller
+	s.True(ibcBalBefore.Amount.Sub(ibcBalAfter.Amount).Equal(undelegateAmount))
+
+	epochRes, err := queryCurEpoch(s.ctlChain.encfg.Codec, ctlAPIEndpoint, appparams.UndelegationEpochIdentifier)
+	s.NoError(err)
+
+	chainUnbondingResp, err := queryLiquidstakeChainUnbonding(s.ctlChain.encfg.Codec, ctlAPIEndpoint, srcChain.ChainID, uint64(epochRes.CurrentEpoch))
+	s.NoError(err)
+	fmt.Println(chainUnbondingResp)
+
+	s.True(chainUnbondingResp.ChainUnbonding.BurnedDerivativeAmount.Equal(undelegateAmount))
+	s.True(chainUnbondingResp.ChainUnbonding.RedeemNativeToken.Equal(undelegateAmount.Add(rewardAmount)))
+
+	// check user undelegate reocrd
+	userUnbondingResp, err := queryLiquidstakeUserUnbonding(s.ctlChain.encfg.Codec, ctlAPIEndpoint, srcChain.ChainID, ctlUser)
+	s.NoError(err)
+	for _, rc := range userUnbondingResp.UndelegationRecords {
+		if rc.Epoch == uint64(epochRes.CurrentEpoch) {
+			s.True(rc.RedeemToken.Amount.Equal(undelegateAmount.Add(rewardAmount)))
+			s.Equal(rc.CliamStatus, types.UndelegationPending)
+		}
+	}
+
+	s.waitForNextEpoch(ctlAPIEndpoint, appparams.UndelegationEpochIdentifier, time.Second*10)
+	chainUnbondingResp, _ = queryLiquidstakeChainUnbonding(s.ctlChain.encfg.Codec, ctlAPIEndpoint, srcChain.ChainID, uint64(epochRes.CurrentEpoch))
+	completeTimeStamp := chainUnbondingResp.ChainUnbonding.UnbondTIme
+	completeTime := time.Unix(0, int64(completeTimeStamp))
+
+	time.Sleep(time.Until(completeTime) + time.Minute*2)
+
+	userUnbondingResp, err = queryLiquidstakeUserUnbonding(s.ctlChain.encfg.Codec, ctlAPIEndpoint, srcChain.ChainID, ctlUser)
+	s.NoError(err)
+	for _, rc := range userUnbondingResp.UndelegationRecords {
+		if rc.Epoch == uint64(epochRes.CurrentEpoch) {
+			s.True(rc.RedeemToken.Amount.Equal(undelegateAmount.Add(rewardAmount)))
+			s.Equal(rc.CliamStatus, types.UndelegationClaimable)
+		}
+	}
+
+	return uint64(epochRes.CurrentEpoch)
+}
+
+func (s *IntegrationTestSuite) LiquidstakeClaim(claimableCoin sdk.Coin, chainID string, epoch uint64) {
+	ctlAPIEndpoint := fmt.Sprintf("http://%s", s.valResources[s.ctlChain.ID][0].GetHostPort("1317/tcp"))
+	// srcAPIEndpoint := fmt.Sprintf("http://%s", s.valResources[s.srcChain.ID][0].GetHostPort("1317/tcp"))
+	address, _ := s.ctlChain.validators[0].keyRecord.GetAddress()
+	ctlUser := address.String()
+	fee := sdk.NewCoin(s.srcChain.Denom, standardFeeAmount)
+
+	liuidstakeClaimCmd := []string{
+		s.ctlChain.ChainNodeBinary,
+		txCommand,
+		"liquidstake",
+		"claim",
+		chainID,
+		strconv.Itoa(int(epoch)),
+		fmt.Sprintf("--from=%s", ctlUser),
+		fmt.Sprintf("--%s=%s", flags.FlagFees, fee.String()),
+		fmt.Sprintf("--%s=%d", flags.FlagGas, gas*10),
+		fmt.Sprintf("--%s=%s", flags.FlagChainID, s.ctlChain.ID),
+		"--keyring-backend=test",
+		"--broadcast-mode=sync",
+		"--output=json",
+		"-y",
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	ibcBalBefore, err := getSpecificBalance(s.ctlChain.encfg.Codec, ctlAPIEndpoint, ctlUser, claimableCoin.Denom)
+	s.NoError(err)
+
+	s.executeCeliniumTxCommand(ctx, s.ctlChain, liuidstakeClaimCmd, 0, s.defaultExecValidation(s.ctlChain, 0))
+	ibcBalAfter, err := getSpecificBalance(s.ctlChain.encfg.Codec, ctlAPIEndpoint, ctlUser, claimableCoin.Denom)
+	s.NoError(err)
+
+	s.True(ibcBalAfter.Amount.Sub(ibcBalBefore.Amount).Equal(claimableCoin.Amount))
+}
+
+func (s *IntegrationTestSuite) waitForNextEpoch(endpoint, identifier string, interval time.Duration) {
+	curResp, err := queryCurEpoch(s.ctlChain.encfg.Codec, endpoint, identifier)
+	s.NoError(err)
+
+	for {
+		resp, err := queryCurEpoch(s.ctlChain.encfg.Codec, endpoint, identifier)
+		s.NoError(err)
+		if curResp.CurrentEpoch < resp.CurrentEpoch {
+			break
+		}
+		time.Sleep(time.Second * 30)
+	}
 }
