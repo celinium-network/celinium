@@ -34,10 +34,10 @@ jobs:
       run: docker build -t relayer -f tests/e2e/docker/hermes.Dockerfile .      
 
     - name: Unit Test
-      run: go test -v ./x
+      run: go test -v ./x/...
 
     - name: E2E Test
-      run: go test -v ./tests/e2e -timeout 5h
+      run: go test -v ./tests/e2e/... -timeout 5h
 
     - name: Benchmark
       run: go test -benchmem -run=^$ -bench ^BenchmarkSimulation ./app/simulation -NumBlocks=200 -BlockSize 50 -Commit=true -Verbose=true -Enabled=true
