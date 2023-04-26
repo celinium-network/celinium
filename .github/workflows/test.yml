@@ -27,6 +27,9 @@ jobs:
     - name: Docker login
       run: docker login -u ${{ secrets.TMP_DOCKER_ACCESS_USR }} -p ${{ secrets.TMP_DOCKER_ACCESS_TOKEN }}
 
+    - name: Build local celinium image
+      run: docker build -t celinium -f tests/e2e/docker/e2e.Dockerfile .      
+
     - name: Test
       run: go test -v ./...
     - name: Benchmark
