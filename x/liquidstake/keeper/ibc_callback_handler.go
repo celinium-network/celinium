@@ -25,7 +25,7 @@ func init() {
 
 	callbackHandlerRegistry[types.DelegateTransferCall] = delegateTransferCallbackHandler
 	callbackHandlerRegistry[types.DelegateCall] = delegateCallbackHandler
-	callbackHandlerRegistry[types.UnbondCall] = unbondCallbackHandler
+	callbackHandlerRegistry[types.UnbondCall] = undelegateCallbackHandler
 	callbackHandlerRegistry[types.WithdrawUnbondCall] = withdrawUnbondCallbackHandler
 	callbackHandlerRegistry[types.WithdrawDelegateRewardCall] = withdrawDelegateRewardCallbackHandler
 	callbackHandlerRegistry[types.TransferRewardCall] = transferRewardCallbackHandler
@@ -34,30 +34,30 @@ func init() {
 
 func delegateTransferCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCallback, response []*codectypes.Any) error {
 	proxyDelegationID := sdk.BigEndianToUint64([]byte(callback.Args))
-	record, found := k.GetProxyDelegation(ctx, proxyDelegationID)
+	delegation, found := k.GetProxyDelegation(ctx, proxyDelegationID)
 	if !found {
 		return nil
 	}
 
-	k.Logger(ctx).Info(fmt.Sprintf("delegateTransferCallbackHandler, chainID %s epoch %d", record.ChainID, record.EpochNumber))
-	k.AfterProxyDelegationTransfer(ctx, record, true)
+	k.Logger(ctx).Info(fmt.Sprintf("delegateTransferCallbackHandler, chainID %s epoch %d", delegation.ChainID, delegation.EpochNumber))
+	k.AfterProxyDelegationTransfer(ctx, delegation, true)
 	return nil
 }
 
 func delegateCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCallback, response []*codectypes.Any) error {
 	proxyDelegationID := sdk.BigEndianToUint64([]byte(callback.Args))
-	record, found := k.GetProxyDelegation(ctx, proxyDelegationID)
+	delegation, found := k.GetProxyDelegation(ctx, proxyDelegationID)
 	if !found {
 		return nil
 	}
 
-	k.Logger(ctx).Info(fmt.Sprintf("delegateCallbackHandler, chainID %s epoch %d", record.ChainID, record.EpochNumber))
-	k.AfterProxyDelegationDone(ctx, record, true)
+	k.Logger(ctx).Info(fmt.Sprintf("delegateCallbackHandler, chainID %s epoch %d", delegation.ChainID, delegation.EpochNumber))
+	k.AfterProxyDelegationDone(ctx, delegation, true)
 
 	return nil
 }
 
-func unbondCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCallback, responses []*codectypes.Any) error {
+func undelegateCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCallback, responses []*codectypes.Any) error {
 	var completeTime time.Time
 	for _, r := range responses {
 		if strings.Contains(r.TypeUrl, "MsgUndelegateResponse") {
@@ -72,7 +72,7 @@ func unbondCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCallba
 
 	k.cdc.MustUnmarshal([]byte(callback.Args), &unbondCallArgs)
 
-	epochUnbondings, found := k.GetEpochUnboundings(ctx, unbondCallArgs.Epoch)
+	epochUnbondings, found := k.GetEpochProxyUnboundings(ctx, unbondCallArgs.Epoch)
 	if !found {
 		return nil
 	}
@@ -99,7 +99,7 @@ func unbondCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCallba
 	}
 
 	// save
-	k.SetEpochUnboundings(ctx, epochUnbondings)
+	k.SetEpochProxyUnboundings(ctx, epochUnbondings)
 
 	return nil
 }
@@ -107,7 +107,7 @@ func unbondCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCallba
 func withdrawUnbondCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCallback, responses []*codectypes.Any) error {
 	var unbondCallArgs types.UnbondCallbackArgs
 	k.cdc.MustUnmarshal([]byte(callback.Args), &unbondCallArgs)
-	epochUnbondings, found := k.GetEpochUnboundings(ctx, unbondCallArgs.Epoch)
+	epochUnbondings, found := k.GetEpochProxyUnboundings(ctx, unbondCallArgs.Epoch)
 	if !found {
 		return nil
 	}
@@ -121,15 +121,15 @@ func withdrawUnbondCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.I
 		unbondings[i].Status = types.ProxyUnbondingDone
 
 		for _, userUnDelegationID := range unbondings[i].UserUnbondRecordIds {
-			userUndelegation, found := k.GetUndelegationRecordByID(ctx, userUnDelegationID)
+			userUnbonding, found := k.GetUserUnbondingID(ctx, userUnDelegationID)
 			if !found {
 				continue
 			}
-			userUndelegation.CliamStatus = types.UserUnbondingClaimable
-			k.SetUndelegationRecord(ctx, userUndelegation)
+			userUnbonding.CliamStatus = types.UserUnbondingClaimable
+			k.SetUserUnbonding(ctx, userUnbonding)
 		}
 	}
-	k.SetEpochUnboundings(ctx, epochUnbondings)
+	k.SetEpochProxyUnboundings(ctx, epochUnbondings)
 	return nil
 }
 
@@ -171,19 +171,19 @@ func transferRewardCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.I
 	}
 
 	currentEpoch := uint64(epochInfo.CurrentEpoch)
-	recordID, found := k.GetChianProxyDelegationID(ctx, callbackArgs.ChainID, currentEpoch)
+	delegationID, found := k.GetChianProxyDelegationID(ctx, callbackArgs.ChainID, currentEpoch)
 	if !found {
 		return nil
 	}
 
-	record, found := k.GetProxyDelegation(ctx, recordID)
+	delegation, found := k.GetProxyDelegation(ctx, delegationID)
 	if !found {
 		return nil
 	}
 
-	record.Coin = record.Coin.AddAmount(callbackArgs.Amount)
-	record.TransferredAmount = record.TransferredAmount.Add(callbackArgs.Amount)
-	k.SetProxyDelegation(ctx, recordID, record)
+	delegation.Coin = delegation.Coin.AddAmount(callbackArgs.Amount)
+	delegation.TransferredAmount = delegation.TransferredAmount.Add(callbackArgs.Amount)
+	k.SetProxyDelegation(ctx, delegationID, delegation)
 	return nil
 }
 

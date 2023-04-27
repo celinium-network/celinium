@@ -59,9 +59,9 @@ func (k Keeper) AddSouceChain(ctx sdk.Context, sourceChain *types.SourceChain) e
 	return nil
 }
 
-// CreateEpochProxyDelegation create a new ProxyDelegation in current epoch for all available chain.
+// CreateProxyDelegationForEpoch create a new ProxyDelegation in current epoch for all available chain.
 // If current epoch already has ProxyDelegation for the chain, then do nothing
-func (k Keeper) CreateEpochProxyDelegation(ctx sdk.Context, epochNumber uint64) {
+func (k Keeper) CreateProxyDelegationForEpoch(ctx sdk.Context, epochNumber uint64) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, types.SouceChainKeyPrefix)
 
@@ -102,9 +102,9 @@ func (k Keeper) createProxyDelegation(ctx sdk.Context, epochNumber uint64, chain
 	return &delegation
 }
 
-// CreateEpochUnbondings a new unbonding in current epoch.
-func (k Keeper) CreateEpochUnbondings(ctx sdk.Context, epochNumber uint64) *types.EpochProxyUnbonding {
-	_, found := k.GetEpochUnboundings(ctx, epochNumber)
+// CreateProxyUnbondingForEpoch a new unbonding in current epoch.
+func (k Keeper) CreateProxyUnbondingForEpoch(ctx sdk.Context, epochNumber uint64) *types.EpochProxyUnbonding {
+	_, found := k.GetEpochProxyUnboundings(ctx, epochNumber)
 	if found {
 		return nil
 	}
@@ -114,7 +114,7 @@ func (k Keeper) CreateEpochUnbondings(ctx sdk.Context, epochNumber uint64) *type
 		Unbondings: []types.ProxyUnbonding{},
 	}
 
-	k.SetEpochUnboundings(ctx, &epochUnbonding)
+	k.SetEpochProxyUnboundings(ctx, &epochUnbonding)
 
 	return &epochUnbonding
 }
@@ -128,17 +128,17 @@ func (k Keeper) GetProxyDelegation(ctx sdk.Context, id uint64) (*types.ProxyDele
 		return nil, false
 	}
 
-	record := &types.ProxyDelegation{}
-	k.cdc.MustUnmarshal(bz, record)
+	delegation := &types.ProxyDelegation{}
+	k.cdc.MustUnmarshal(bz, delegation)
 
-	return record, true
+	return delegation, true
 }
 
 // SetProxyDelegation store ProxyDelegation
-func (k Keeper) SetProxyDelegation(ctx sdk.Context, id uint64, record *types.ProxyDelegation) {
+func (k Keeper) SetProxyDelegation(ctx sdk.Context, id uint64, delegation *types.ProxyDelegation) {
 	store := ctx.KVStore(k.storeKey)
 
-	bz := k.cdc.MustMarshal(record)
+	bz := k.cdc.MustMarshal(delegation)
 
 	store.Set(types.GetProxyDelegationKey(id), bz)
 }
@@ -147,7 +147,7 @@ func (k Keeper) SetProxyDelegation(ctx sdk.Context, id uint64, record *types.Pro
 func (k Keeper) GetChianProxyDelegationID(ctx sdk.Context, chainID string, epochNumber uint64) (uint64, bool) {
 	store := ctx.KVStore(k.storeKey)
 
-	bz := store.Get(types.GeChainProxyDelegationIDForEpochKey(epochNumber, []byte(chainID)))
+	bz := store.Get(types.GetChainProxyDelegationIDForEpochKey(epochNumber, []byte(chainID)))
 
 	if len(bz) == 0 {
 		return 0, false
@@ -157,10 +157,10 @@ func (k Keeper) GetChianProxyDelegationID(ctx sdk.Context, chainID string, epoch
 }
 
 // SetChianProxyDelegationID set ProxyDelegation's ID  of chain at specific epoch and chainID
-func (k Keeper) SetChainProxyDelegationID(ctx sdk.Context, chainID string, epochNumber uint64, recordID uint64) {
+func (k Keeper) SetChainProxyDelegationID(ctx sdk.Context, chainID string, epochNumber uint64, delegationID uint64) {
 	store := ctx.KVStore(k.storeKey)
 
-	store.Set(types.GeChainProxyDelegationIDForEpochKey(epochNumber, []byte(chainID)), sdk.Uint64ToBigEndian(recordID))
+	store.Set(types.GetChainProxyDelegationIDForEpochKey(epochNumber, []byte(chainID)), sdk.Uint64ToBigEndian(delegationID))
 }
 
 func (k Keeper) GetSourceChainAddr(ctx sdk.Context, connectionID string, ctlAddress string) (string, error) {

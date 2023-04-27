@@ -115,7 +115,7 @@ func (ms msgServer) Claim(goCtx goctx.Context, msg *types.MsgClaim) (*types.MsgC
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	delegatorAccAddress := sdk.MustAccAddressFromBech32(msg.Delegator)
-	claimAmt, err := ms.keeper.ClaimUndelegation(ctx, delegatorAccAddress, msg.Epoch, msg.ChainId)
+	claimAmt, err := ms.keeper.ClaimUnbonding(ctx, delegatorAccAddress, msg.Epoch, msg.ChainId)
 	if err != nil {
 		return nil, nil
 	}

@@ -64,8 +64,8 @@ func (k Keeper) GetProcessingFundsFromRecords(sourceChain *types.SourceChain, re
 	return amount
 }
 
-func (k Keeper) ClaimUndelegation(ctx sdk.Context, deletator sdk.AccAddress, epoch uint64, chainID string) (math.Int, error) {
-	undelegationRecord, found := k.GetUndelegationRecord(ctx, chainID, epoch, deletator.String())
+func (k Keeper) ClaimUnbonding(ctx sdk.Context, deletator sdk.AccAddress, epoch uint64, chainID string) (math.Int, error) {
+	undelegationRecord, found := k.GetUserUnbonding(ctx, chainID, epoch, deletator.String())
 	if !found {
 		return math.ZeroInt(), sdkerrors.Wrapf(types.ErrUserUndelegationNotExist, "chainID %s, epoch %d, address %s", chainID, epoch, deletator.String())
 	}
@@ -91,6 +91,6 @@ func (k Keeper) ClaimUndelegation(ctx sdk.Context, deletator sdk.AccAddress, epo
 
 	undelegationRecord.CliamStatus = types.UserUnbondingComplete
 
-	k.SetUndelegationRecord(ctx, undelegationRecord)
+	k.SetUserUnbonding(ctx, undelegationRecord)
 	return math.ZeroInt(), nil
 }

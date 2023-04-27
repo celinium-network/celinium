@@ -34,12 +34,11 @@ func (k Keeper) Undelegate(ctx sdk.Context, chainID string, amount math.Int, del
 	currentEpoch := uint64(epochInfo.CurrentEpoch)
 	delegatorAddr := delegator.String()
 
-	_, found = k.GetUndelegationRecord(ctx, chainID, currentEpoch, delegatorAddr)
+	_, found = k.GetUserUnbonding(ctx, chainID, currentEpoch, delegatorAddr)
 	if found {
 		return nil, sdkerrors.Wrapf(types.ErrRepeatUndelegate, "epoch %d", currentEpoch)
 	}
 
-	// TODO, How to confirm the accuracy of calcualate ?
 	receiveAmount := sdk.NewDecFromInt(amount).Mul(sourceChain.Redemptionratio).TruncateInt()
 	if sourceChain.StakedAmount.LT(receiveAmount) {
 		return nil, sdkerrors.Wrapf(types.ErrInternalError, "undelegate too mach, max %s, get %s", sourceChain.StakedAmount, receiveAmount)
@@ -51,8 +50,8 @@ func (k Keeper) Undelegate(ctx sdk.Context, chainID string, amount math.Int, del
 		return nil, err
 	}
 
-	undelegationRecord := types.UserUnbonding{
-		ID:          types.AssembleUndelegationRecordID(chainID, currentEpoch, delegatorAddr),
+	userUnbonding := types.UserUnbonding{
+		ID:          types.AssembleUserUnbondingID(chainID, currentEpoch, delegatorAddr),
 		ChainID:     chainID,
 		Epoch:       currentEpoch,
 		Delegator:   delegatorAddr,
@@ -60,24 +59,24 @@ func (k Keeper) Undelegate(ctx sdk.Context, chainID string, amount math.Int, del
 		CliamStatus: types.UserUnbondingPending,
 	}
 
-	// update related Unbonding by chainID
-	curEpochUnbondings, found := k.GetEpochUnboundings(ctx, currentEpoch)
+	// update related ProxyUnbonding by chainID
+	curEpochProxyUnbondings, found := k.GetEpochProxyUnboundings(ctx, currentEpoch)
 	if !found {
-		curEpochUnbondings = k.CreateEpochUnbondings(ctx, currentEpoch)
+		curEpochProxyUnbondings = k.CreateProxyUnbondingForEpoch(ctx, currentEpoch)
 	}
 
-	var curEpochSourceChainUnbonding types.ProxyUnbonding
-	chainUnbondingIndex := -1
-	for i, unbonding := range curEpochUnbondings.Unbondings {
+	var curEpochChainProxyUnbonding types.ProxyUnbonding
+	chainProxyUnbondingIndex := -1
+	for i, unbonding := range curEpochProxyUnbondings.Unbondings {
 		if unbonding.ChainID == chainID {
-			curEpochSourceChainUnbonding = unbonding
-			chainUnbondingIndex = i
+			curEpochChainProxyUnbonding = unbonding
+			chainProxyUnbondingIndex = i
 		}
 	}
 
-	// unbonding of the chain is not created, then create it now.
-	if chainUnbondingIndex == -1 {
-		curEpochSourceChainUnbonding = types.ProxyUnbonding{
+	// ProxyUnbonding of the chain is not created, then create it now.
+	if chainProxyUnbondingIndex == -1 {
+		curEpochChainProxyUnbonding = types.ProxyUnbonding{
 			ChainID:                chainID,
 			BurnedDerivativeAmount: sdk.ZeroInt(),
 			RedeemNativeToken:      sdk.NewCoin(sourceChain.NativeDenom, sdk.ZeroInt()),
@@ -87,32 +86,32 @@ func (k Keeper) Undelegate(ctx sdk.Context, chainID string, amount math.Int, del
 		}
 	}
 
-	curEpochSourceChainUnbonding.BurnedDerivativeAmount = curEpochSourceChainUnbonding.BurnedDerivativeAmount.Add(amount)
-	curEpochSourceChainUnbonding.RedeemNativeToken = curEpochSourceChainUnbonding.RedeemNativeToken.AddAmount(receiveAmount)
-	curEpochSourceChainUnbonding.UserUnbondRecordIds = append(curEpochSourceChainUnbonding.UserUnbondRecordIds, undelegationRecord.ID)
+	curEpochChainProxyUnbonding.BurnedDerivativeAmount = curEpochChainProxyUnbonding.BurnedDerivativeAmount.Add(amount)
+	curEpochChainProxyUnbonding.RedeemNativeToken = curEpochChainProxyUnbonding.RedeemNativeToken.AddAmount(receiveAmount)
+	curEpochChainProxyUnbonding.UserUnbondRecordIds = append(curEpochChainProxyUnbonding.UserUnbondRecordIds, userUnbonding.ID)
 
-	if chainUnbondingIndex == -1 {
+	if chainProxyUnbondingIndex == -1 {
 		// just append it
-		curEpochUnbondings.Unbondings = append(curEpochUnbondings.Unbondings, curEpochSourceChainUnbonding)
+		curEpochProxyUnbondings.Unbondings = append(curEpochProxyUnbondings.Unbondings, curEpochChainProxyUnbonding)
 	} else {
-		// update with the index
-		curEpochUnbondings.Unbondings[chainUnbondingIndex] = curEpochSourceChainUnbonding
+		// replace it by the index
+		curEpochProxyUnbondings.Unbondings[chainProxyUnbondingIndex] = curEpochChainProxyUnbonding
 	}
 
-	k.SetUndelegationRecord(ctx, &undelegationRecord)
+	k.SetUserUnbonding(ctx, &userUnbonding)
 
-	k.SetEpochUnboundings(ctx, curEpochUnbondings)
+	k.SetEpochProxyUnboundings(ctx, curEpochProxyUnbondings)
 
-	return &undelegationRecord, nil
+	return &userUnbonding, nil
 }
 
-func (k Keeper) GetUndelegationRecord(ctx sdk.Context, chainID string, epoch uint64, delegator string) (*types.UserUnbonding, bool) {
-	id := types.AssembleUndelegationRecordID(chainID, epoch, delegator)
+func (k Keeper) GetUserUnbonding(ctx sdk.Context, chainID string, epoch uint64, delegator string) (*types.UserUnbonding, bool) {
+	id := types.AssembleUserUnbondingID(chainID, epoch, delegator)
 
-	return k.GetUndelegationRecordByID(ctx, id)
+	return k.GetUserUnbondingID(ctx, id)
 }
 
-func (k Keeper) GetUndelegationRecordByID(ctx sdk.Context, id string) (*types.UserUnbonding, bool) {
+func (k Keeper) GetUserUnbondingID(ctx sdk.Context, id string) (*types.UserUnbonding, bool) {
 	store := ctx.KVStore(k.storeKey)
 
 	bz := store.Get([]byte(types.GetUndelegationRecordKeyFromID(id)))
@@ -126,15 +125,15 @@ func (k Keeper) GetUndelegationRecordByID(ctx sdk.Context, id string) (*types.Us
 	return &record, true
 }
 
-func (k Keeper) SetUndelegationRecord(ctx sdk.Context, undelegationRecord *types.UserUnbonding) {
+func (k Keeper) SetUserUnbonding(ctx sdk.Context, userUnbonding *types.UserUnbonding) {
 	store := ctx.KVStore(k.storeKey)
 
-	key := types.GetUndelegationRecordKey(undelegationRecord.ChainID, undelegationRecord.Epoch, undelegationRecord.Delegator)
-	bz := k.cdc.MustMarshal(undelegationRecord)
+	key := types.GetUserUnbondingKey(userUnbonding.ChainID, userUnbonding.Epoch, userUnbonding.Delegator)
+	bz := k.cdc.MustMarshal(userUnbonding)
 	store.Set([]byte(key), bz)
 }
 
-func (k Keeper) GetEpochUnboundings(ctx sdk.Context, epoch uint64) (*types.EpochProxyUnbonding, bool) {
+func (k Keeper) GetEpochProxyUnboundings(ctx sdk.Context, epoch uint64) (*types.EpochProxyUnbonding, bool) {
 	store := ctx.KVStore(k.storeKey)
 
 	bz := store.Get(types.GetEpochUnbondingsKey(epoch))
@@ -148,7 +147,7 @@ func (k Keeper) GetEpochUnboundings(ctx sdk.Context, epoch uint64) (*types.Epoch
 	return &unbondings, true
 }
 
-func (k Keeper) SetEpochUnboundings(ctx sdk.Context, unbondings *types.EpochProxyUnbonding) {
+func (k Keeper) SetEpochProxyUnboundings(ctx sdk.Context, unbondings *types.EpochProxyUnbonding) {
 	store := ctx.KVStore(k.storeKey)
 
 	bz := k.cdc.MustMarshal(unbondings)
@@ -156,8 +155,8 @@ func (k Keeper) SetEpochUnboundings(ctx sdk.Context, unbondings *types.EpochProx
 	store.Set(types.GetEpochUnbondingsKey(unbondings.Epoch), bz)
 }
 
-// ProcessUnbondings advance the Unbondings in the past epoch into the next status
-func (k Keeper) ProcessUnbondings(ctx sdk.Context, epochNumber uint64) {
+// ProcessUndelegationEpoch advance the Unbondings in the past epoch into the next status
+func (k Keeper) ProcessUndelegationEpoch(ctx sdk.Context, epochNumber uint64) {
 	store := ctx.KVStore(k.storeKey)
 
 	iterator := storetypes.KVStorePrefixIterator(store, types.EpochUnbondingsPrefix)
@@ -168,22 +167,22 @@ func (k Keeper) ProcessUnbondings(ctx sdk.Context, epochNumber uint64) {
 			// TODO why come here ?
 			continue
 		}
-		epochUnbondings := types.EpochProxyUnbonding{}
-		k.cdc.MustUnmarshal(bz, &epochUnbondings)
+		epochProxyUnbondings := types.EpochProxyUnbonding{}
+		k.cdc.MustUnmarshal(bz, &epochProxyUnbondings)
 
 		// epoch not past
-		if epochUnbondings.Epoch >= epochNumber {
+		if epochProxyUnbondings.Epoch >= epochNumber {
 			continue
 		}
-		if err := k.ProcessEpochUnbondings(ctx, epochUnbondings.Epoch, epochUnbondings.Unbondings); err != nil {
+		if err := k.ProcessEpochProxyUnbondings(ctx, epochProxyUnbondings.Epoch, epochProxyUnbondings.Unbondings); err != nil {
 			continue
 		}
 		// save the changed epochUnbondings
-		k.SetEpochUnboundings(ctx, &epochUnbondings)
+		k.SetEpochProxyUnboundings(ctx, &epochProxyUnbondings)
 	}
 }
 
-func (k Keeper) ProcessEpochUnbondings(ctx sdk.Context, epoch uint64, unbondings []types.ProxyUnbonding) error {
+func (k Keeper) ProcessEpochProxyUnbondings(ctx sdk.Context, epoch uint64, proxyUnbondings []types.ProxyUnbonding) error {
 	pendingUnbondAmount := make(map[string]math.Int)
 	sourceChainTemp := make(map[string]*types.SourceChain)
 	completeUnbondAmmount := make(map[string]math.Int)
@@ -191,7 +190,7 @@ func (k Keeper) ProcessEpochUnbondings(ctx sdk.Context, epoch uint64, unbondings
 	chainIDs := make([]string, 0)
 
 	// TODO use index loop style.
-	for i, unbonding := range unbondings {
+	for i, unbonding := range proxyUnbondings {
 		sourceChian, found := k.GetSourceChain(ctx, unbonding.ChainID)
 		if !found {
 			// TODO why come here ?
@@ -213,7 +212,7 @@ func (k Keeper) ProcessEpochUnbondings(ctx sdk.Context, epoch uint64, unbondings
 				existAmount = sdk.ZeroInt()
 			}
 			pendingUnbondAmount[unbonding.ChainID] = existAmount.Add(unbonding.RedeemNativeToken.Amount)
-			unbondings[i].Status = types.ProxyUnbondingStart
+			proxyUnbondings[i].Status = types.ProxyUnbondingStart
 
 		case types.ProxyUnbondingTransferFailed:
 			// TODO must retry?
@@ -231,7 +230,7 @@ func (k Keeper) ProcessEpochUnbondings(ctx sdk.Context, epoch uint64, unbondings
 				existAmount = sdk.ZeroInt()
 			}
 			completeUnbondAmmount[unbonding.ChainID] = existAmount.Add(unbonding.RedeemNativeToken.Amount)
-			unbondings[i].Status = types.ProxyUnbondingWithdraw
+			proxyUnbondings[i].Status = types.ProxyUnbondingWithdraw
 		default:
 		}
 	}
@@ -243,7 +242,7 @@ func (k Keeper) ProcessEpochUnbondings(ctx sdk.Context, epoch uint64, unbondings
 		if !ok || amount.IsZero() {
 			continue
 		}
-		k.undelegateFromSourceChain(ctx, sourceChainTemp[chainID], pendingUnbondAmount[chainID], epoch)
+		k.undelegateOnSourceChain(ctx, sourceChainTemp[chainID], pendingUnbondAmount[chainID], epoch)
 	}
 
 	for _, chainID := range chainIDs {
@@ -257,7 +256,7 @@ func (k Keeper) ProcessEpochUnbondings(ctx sdk.Context, epoch uint64, unbondings
 	return nil
 }
 
-func (k Keeper) undelegateFromSourceChain(ctx sdk.Context, sourceChain *types.SourceChain, amount math.Int, epoch uint64) error {
+func (k Keeper) undelegateOnSourceChain(ctx sdk.Context, sourceChain *types.SourceChain, amount math.Int, epoch uint64) error {
 	validatorAllocateFunds := sourceChain.AllocateFundsForValidator(amount)
 
 	// TODO, Ensuring the order of Validators seems to be easy, as long as the order is determined when modifying them.

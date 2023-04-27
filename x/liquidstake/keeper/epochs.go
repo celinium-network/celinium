@@ -21,24 +21,24 @@ func (h Hooks) BeforeEpochStart(ctx sdk.Context, epochIdentifier string, epochNu
 		return
 	}
 
-	uEpochNumber := uint64(epochNumber)
+	epoch := uint64(epochNumber)
 
 	switch epochIdentifier {
 	case appparams.DelegationEpochIdentifier:
-		h.k.CreateEpochProxyDelegation(ctx, uEpochNumber)
+		h.k.CreateProxyDelegationForEpoch(ctx, epoch)
 
 		proxyDelegations := h.k.GetAllProxyDelegation(ctx)
-		h.k.ProcessProxyDelegation(ctx, uEpochNumber, proxyDelegations)
+		h.k.ProcessProxyDelegation(ctx, epoch, proxyDelegations)
 
 		h.k.UpdateRedeemRatio(ctx, proxyDelegations)
 	case appparams.UndelegationEpochIdentifier:
-		h.k.CreateEpochUnbondings(ctx, uEpochNumber)
+		h.k.CreateProxyUnbondingForEpoch(ctx, epoch)
 
-		h.k.ProcessUnbondings(ctx, uEpochNumber)
+		h.k.ProcessUndelegationEpoch(ctx, epoch)
 	case appparams.ReinvestEpochIdentifier:
 		h.k.SetDistriWithdrawAddress(ctx)
 
-		h.k.Reinvest(ctx)
+		h.k.StartReinvest(ctx)
 	default:
 	}
 }

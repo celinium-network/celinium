@@ -31,13 +31,13 @@ var (
 	ProxyDelegationIDKey = []byte{0x20}
 
 	// Prefix for key which used in `{epoch + ChainID}=> ProxyDelegationID`
-	ProxyDelegationIDForEpochPrefix = []byte{0x21}
+	ProxyDelegationIDPrefix = []byte{0x21}
 
 	// Prefix for ProxyDelegation `ID => ProxyDelegation`
 	ProxyDelegationPrefix = []byte{0x22}
 
 	// Prefix for key `{channel + port + sequence} => ProxyDelegationID`
-	IBCDelegationCallbackPrefix = []byte{0x23}
+	IBCCallbackPrefix = []byte{0x23}
 
 	// Prefix for key `{chainID + epoch + delegator}` => UnProxyDelegation
 	UndelegationRecrodPrefix = []byte{0x31}
@@ -52,17 +52,17 @@ func GetSourceChainKey(chainID []byte) []byte {
 	return append(SouceChainKeyPrefix, lengthPrefix(chainID)...)
 }
 
-// GeChainProxyDelegationIDForEpochKey return , `SouceChainKeyPrefix + len(chainID)+chainID`
-func GeChainProxyDelegationIDForEpochKey(epoch uint64, chainID []byte) []byte {
+// GetChainProxyDelegationIDForEpochKey return , `SouceChainKeyPrefix + len(chainID)+chainID`
+func GetChainProxyDelegationIDForEpochKey(epoch uint64, chainID []byte) []byte {
 	epochBz := sdk.Uint64ToBigEndian(epoch)
 
-	prefixL := len(ProxyDelegationIDForEpochPrefix)
+	prefixL := len(ProxyDelegationIDPrefix)
 
 	chainIDWithLength := lengthPrefix(chainID)
 
 	bz := make([]byte, prefixL+8+len(chainIDWithLength))
 
-	copy(bz[:prefixL], ProxyDelegationIDForEpochPrefix)
+	copy(bz[:prefixL], ProxyDelegationIDPrefix)
 	copy(bz[prefixL:prefixL+8], epochBz)
 	copy(bz[prefixL+8:], chainIDWithLength)
 
@@ -75,17 +75,17 @@ func GetProxyDelegationKey(id uint64) []byte {
 	return append(ProxyDelegationPrefix, idBz...)
 }
 
-func GetIBCDelegationCallbackKey(channel []byte, port []byte, sequence uint64) []byte {
+func GetIBCCallbackKey(channel []byte, port []byte, sequence uint64) []byte {
 	channelBz := lengthPrefix(channel)
 	portBz := lengthPrefix(port)
 	sequenceBz := sdk.Uint64ToBigEndian(sequence)
 
-	prefixL := len(IBCDelegationCallbackPrefix)
+	prefixL := len(IBCCallbackPrefix)
 	channelBzL := len(channelBz)
 	portBzL := len(portBz)
 
 	bz := make([]byte, prefixL+channelBzL+portBzL+8)
-	copy(bz[:prefixL], IBCDelegationCallbackPrefix)
+	copy(bz[:prefixL], IBCCallbackPrefix)
 	copy(bz[prefixL:prefixL+channelBzL], channelBz)
 	copy(bz[prefixL+channelBzL:prefixL+channelBzL+portBzL], portBz)
 	copy(bz[prefixL+channelBzL+portBzL:], sequenceBz)
@@ -93,8 +93,8 @@ func GetIBCDelegationCallbackKey(channel []byte, port []byte, sequence uint64) [
 	return bz
 }
 
-func GetUndelegationRecordKey(chainID string, epoch uint64, delegator string) string {
-	id := AssembleUndelegationRecordID(chainID, epoch, delegator)
+func GetUserUnbondingKey(chainID string, epoch uint64, delegator string) string {
+	id := AssembleUserUnbondingID(chainID, epoch, delegator)
 
 	return string(UndelegationRecrodPrefix) + id
 }
@@ -103,7 +103,7 @@ func GetUndelegationRecordKeyFromID(id string) string {
 	return string(UndelegationRecrodPrefix) + id
 }
 
-func AssembleUndelegationRecordID(chainID string, epoch uint64, delegator string) string {
+func AssembleUserUnbondingID(chainID string, epoch uint64, delegator string) string {
 	return strings.Join([]string{chainID, strconv.FormatUint(epoch, 10), delegator}, ".")
 }
 

@@ -60,7 +60,7 @@ func (k Querier) EpochProxyUnbonding(goCtx context.Context, req *types.QueryEpoc
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	unbondings, found := k.GetEpochUnboundings(ctx, req.Epoch)
+	unbondings, found := k.GetEpochProxyUnboundings(ctx, req.Epoch)
 	if !found || len(unbondings.Unbondings) == 0 {
 		return nil, status.Errorf(codes.Internal, "no unbondings in epoch %d", req.Epoch)
 	}
@@ -121,7 +121,7 @@ func (k Querier) UserUnbonding(goCtx context.Context, req *types.QueryUserUnbond
 	var userUnbondings []types.UserUnbonding
 	// TODO the loop maybe expensive. so get epoch from request?
 	for i := uint64(0); i < uint64(curEpoch.CurrentEpoch); i++ {
-		record, found := k.GetUndelegationRecord(ctx, req.ChainID, i, req.User)
+		record, found := k.GetUserUnbonding(ctx, req.ChainID, i, req.User)
 		if !found {
 			continue
 		}
