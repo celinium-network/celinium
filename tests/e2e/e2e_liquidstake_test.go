@@ -336,7 +336,7 @@ func (s *IntegrationTestSuite) LiquistakeUndelegate(srcChain *types.SourceChain,
 	fmt.Println(chainUnbondingResp)
 
 	s.True(chainUnbondingResp.ChainUnbonding.BurnedDerivativeAmount.Equal(undelegateAmount))
-	s.True(chainUnbondingResp.ChainUnbonding.RedeemNativeToken.Equal(undelegateAmount.Add(rewardAmount)))
+	s.True(chainUnbondingResp.ChainUnbonding.RedeemNativeToken.Amount.Equal(undelegateAmount.Add(rewardAmount)))
 
 	// check user undelegate reocrd
 	userUnbondingResp, err := queryLiquidstakeUserUnbonding(s.ctlChain.encfg.Codec, ctlAPIEndpoint, srcChain.ChainID, ctlUser)
@@ -356,6 +356,9 @@ func (s *IntegrationTestSuite) LiquistakeUndelegate(srcChain *types.SourceChain,
 	s.Logf("Undelegate complete time %s", completeTime.Format(time.RFC3339))
 
 	time.Sleep(time.Until(completeTime) + time.Minute*2)
+
+	s.waitForNextEpoch(ctlAPIEndpoint, appparams.UndelegationEpochIdentifier, time.Second*20)
+	time.Sleep(time.Minute)
 
 	userUnbondingResp, err = queryLiquidstakeUserUnbonding(s.ctlChain.encfg.Codec, ctlAPIEndpoint, srcChain.ChainID, ctlUser)
 	s.NoError(err)
