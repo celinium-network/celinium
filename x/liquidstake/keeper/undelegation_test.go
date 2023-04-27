@@ -87,7 +87,7 @@ func (suite *KeeperTestSuite) TestUndelegate() {
 		if unbonding.ChainID != srcChainParams.ChainID {
 			continue
 		}
-		suite.Equal(unbonding.Status, types.UnbondingWaitting)
+		suite.Equal(unbonding.Status, types.ProxyUnbondingWaitting)
 
 		suite.True(unbonding.BurnedDerivativeAmount.Equal(testCoin.Amount))
 		suite.True(unbonding.RedeemNativeToken.Amount.Equal(testCoin.Amount))
@@ -159,7 +159,7 @@ func (suite *KeeperTestSuite) TestWithdrawCompleteUnbond() {
 		if unbonding.ChainID != sourceChainParams.ChainID {
 			continue
 		}
-		suite.Equal(unbonding.Status, types.UnbondingDone)
+		suite.Equal(unbonding.Status, types.ProxyUnbondingDone)
 	}
 	amt := controlChainApp.BankKeeper.GetBalance(
 		suite.controlChain.GetContext(),
@@ -185,7 +185,7 @@ func (suite *KeeperTestSuite) WaitForUnbondingComplete(sourceChainParams *types.
 		if unbonding.ChainID != sourceChainParams.ChainID {
 			continue
 		}
-		suite.Equal(unbonding.Status, types.UnbondingWaitting)
+		suite.Equal(unbonding.Status, types.ProxyUnbondingWaitting)
 		unbondCompleteTime = time.Unix(0, int64(unbonding.UnbondTIme))
 	}
 

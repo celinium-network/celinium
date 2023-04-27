@@ -65,7 +65,7 @@ func (suite *KeeperTestSuite) TestGRPCQueryDelegation() {
 	sourceChainParams := suite.generateSourceChainParams()
 	suite.setSourceChainAndEpoch(sourceChainParams, suite.delegationEpoch())
 
-	var req *types.QueryChainEpochDelegationRecordRequest
+	var req *types.QueryProxyDelegationRequest
 
 	ctx := suite.controlChain.GetContext()
 	user := suite.controlChain.SenderAccount.GetAddress()
@@ -79,18 +79,18 @@ func (suite *KeeperTestSuite) TestGRPCQueryDelegation() {
 	testCases := []struct {
 		msg       string
 		malleate  func()
-		onSuccess func(suite *KeeperTestSuite, response *types.QueryChainEpochDelegationRecordResponse)
+		onSuccess func(suite *KeeperTestSuite, response *types.QueryProxyDelegationResponse)
 		expErr    bool
 	}{
 		{
 			"real",
 			func() {
-				req = &types.QueryChainEpochDelegationRecordRequest{
+				req = &types.QueryProxyDelegationRequest{
 					ChainID: sourceChainParams.ChainID,
 					Epoch:   uint64(delegateEpoch.CurrentEpoch),
 				}
 			},
-			func(suite *KeeperTestSuite, response *types.QueryChainEpochDelegationRecordResponse) {
+			func(suite *KeeperTestSuite, response *types.QueryProxyDelegationResponse) {
 				suite.True(strings.Compare(req.ChainID, response.Record.ChainID) == 0)
 				suite.Equal(req.Epoch, response.Record.EpochNumber)
 			},
@@ -99,22 +99,22 @@ func (suite *KeeperTestSuite) TestGRPCQueryDelegation() {
 		{
 			"query unknown source chain",
 			func() {
-				req = &types.QueryChainEpochDelegationRecordRequest{
+				req = &types.QueryProxyDelegationRequest{
 					ChainID: "noexist",
 				}
 			},
-			func(suite *KeeperTestSuite, response *types.QueryChainEpochDelegationRecordResponse) {},
+			func(suite *KeeperTestSuite, response *types.QueryProxyDelegationResponse) {},
 			true,
 		},
 		{
 			"query future epoch",
 			func() {
-				req = &types.QueryChainEpochDelegationRecordRequest{
+				req = &types.QueryProxyDelegationRequest{
 					ChainID: sourceChainParams.ChainID,
 					Epoch:   uint64(10000),
 				}
 			},
-			func(suite *KeeperTestSuite, response *types.QueryChainEpochDelegationRecordResponse) {},
+			func(suite *KeeperTestSuite, response *types.QueryProxyDelegationResponse) {},
 			true,
 		},
 	}
@@ -123,7 +123,7 @@ func (suite *KeeperTestSuite) TestGRPCQueryDelegation() {
 		suite.Run(fmt.Sprintf("Case %s", tc.msg), func() {
 			tc.malleate()
 
-			res, err := queryClient.ChainEpochDelegationRecord(context.Background(), req)
+			res, err := queryClient.ProxyDelegation(context.Background(), req)
 			if tc.expErr {
 				suite.Error(err)
 			} else {
@@ -157,24 +157,24 @@ func (suite *KeeperTestSuite) TestGRPCQueryChainUnbondings() {
 
 	suite.advanceEpochAndRelayIBC(unbondingEpochInfo)
 
-	var req *types.QueryChainEpochUnbondingRequest
+	var req *types.QueryEpochProxyUnbondingRequest
 	queryClient := suite.queryClient
 
 	testCases := []struct {
 		msg       string
 		malleate  func()
-		onSuccess func(suite *KeeperTestSuite, response *types.QueryChainEpochUnbondingResponse)
+		onSuccess func(suite *KeeperTestSuite, response *types.QueryEpochProxyUnbondingResponse)
 		expErr    bool
 	}{
 		{
 			"successful query",
 			func() {
-				req = &types.QueryChainEpochUnbondingRequest{
+				req = &types.QueryEpochProxyUnbondingRequest{
 					ChainID: srcChainParams.ChainID,
 					Epoch:   uint64(2),
 				}
 			},
-			func(suite *KeeperTestSuite, response *types.QueryChainEpochUnbondingResponse) {
+			func(suite *KeeperTestSuite, response *types.QueryEpochProxyUnbondingResponse) {
 				suite.True(strings.Compare(req.ChainID, response.ChainUnbonding.ChainID) == 0)
 			},
 			false,
@@ -182,22 +182,22 @@ func (suite *KeeperTestSuite) TestGRPCQueryChainUnbondings() {
 		{
 			"query unknown source chain",
 			func() {
-				req = &types.QueryChainEpochUnbondingRequest{
+				req = &types.QueryEpochProxyUnbondingRequest{
 					ChainID: "noexist",
 				}
 			},
-			func(suite *KeeperTestSuite, response *types.QueryChainEpochUnbondingResponse) {},
+			func(suite *KeeperTestSuite, response *types.QueryEpochProxyUnbondingResponse) {},
 			true,
 		},
 		{
 			"query future epoch",
 			func() {
-				req = &types.QueryChainEpochUnbondingRequest{
+				req = &types.QueryEpochProxyUnbondingRequest{
 					ChainID: srcChainParams.ChainID,
 					Epoch:   uint64(10000),
 				}
 			},
-			func(suite *KeeperTestSuite, response *types.QueryChainEpochUnbondingResponse) {},
+			func(suite *KeeperTestSuite, response *types.QueryEpochProxyUnbondingResponse) {},
 			true,
 		},
 	}
@@ -206,7 +206,7 @@ func (suite *KeeperTestSuite) TestGRPCQueryChainUnbondings() {
 		suite.Run(fmt.Sprintf("Case %s", tc.msg), func() {
 			tc.malleate()
 
-			res, err := queryClient.ChainEpochUnbonding(context.Background(), req)
+			res, err := queryClient.EpochProxyUnbonding(context.Background(), req)
 			if tc.expErr {
 				suite.Error(err)
 			} else {
@@ -217,7 +217,7 @@ func (suite *KeeperTestSuite) TestGRPCQueryChainUnbondings() {
 	}
 }
 
-func (suite *KeeperTestSuite) TestGRPCQueryUserUndelegationRecord() {
+func (suite *KeeperTestSuite) TestGRPCQueryUserUnbonding() {
 	srcChainParams := suite.generateSourceChainParams()
 	delegationEpochInfo := suite.delegationEpoch()
 	suite.setSourceChainAndEpoch(srcChainParams, delegationEpochInfo)
@@ -241,51 +241,51 @@ func (suite *KeeperTestSuite) TestGRPCQueryUserUndelegationRecord() {
 
 	suite.advanceEpochAndRelayIBC(unbondingEpochInfo)
 
-	var req *types.QueryUserUndelegationRecordRequest
+	var req *types.QueryUserUnbondingRequest
 	queryClient := suite.queryClient
 
 	testCases := []struct {
 		msg       string
 		malleate  func()
-		onSuccess func(suite *KeeperTestSuite, response *types.QueryUserUndelegationRecordResponse)
+		onSuccess func(suite *KeeperTestSuite, response *types.QueryUserUnbondingResponse)
 		expErr    bool
 	}{
 		{
 			"successful query",
 			func() {
-				req = &types.QueryUserUndelegationRecordRequest{
+				req = &types.QueryUserUnbondingRequest{
 					ChainID: srcChainParams.ChainID,
 					User:    ctlChainUserAccAddr.String(),
 				}
 			},
-			func(suite *KeeperTestSuite, response *types.QueryUserUndelegationRecordResponse) {
-				suite.True(strings.Compare(req.ChainID, response.UndelegationRecords[0].ChainID) == 0)
-				suite.True(strings.Contains(response.UndelegationRecords[0].ID, req.User))
+			func(suite *KeeperTestSuite, response *types.QueryUserUnbondingResponse) {
+				suite.True(strings.Compare(req.ChainID, response.UserUnbondings[0].ChainID) == 0)
+				suite.True(strings.Contains(response.UserUnbondings[0].ID, req.User))
 			},
 			false,
 		},
 		{
 			"query user has't undelegation operation",
 			func() {
-				req = &types.QueryUserUndelegationRecordRequest{
+				req = &types.QueryUserUnbondingRequest{
 					ChainID: srcChainParams.ChainID,
 					User:    unknownUser.String(),
 				}
 			},
-			func(suite *KeeperTestSuite, response *types.QueryUserUndelegationRecordResponse) {
-				suite.True(len(response.UndelegationRecords) == 0)
+			func(suite *KeeperTestSuite, response *types.QueryUserUnbondingResponse) {
+				suite.True(len(response.UserUnbondings) == 0)
 			},
 			false,
 		},
 		{
 			"query unknown chain",
 			func() {
-				req = &types.QueryUserUndelegationRecordRequest{
+				req = &types.QueryUserUnbondingRequest{
 					ChainID: "noexist",
 					User:    ctlChainUserAccAddr.String(),
 				}
 			},
-			func(suite *KeeperTestSuite, response *types.QueryUserUndelegationRecordResponse) {},
+			func(suite *KeeperTestSuite, response *types.QueryUserUnbondingResponse) {},
 			true,
 		},
 	}
@@ -294,7 +294,7 @@ func (suite *KeeperTestSuite) TestGRPCQueryUserUndelegationRecord() {
 		suite.Run(fmt.Sprintf("Case %s", tc.msg), func() {
 			tc.malleate()
 
-			res, err := queryClient.UserUndelegationRecord(context.Background(), req)
+			res, err := queryClient.UserUnbonding(context.Background(), req)
 			if tc.expErr {
 				suite.Error(err)
 			} else {

@@ -15,16 +15,16 @@ service Query{
         option (google.api.http).get = "/celinium/liquidstake/v1/source_chain";
     }
 
-    rpc ChainEpochDelegationRecord(QueryChainEpochDelegationRecordRequest) returns(QueryChainEpochDelegationRecordResponse){
-        option (google.api.http).get = "/celinium/liquidstake/v1/chain_epoch_delegation";
+    rpc ProxyDelegation(QueryProxyDelegationRequest) returns(QueryProxyDelegationResponse){
+        option (google.api.http).get = "/celinium/liquidstake/v1/proxy_delegation";
     }
 
-    rpc ChainEpochUnbonding(QueryChainEpochUnbondingRequest) returns(QueryChainEpochUnbondingResponse){
-        option (google.api.http).get = "/celinium/liquidstake/v1/chain_epoch_unbonding";
+    rpc EpochProxyUnbonding(QueryEpochProxyUnbondingRequest) returns(QueryEpochProxyUnbondingResponse){
+        option (google.api.http).get = "/celinium/liquidstake/v1/epoch_proxy_unbonding";
     }
 
-    rpc UserUndelegationRecord(QueryUserUndelegationRecordRequest) returns(QueryUserUndelegationRecordResponse){
-        option (google.api.http).get = "/celinium/liquidstake/v1/user_undelegation_record";
+    rpc UserUnbonding(QueryUserUnbondingRequest) returns(QueryUserUnbondingResponse){
+        option (google.api.http).get = "/celinium/liquidstake/v1/user_unbonding";
     }
 }
 
@@ -36,29 +36,29 @@ message QuerySourceChainResponse{
     SourceChain sourceChain = 1 [(gogoproto.nullable) = false];
 }
 
-message QueryChainEpochDelegationRecordRequest{
+message QueryProxyDelegationRequest{
     uint64 epoch = 1;
     string chainID = 2;
 }
 
-message QueryChainEpochDelegationRecordResponse{
-    DelegationRecord record = 1 [(gogoproto.nullable) = false];
+message QueryProxyDelegationResponse{
+    ProxyDelegation record = 1 [(gogoproto.nullable) = false];
 }
 
-message QueryChainEpochUnbondingRequest{
+message QueryEpochProxyUnbondingRequest{
     uint64 epoch = 1;
     string chainID = 2;
 }
 
-message QueryChainEpochUnbondingResponse{
-    Unbonding chainUnbonding = 1 [(gogoproto.nullable) = false];
+message QueryEpochProxyUnbondingResponse{
+    ProxyUnbonding chainUnbonding = 1 [(gogoproto.nullable) = false];
 }
 
-message QueryUserUndelegationRecordRequest{
+message QueryUserUnbondingRequest{
     string chainID = 1;
     string user = 2;
 }
 
-message QueryUserUndelegationRecordResponse{
-    repeated UndelegationRecord undelegationRecords = 1 [(gogoproto.nullable) = false];
+message QueryUserUnbondingResponse{
+    repeated UserUnbonding userUnbondings = 1 [(gogoproto.nullable) = false];
 }

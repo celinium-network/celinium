@@ -33,26 +33,26 @@ func init() {
 }
 
 func delegateTransferCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCallback, response []*codectypes.Any) error {
-	delegationRecordID := sdk.BigEndianToUint64([]byte(callback.Args))
-	record, found := k.GetDelegationRecord(ctx, delegationRecordID)
+	proxyDelegationID := sdk.BigEndianToUint64([]byte(callback.Args))
+	record, found := k.GetProxyDelegation(ctx, proxyDelegationID)
 	if !found {
 		return nil
 	}
 
 	k.Logger(ctx).Info(fmt.Sprintf("delegateTransferCallbackHandler, chainID %s epoch %d", record.ChainID, record.EpochNumber))
-	k.AfterDelegateTransfer(ctx, record, true)
+	k.AfterProxyDelegationTransfer(ctx, record, true)
 	return nil
 }
 
 func delegateCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCallback, response []*codectypes.Any) error {
-	delegationRecordID := sdk.BigEndianToUint64([]byte(callback.Args))
-	record, found := k.GetDelegationRecord(ctx, delegationRecordID)
+	proxyDelegationID := sdk.BigEndianToUint64([]byte(callback.Args))
+	record, found := k.GetProxyDelegation(ctx, proxyDelegationID)
 	if !found {
 		return nil
 	}
 
 	k.Logger(ctx).Info(fmt.Sprintf("delegateCallbackHandler, chainID %s epoch %d", record.ChainID, record.EpochNumber))
-	k.AfterCrosschainDelegate(ctx, record, true)
+	k.AfterProxyDelegationDone(ctx, record, true)
 
 	return nil
 }
@@ -82,7 +82,7 @@ func unbondCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCallba
 			continue
 		}
 		epochUnbondings.Unbondings[i].UnbondTIme = uint64(completeTime.UnixNano())
-		epochUnbondings.Unbondings[i].Status = types.UnbondingWaitting
+		epochUnbondings.Unbondings[i].Status = types.ProxyUnbondingWaitting
 
 		// update sourcechain
 		sourceChain, found := k.GetSourceChain(ctx, unbondCallArgs.ChainID)
@@ -118,14 +118,14 @@ func withdrawUnbondCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.I
 		if unbondings[i].ChainID != unbondCallArgs.ChainID {
 			continue
 		}
-		unbondings[i].Status = types.UnbondingDone
+		unbondings[i].Status = types.ProxyUnbondingDone
 
 		for _, userUnDelegationID := range unbondings[i].UserUnbondRecordIds {
 			userUndelegation, found := k.GetUndelegationRecordByID(ctx, userUnDelegationID)
 			if !found {
 				continue
 			}
-			userUndelegation.CliamStatus = types.UndelegationClaimable
+			userUndelegation.CliamStatus = types.UserUnbondingClaimable
 			k.SetUndelegationRecord(ctx, userUndelegation)
 		}
 	}
@@ -171,19 +171,19 @@ func transferRewardCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.I
 	}
 
 	currentEpoch := uint64(epochInfo.CurrentEpoch)
-	recordID, found := k.GetChianDelegationRecordID(ctx, callbackArgs.ChainID, currentEpoch)
+	recordID, found := k.GetChianProxyDelegationID(ctx, callbackArgs.ChainID, currentEpoch)
 	if !found {
 		return nil
 	}
 
-	record, found := k.GetDelegationRecord(ctx, recordID)
+	record, found := k.GetProxyDelegation(ctx, recordID)
 	if !found {
 		return nil
 	}
 
-	record.DelegationCoin = record.DelegationCoin.AddAmount(callbackArgs.Amount)
+	record.Coin = record.Coin.AddAmount(callbackArgs.Amount)
 	record.TransferredAmount = record.TransferredAmount.Add(callbackArgs.Amount)
-	k.SetDelegationRecord(ctx, recordID, record)
+	k.SetProxyDelegation(ctx, recordID, record)
 	return nil
 }
 

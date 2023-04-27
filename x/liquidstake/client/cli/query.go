@@ -23,9 +23,9 @@ func NewQueryCmd() *cobra.Command {
 
 	liquistakeQueryCmd.AddCommand(
 		GetSourceChainCmd(),
-		GetDelegationRecordCmd(),
+		GetProxyDelegationCmd(),
 		GetChainUnbondingCmd(),
-		GetUserDelegationRecordCmd(),
+		GetUserProxyDelegationCmd(),
 	)
 
 	return liquistakeQueryCmd
@@ -60,7 +60,7 @@ func GetSourceChainCmd() *cobra.Command {
 	return cmd
 }
 
-func GetDelegationRecordCmd() *cobra.Command {
+func GetProxyDelegationCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "delegation-record [chain_id] [epoch]",
 		Short: "Query delegation record of a source chain from the specific epoch",
@@ -76,11 +76,11 @@ func GetDelegationRecordCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			params := &types.QueryChainEpochDelegationRecordRequest{
+			params := &types.QueryProxyDelegationRequest{
 				ChainID: args[0],
 				Epoch:   uint64(epoch),
 			}
-			res, err := queryClient.ChainEpochDelegationRecord(cmd.Context(), params)
+			res, err := queryClient.ProxyDelegation(cmd.Context(), params)
 			if err != nil {
 				return err
 			}
@@ -111,11 +111,11 @@ func GetChainUnbondingCmd() *cobra.Command {
 				return err
 			}
 
-			params := &types.QueryChainEpochUnbondingRequest{
+			params := &types.QueryEpochProxyUnbondingRequest{
 				ChainID: args[0],
 				Epoch:   uint64(epoch),
 			}
-			res, err := queryClient.ChainEpochUnbonding(cmd.Context(), params)
+			res, err := queryClient.EpochProxyUnbonding(cmd.Context(), params)
 			if err != nil {
 				return err
 			}
@@ -129,7 +129,7 @@ func GetChainUnbondingCmd() *cobra.Command {
 	return cmd
 }
 
-func GetUserDelegationRecordCmd() *cobra.Command {
+func GetUserProxyDelegationCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "user-undelegation [chain_id] [user_address]",
 		Short: "Query undelegation record of the user for the specific chain",
@@ -141,11 +141,11 @@ func GetUserDelegationRecordCmd() *cobra.Command {
 			}
 			queryClient := types.NewQueryClient(clientCtx)
 
-			params := &types.QueryUserUndelegationRecordRequest{
+			params := &types.QueryUserUnbondingRequest{
 				ChainID: args[0],
 				User:    args[1],
 			}
-			res, err := queryClient.UserUndelegationRecord(cmd.Context(), params)
+			res, err := queryClient.UserUnbonding(cmd.Context(), params)
 			if err != nil {
 				return err
 			}

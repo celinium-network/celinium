@@ -25,12 +25,12 @@ func (h Hooks) BeforeEpochStart(ctx sdk.Context, epochIdentifier string, epochNu
 
 	switch epochIdentifier {
 	case appparams.DelegationEpochIdentifier:
-		h.k.CreateEpochDelegationRecord(ctx, uEpochNumber)
+		h.k.CreateEpochProxyDelegation(ctx, uEpochNumber)
 
-		delegationRecords := h.k.GetAllDelegationRecord(ctx)
-		h.k.ProcessDelegationRecord(ctx, uEpochNumber, delegationRecords)
+		proxyDelegations := h.k.GetAllProxyDelegation(ctx)
+		h.k.ProcessProxyDelegation(ctx, uEpochNumber, proxyDelegations)
 
-		h.k.UpdateRedeemRatio(ctx, delegationRecords)
+		h.k.UpdateRedeemRatio(ctx, proxyDelegations)
 	case appparams.UndelegationEpochIdentifier:
 		h.k.CreateEpochUnbondings(ctx, uEpochNumber)
 

@@ -28,18 +28,18 @@ var (
 	SouceChainKeyPrefix = []byte{0x11}
 
 	// Key for delegation record ID.
-	DelegationRecordIDKey = []byte{0x20}
+	ProxyDelegationIDKey = []byte{0x20}
 
-	// Prefix for key which used in `{epoch + ChainID}=> DelegationRecordID`
-	DelegationRecordIDForEpochPrefix = []byte{0x21}
+	// Prefix for key which used in `{epoch + ChainID}=> ProxyDelegationID`
+	ProxyDelegationIDForEpochPrefix = []byte{0x21}
 
-	// Prefix for DelegationRecord `ID => DelegationRecord`
-	DelegationRecordPrefix = []byte{0x22}
+	// Prefix for ProxyDelegation `ID => ProxyDelegation`
+	ProxyDelegationPrefix = []byte{0x22}
 
-	// Prefix for key `{channel + port + sequence} => DelegationRecordID`
+	// Prefix for key `{channel + port + sequence} => ProxyDelegationID`
 	IBCDelegationCallbackPrefix = []byte{0x23}
 
-	// Prefix for key `{chainID + epoch + delegator}` => UnDelegationRecord
+	// Prefix for key `{chainID + epoch + delegator}` => UnProxyDelegation
 	UndelegationRecrodPrefix = []byte{0x31}
 
 	EpochUnbondingsPrefix = []byte{0x32}
@@ -52,27 +52,27 @@ func GetSourceChainKey(chainID []byte) []byte {
 	return append(SouceChainKeyPrefix, lengthPrefix(chainID)...)
 }
 
-// GeChainDelegationRecordIDForEpochKey return , `SouceChainKeyPrefix + len(chainID)+chainID`
-func GeChainDelegationRecordIDForEpochKey(epoch uint64, chainID []byte) []byte {
+// GeChainProxyDelegationIDForEpochKey return , `SouceChainKeyPrefix + len(chainID)+chainID`
+func GeChainProxyDelegationIDForEpochKey(epoch uint64, chainID []byte) []byte {
 	epochBz := sdk.Uint64ToBigEndian(epoch)
 
-	prefixL := len(DelegationRecordIDForEpochPrefix)
+	prefixL := len(ProxyDelegationIDForEpochPrefix)
 
 	chainIDWithLength := lengthPrefix(chainID)
 
 	bz := make([]byte, prefixL+8+len(chainIDWithLength))
 
-	copy(bz[:prefixL], DelegationRecordIDForEpochPrefix)
+	copy(bz[:prefixL], ProxyDelegationIDForEpochPrefix)
 	copy(bz[prefixL:prefixL+8], epochBz)
 	copy(bz[prefixL+8:], chainIDWithLength)
 
 	return bz
 }
 
-func GetDelegationRecordKey(id uint64) []byte {
+func GetProxyDelegationKey(id uint64) []byte {
 	idBz := sdk.Uint64ToBigEndian(id)
 
-	return append(DelegationRecordPrefix, idBz...)
+	return append(ProxyDelegationPrefix, idBz...)
 }
 
 func GetIBCDelegationCallbackKey(channel []byte, port []byte, sequence uint64) []byte {

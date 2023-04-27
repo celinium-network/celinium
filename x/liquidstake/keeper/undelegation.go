@@ -19,7 +19,7 @@ import (
 	"github.com/celinium-network/celinium/x/liquidstake/types"
 )
 
-func (k Keeper) Undelegate(ctx sdk.Context, chainID string, amount math.Int, delegator sdk.AccAddress) (*types.UndelegationRecord, error) {
+func (k Keeper) Undelegate(ctx sdk.Context, chainID string, amount math.Int, delegator sdk.AccAddress) (*types.UserUnbonding, error) {
 	sourceChain, found := k.GetSourceChain(ctx, chainID)
 	if !found {
 		return nil, sdkerrors.Wrapf(types.ErrUnknownSourceChain, "unknown source chain, chainID: %s", chainID)
@@ -51,13 +51,13 @@ func (k Keeper) Undelegate(ctx sdk.Context, chainID string, amount math.Int, del
 		return nil, err
 	}
 
-	undelegationRecord := types.UndelegationRecord{
+	undelegationRecord := types.UserUnbonding{
 		ID:          types.AssembleUndelegationRecordID(chainID, currentEpoch, delegatorAddr),
 		ChainID:     chainID,
 		Epoch:       currentEpoch,
 		Delegator:   delegatorAddr,
-		RedeemToken: sdk.NewCoin(sourceChain.IbcDenom, receiveAmount),
-		CliamStatus: types.UndelegationPending,
+		RedeemCoin:  sdk.NewCoin(sourceChain.IbcDenom, receiveAmount),
+		CliamStatus: types.UserUnbondingPending,
 	}
 
 	// update related Unbonding by chainID
@@ -66,7 +66,7 @@ func (k Keeper) Undelegate(ctx sdk.Context, chainID string, amount math.Int, del
 		curEpochUnbondings = k.CreateEpochUnbondings(ctx, currentEpoch)
 	}
 
-	var curEpochSourceChainUnbonding types.Unbonding
+	var curEpochSourceChainUnbonding types.ProxyUnbonding
 	chainUnbondingIndex := -1
 	for i, unbonding := range curEpochUnbondings.Unbondings {
 		if unbonding.ChainID == chainID {
@@ -77,7 +77,7 @@ func (k Keeper) Undelegate(ctx sdk.Context, chainID string, amount math.Int, del
 
 	// unbonding of the chain is not created, then create it now.
 	if chainUnbondingIndex == -1 {
-		curEpochSourceChainUnbonding = types.Unbonding{
+		curEpochSourceChainUnbonding = types.ProxyUnbonding{
 			ChainID:                chainID,
 			BurnedDerivativeAmount: sdk.ZeroInt(),
 			RedeemNativeToken:      sdk.NewCoin(sourceChain.NativeDenom, sdk.ZeroInt()),
@@ -106,13 +106,13 @@ func (k Keeper) Undelegate(ctx sdk.Context, chainID string, amount math.Int, del
 	return &undelegationRecord, nil
 }
 
-func (k Keeper) GetUndelegationRecord(ctx sdk.Context, chainID string, epoch uint64, delegator string) (*types.UndelegationRecord, bool) {
+func (k Keeper) GetUndelegationRecord(ctx sdk.Context, chainID string, epoch uint64, delegator string) (*types.UserUnbonding, bool) {
 	id := types.AssembleUndelegationRecordID(chainID, epoch, delegator)
 
 	return k.GetUndelegationRecordByID(ctx, id)
 }
 
-func (k Keeper) GetUndelegationRecordByID(ctx sdk.Context, id string) (*types.UndelegationRecord, bool) {
+func (k Keeper) GetUndelegationRecordByID(ctx sdk.Context, id string) (*types.UserUnbonding, bool) {
 	store := ctx.KVStore(k.storeKey)
 
 	bz := store.Get([]byte(types.GetUndelegationRecordKeyFromID(id)))
@@ -120,13 +120,13 @@ func (k Keeper) GetUndelegationRecordByID(ctx sdk.Context, id string) (*types.Un
 		return nil, false
 	}
 
-	record := types.UndelegationRecord{}
+	record := types.UserUnbonding{}
 	k.cdc.MustUnmarshal(bz, &record)
 
 	return &record, true
 }
 
-func (k Keeper) SetUndelegationRecord(ctx sdk.Context, undelegationRecord *types.UndelegationRecord) {
+func (k Keeper) SetUndelegationRecord(ctx sdk.Context, undelegationRecord *types.UserUnbonding) {
 	store := ctx.KVStore(k.storeKey)
 
 	key := types.GetUndelegationRecordKey(undelegationRecord.ChainID, undelegationRecord.Epoch, undelegationRecord.Delegator)
@@ -134,7 +134,7 @@ func (k Keeper) SetUndelegationRecord(ctx sdk.Context, undelegationRecord *types
 	store.Set([]byte(key), bz)
 }
 
-func (k Keeper) GetEpochUnboundings(ctx sdk.Context, epoch uint64) (*types.EpochUnbondings, bool) {
+func (k Keeper) GetEpochUnboundings(ctx sdk.Context, epoch uint64) (*types.EpochProxyUnbonding, bool) {
 	store := ctx.KVStore(k.storeKey)
 
 	bz := store.Get(types.GetEpochUnbondingsKey(epoch))
@@ -142,13 +142,13 @@ func (k Keeper) GetEpochUnboundings(ctx sdk.Context, epoch uint64) (*types.Epoch
 		return nil, false
 	}
 
-	unbondings := types.EpochUnbondings{}
+	unbondings := types.EpochProxyUnbonding{}
 	k.cdc.MustUnmarshal(bz, &unbondings)
 
 	return &unbondings, true
 }
 
-func (k Keeper) SetEpochUnboundings(ctx sdk.Context, unbondings *types.EpochUnbondings) {
+func (k Keeper) SetEpochUnboundings(ctx sdk.Context, unbondings *types.EpochProxyUnbonding) {
 	store := ctx.KVStore(k.storeKey)
 
 	bz := k.cdc.MustMarshal(unbondings)
@@ -168,7 +168,7 @@ func (k Keeper) ProcessUnbondings(ctx sdk.Context, epochNumber uint64) {
 			// TODO why come here ?
 			continue
 		}
-		epochUnbondings := types.EpochUnbondings{}
+		epochUnbondings := types.EpochProxyUnbonding{}
 		k.cdc.MustUnmarshal(bz, &epochUnbondings)
 
 		// epoch not past
@@ -183,7 +183,7 @@ func (k Keeper) ProcessUnbondings(ctx sdk.Context, epochNumber uint64) {
 	}
 }
 
-func (k Keeper) ProcessEpochUnbondings(ctx sdk.Context, epoch uint64, unbondings []types.Unbonding) error {
+func (k Keeper) ProcessEpochUnbondings(ctx sdk.Context, epoch uint64, unbondings []types.ProxyUnbonding) error {
 	pendingUnbondAmount := make(map[string]math.Int)
 	sourceChainTemp := make(map[string]*types.SourceChain)
 	completeUnbondAmmount := make(map[string]math.Int)
@@ -207,20 +207,20 @@ func (k Keeper) ProcessEpochUnbondings(ctx sdk.Context, epoch uint64, unbondings
 		sourceChainTemp[unbonding.ChainID] = sourceChian
 
 		switch unbonding.Status {
-		case types.UnbondingPending:
+		case types.ProxyUnbondingPending:
 			existAmount, ok := pendingUnbondAmount[unbonding.ChainID]
 			if !ok {
 				existAmount = sdk.ZeroInt()
 			}
 			pendingUnbondAmount[unbonding.ChainID] = existAmount.Add(unbonding.RedeemNativeToken.Amount)
-			unbondings[i].Status = types.UnbondingStart
+			unbondings[i].Status = types.ProxyUnbondingStart
 
-		case types.UnbondingTransferFailed:
+		case types.ProxyUnbondingTransferFailed:
 			// TODO must retry?
-		case types.UnbondingStartFailed:
+		case types.ProxyUnbondingStartFailed:
 			// TODO become pending and retry next epoch or retry now ?
 			// retry now maybe deadloop ?
-		case types.UnbondingWaitting:
+		case types.ProxyUnbondingWaitting:
 			// TODO timestamp become int64
 			if ctx.BlockTime().Before(time.Unix(0, int64(unbonding.UnbondTIme)).Add(5 * time.Minute)) {
 				continue
@@ -231,7 +231,7 @@ func (k Keeper) ProcessEpochUnbondings(ctx sdk.Context, epoch uint64, unbondings
 				existAmount = sdk.ZeroInt()
 			}
 			completeUnbondAmmount[unbonding.ChainID] = existAmount.Add(unbonding.RedeemNativeToken.Amount)
-			unbondings[i].Status = types.UnbondingWithdraw
+			unbondings[i].Status = types.ProxyUnbondingWithdraw
 		default:
 		}
 	}

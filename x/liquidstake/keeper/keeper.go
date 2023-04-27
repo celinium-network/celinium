@@ -77,32 +77,32 @@ func (k Keeper) SetSourceChain(ctx sdk.Context, sourceChain *types.SourceChain) 
 	store.Set(types.GetSourceChainKey([]byte(sourceChain.ChainID)), bz)
 }
 
-func (k Keeper) GetDelegationRecordID(ctx sdk.Context) uint64 {
+func (k Keeper) GetProxyDelegationID(ctx sdk.Context) uint64 {
 	store := ctx.KVStore(k.storeKey)
 
-	bz := store.Get(types.DelegationRecordIDKey)
+	bz := store.Get(types.ProxyDelegationIDKey)
 
 	return sdk.BigEndianToUint64(bz)
 }
 
-func (k Keeper) IncreaseDelegationRecordID(ctx sdk.Context) {
+func (k Keeper) IncreaseProxyDelegationID(ctx sdk.Context) {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.DelegationRecordIDKey)
+	bz := store.Get(types.ProxyDelegationIDKey)
 
 	oldID := sdk.BigEndianToUint64(bz)
 	oldID++ // TODO need check overflow?
 
-	store.Set(types.DelegationRecordIDKey, sdk.Uint64ToBigEndian(oldID))
+	store.Set(types.ProxyDelegationIDKey, sdk.Uint64ToBigEndian(oldID))
 }
 
-func (k Keeper) GetAllDelegationRecord(ctx sdk.Context) []types.DelegationRecord {
+func (k Keeper) GetAllProxyDelegation(ctx sdk.Context) []types.ProxyDelegation {
 	store := ctx.KVStore(k.storeKey)
 
-	iterator := storetypes.KVStorePrefixIterator(store, types.DelegationRecordPrefix)
+	iterator := storetypes.KVStorePrefixIterator(store, types.ProxyDelegationPrefix)
 
-	var records []types.DelegationRecord
+	var records []types.ProxyDelegation
 	for ; iterator.Valid(); iterator.Next() {
-		r := types.DelegationRecord{}
+		r := types.ProxyDelegation{}
 
 		bz := iterator.Value()
 		k.cdc.MustUnmarshal(bz, &r)

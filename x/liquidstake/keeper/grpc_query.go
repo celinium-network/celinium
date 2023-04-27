@@ -18,8 +18,8 @@ type Querier struct {
 
 var _ types.QueryServer = Querier{}
 
-// ChainEpochDelegationRecord implements types.QueryServer
-func (k Querier) ChainEpochDelegationRecord(goCtx context.Context, req *types.QueryChainEpochDelegationRecordRequest) (*types.QueryChainEpochDelegationRecordResponse, error) {
+// ProxyDelegation implements types.QueryServer
+func (k Querier) ProxyDelegation(goCtx context.Context, req *types.QueryProxyDelegationRequest) (*types.QueryProxyDelegationResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -34,22 +34,22 @@ func (k Querier) ChainEpochDelegationRecord(goCtx context.Context, req *types.Qu
 		return nil, status.Errorf(codes.InvalidArgument, "unknown chainID %s", req.ChainID)
 	}
 
-	recordID, found := k.GetChianDelegationRecordID(ctx, req.ChainID, req.Epoch)
+	recordID, found := k.GetChianProxyDelegationID(ctx, req.ChainID, req.Epoch)
 	if !found {
 		return nil, status.Errorf(codes.InvalidArgument, "chain%s no record in epoch %d", req.ChainID, req.Epoch)
 	}
 
-	record, found := k.GetDelegationRecord(ctx, recordID)
+	record, found := k.GetProxyDelegation(ctx, recordID)
 	if !found {
 		return nil, status.Errorf(codes.Internal, "chain%s no record in epoch %d", req.ChainID, req.Epoch)
 	}
-	return &types.QueryChainEpochDelegationRecordResponse{
+	return &types.QueryProxyDelegationResponse{
 		Record: *record,
 	}, nil
 }
 
-// ChainEpochUnbonding implements types.QueryServer
-func (k Querier) ChainEpochUnbonding(goCtx context.Context, req *types.QueryChainEpochUnbondingRequest) (*types.QueryChainEpochUnbondingResponse, error) {
+// EpochProxyUnbonding implements types.QueryServer
+func (k Querier) EpochProxyUnbonding(goCtx context.Context, req *types.QueryEpochProxyUnbondingRequest) (*types.QueryEpochProxyUnbondingResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -65,14 +65,14 @@ func (k Querier) ChainEpochUnbonding(goCtx context.Context, req *types.QueryChai
 		return nil, status.Errorf(codes.Internal, "no unbondings in epoch %d", req.Epoch)
 	}
 
-	var chainUnbonding types.Unbonding
+	var chainUnbonding types.ProxyUnbonding
 	for _, unbonding := range unbondings.Unbondings {
 		if strings.Compare(req.ChainID, unbonding.ChainID) != 0 {
 			continue
 		}
 		chainUnbonding = unbonding
 	}
-	return &types.QueryChainEpochUnbondingResponse{
+	return &types.QueryEpochProxyUnbondingResponse{
 		ChainUnbonding: chainUnbonding,
 	}, nil
 }
@@ -99,8 +99,8 @@ func (k Querier) SourceChain(goCtx context.Context, req *types.QuerySourceChainR
 	}, nil
 }
 
-// UserUndelegationRecord implements types.QueryServer
-func (k Querier) UserUndelegationRecord(goCtx context.Context, req *types.QueryUserUndelegationRecordRequest) (*types.QueryUserUndelegationRecordResponse, error) {
+// UserUnbonding implements types.QueryServer
+func (k Querier) UserUnbonding(goCtx context.Context, req *types.QueryUserUnbondingRequest) (*types.QueryUserUnbondingResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -118,17 +118,17 @@ func (k Querier) UserUndelegationRecord(goCtx context.Context, req *types.QueryU
 		return nil, status.Errorf(codes.Internal, "undelegation epoch not start")
 	}
 
-	var undelegationRecords []types.UndelegationRecord
+	var userUnbondings []types.UserUnbonding
 	// TODO the loop maybe expensive. so get epoch from request?
 	for i := uint64(0); i < uint64(curEpoch.CurrentEpoch); i++ {
 		record, found := k.GetUndelegationRecord(ctx, req.ChainID, i, req.User)
 		if !found {
 			continue
 		}
-		undelegationRecords = append(undelegationRecords, *record)
+		userUnbondings = append(userUnbondings, *record)
 	}
 
-	return &types.QueryUserUndelegationRecordResponse{
-		UndelegationRecords: undelegationRecords,
+	return &types.QueryUserUnbondingResponse{
+		UserUnbondings: userUnbondings,
 	}, nil
 }
