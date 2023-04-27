@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/gogo/protobuf/proto"
 
@@ -48,7 +47,6 @@ func (k *Keeper) Delegate(ctx sdk.Context, chainID string, amount math.Int, call
 		return nil, err
 	}
 
-	// TODO replace TruncateInt with Ceil ?
 	derivativeAmount := sdk.NewDecFromInt(amount).Quo(sourceChain.Redemptionratio).TruncateInt()
 	if err := k.mintCoins(ctx, caller, sdk.Coins{sdk.NewCoin(sourceChain.DerivativeDenom, derivativeAmount)}); err != nil {
 		return nil, err
@@ -116,8 +114,7 @@ func (k Keeper) handlePendingProxyDelegation(ctx sdk.Context, record types.Proxy
 		return err
 	}
 
-	// TODO timeout ?
-	timeoutTimestamp := ctx.BlockTime().Add(time.Minute).UnixNano()
+	timeoutTimestamp := ctx.BlockTime().UnixNano() + types.DefaultIBCTransferTimeoutNanos
 	msg := ibctransfertypes.MsgTransfer{
 		SourcePort:       ibctransfertypes.PortID,
 		SourceChannel:    sourceChain.TransferChannelID,
@@ -169,16 +166,16 @@ func (k Keeper) AfterProxyDelegationTransfer(ctx sdk.Context, record *types.Prox
 	if err != nil {
 		return err
 	}
-	allocatedFunds := sourceChain.AllocateFundsForValidator(record.Coin.Amount)
+	allocTokenVals := sourceChain.AllocateTokenForValidator(record.Coin.Amount)
 
 	stakingMsgs := make([]proto.Message, 0)
-	for _, valFund := range allocatedFunds {
+	for _, val := range allocTokenVals.Validators {
 		stakingMsgs = append(stakingMsgs, &stakingtypes.MsgDelegate{
 			DelegatorAddress: sourceChainDelegateAddr,
-			ValidatorAddress: valFund.Address,
+			ValidatorAddress: val.Address,
 			Amount: sdk.Coin{
 				Denom:  sourceChain.NativeDenom,
-				Amount: valFund.Amount,
+				Amount: val.TokenAmount,
 			},
 		})
 	}
@@ -191,7 +188,13 @@ func (k Keeper) AfterProxyDelegationTransfer(ctx sdk.Context, record *types.Prox
 	record.Status = types.ProxyDelegating
 	k.SetProxyDelegation(ctx, record.Id, record)
 
-	bzArg := sdk.Uint64ToBigEndian(record.Id)
+	callbackArgs := types.DelegateCallbackArgs{
+		Validators:        allocTokenVals.Validators,
+		ProxyDelegationID: record.Id,
+	}
+
+	bzArg := k.cdc.MustMarshal(&callbackArgs)
+
 	callback := types.IBCCallback{
 		CallType: types.DelegateCall,
 		Args:     string(bzArg),
@@ -205,25 +208,31 @@ func (k Keeper) AfterProxyDelegationTransfer(ctx sdk.Context, record *types.Prox
 	return nil
 }
 
-func (k Keeper) AfterProxyDelegationDone(ctx sdk.Context, record *types.ProxyDelegation, delegationSuccessful bool) error {
-	if !delegationSuccessful {
-		record.Status = types.ProxyDelegationFailed
-		k.SetProxyDelegation(ctx, record.Id, record)
+func (k Keeper) AfterProxyDelegationDone(ctx sdk.Context, delegateCallbackArgs *types.DelegateCallbackArgs, delegationSuccessful bool) error {
+	delegation, found := k.GetProxyDelegation(ctx, delegateCallbackArgs.ProxyDelegationID)
+	if !found {
 		return nil
 	}
 
-	sourceChain, found := k.GetSourceChain(ctx, record.ChainID)
-	if !found {
-		return sdkerrors.Wrapf(types.ErrUnknownSourceChain, "unknown source chain, chainID: %s", record.ChainID)
+	k.Logger(ctx).Info(fmt.Sprintf("delegateCallbackHandler, chainID %s epoch %d", delegation.ChainID, delegation.EpochNumber))
+
+	if !delegationSuccessful {
+		delegation.Status = types.ProxyDelegationFailed
+		k.SetProxyDelegation(ctx, delegation.Id, delegation)
+		return nil
 	}
 
-	record.Status = types.ProxyDelegationDone
+	sourceChain, found := k.GetSourceChain(ctx, delegation.ChainID)
+	if !found {
+		return sdkerrors.Wrapf(types.ErrUnknownSourceChain, "unknown source chain, chainID: %s", delegation.ChainID)
+	}
 
-	k.SetProxyDelegation(ctx, record.Id, record)
+	delegation.Status = types.ProxyDelegationDone
 
-	sourceChain.UpdateWithProxyDelegation(record)
+	k.SetProxyDelegation(ctx, delegation.Id, delegation)
 
-	// save source chain
+	sourceChain.UpdateWithDelegatedValidators(delegateCallbackArgs.Validators)
+
 	k.SetSourceChain(ctx, sourceChain)
 
 	return nil

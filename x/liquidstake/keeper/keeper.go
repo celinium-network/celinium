@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	sdkioerrors "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -85,14 +86,19 @@ func (k Keeper) GetProxyDelegationID(ctx sdk.Context) uint64 {
 	return sdk.BigEndianToUint64(bz)
 }
 
-func (k Keeper) IncreaseProxyDelegationID(ctx sdk.Context) {
+func (k Keeper) IncreaseProxyDelegationID(ctx sdk.Context) error {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.ProxyDelegationIDKey)
 
 	oldID := sdk.BigEndianToUint64(bz)
-	oldID++ // TODO need check overflow?
+	newID := oldID + 1
+	if newID < oldID {
+		return sdkioerrors.Wrapf(sdk.ErrIntOverflowAbci, "failed to increase proxy delegation ID")
+	}
 
-	store.Set(types.ProxyDelegationIDKey, sdk.Uint64ToBigEndian(oldID))
+	store.Set(types.ProxyDelegationIDKey, sdk.Uint64ToBigEndian(newID))
+
+	return nil
 }
 
 func (k Keeper) GetAllProxyDelegation(ctx sdk.Context) []types.ProxyDelegation {

@@ -25,7 +25,6 @@ const (
 )
 
 // BasicVerify verify SouceChain parameters
-// todo: more verify ?
 func (s SourceChain) BasicVerify() error {
 	if len(s.Validators) < MinValidators {
 		return fmt.Errorf("min validators: %d, get: %d", MinValidators, len(s.Validators))
@@ -53,7 +52,6 @@ func (s SourceChain) BasicVerify() error {
 }
 
 // GenerateAccounts generate the WithdrawAddress/DelegateAddress/UnboudAddress for source chain
-// TODO: Add a function parameter to do some work like register, then don't need return values?
 func (s *SourceChain) GenerateAccounts(ctx sdk.Context) (accounts []*authtypes.ModuleAccount) {
 	header := ctx.BlockHeader()
 
@@ -98,9 +96,8 @@ type ValidatorFund struct {
 	Amount  math.Int
 }
 
-func (s SourceChain) AllocateFundsForValidator(amount math.Int) []ValidatorFund {
-	validatorFunds := make([]ValidatorFund, 0)
-
+func (s SourceChain) AllocateTokenForValidator(amount math.Int) Validators {
+	var allocatedTokenValidators Validators
 	totalWeight := math.ZeroInt()
 	for _, v := range s.Validators {
 		totalWeight = totalWeight.Add(math.NewIntFromUint64(v.Weight))
@@ -110,28 +107,58 @@ func (s SourceChain) AllocateFundsForValidator(amount math.Int) []ValidatorFund 
 	reminding := amount
 	for i := 0; i < valiLen-1; i++ {
 		allocateAmt := amount.Mul(math.NewIntFromUint64(s.Validators[i].Weight)).Quo(totalWeight)
-		validatorFunds = append(validatorFunds, ValidatorFund{
-			Address: s.Validators[i].Address,
-			Amount:  allocateAmt,
+		allocatedTokenValidators.Validators = append(allocatedTokenValidators.Validators, Validator{
+			Address:     s.Validators[i].Address,
+			TokenAmount: allocateAmt,
+			Weight:      s.Validators[i].Weight,
 		})
 		reminding = reminding.Sub(allocateAmt)
 	}
 
 	// the last validator get all reminding amount
-	validatorFunds = append(validatorFunds, ValidatorFund{
-		Address: s.Validators[valiLen-1].Address,
-		Amount:  reminding,
+	allocatedTokenValidators.Validators = append(allocatedTokenValidators.Validators, Validator{
+		Address:     s.Validators[valiLen-1].Address,
+		TokenAmount: reminding,
+		Weight:      s.Validators[valiLen-1].Weight,
 	})
 
-	return validatorFunds
+	return allocatedTokenValidators
 }
 
-func (s *SourceChain) UpdateWithProxyDelegation(record *ProxyDelegation) {
-	s.StakedAmount = s.StakedAmount.Add(record.Coin.Amount)
-	// TODO update delegation amout for every validators, it't will be used for rebalance.
-	// (1) should not calcaute from weight at now
-	// (2) record at callback'Args
-	// (3) only after successful delegation
+func (s *SourceChain) UpdateWithDelegatedValidators(vals []Validator) {
+	allocValmap := make(map[string]math.Int)
+	totalAmt := math.ZeroInt()
+	for _, v := range vals {
+		allocValmap[v.Address] = v.TokenAmount
+		totalAmt = totalAmt.Add(v.TokenAmount)
+	}
+
+	s.StakedAmount = s.StakedAmount.Add(totalAmt)
+
+	// the total stake amount maybe not equal total amout of the validators when
+	// the validators has be changed. it will be rebalance in `RebalanceValidators` transaction
+	for i, v := range s.Validators {
+		amt := allocValmap[v.Address]
+		s.Validators[i].TokenAmount = s.Validators[i].TokenAmount.Add(amt)
+	}
+}
+
+func (s *SourceChain) UpdateWithUnbondingValidators(vals []Validator) {
+	allocValmap := make(map[string]math.Int)
+	totalAmt := math.ZeroInt()
+	for _, v := range vals {
+		allocValmap[v.Address] = v.TokenAmount
+		totalAmt = totalAmt.Add(v.TokenAmount)
+	}
+
+	s.StakedAmount = s.StakedAmount.Sub(totalAmt)
+
+	// the total stake amount maybe not equal total amout of the validators when
+	// the validators has be changed. it will be rebalance in `RebalanceValidators` transaction
+	for i, v := range s.Validators {
+		amt := allocValmap[v.Address]
+		s.Validators[i].TokenAmount = s.Validators[i].TokenAmount.Sub(amt)
+	}
 }
 
 func (s SourceChain) ValidatorsAddress() string {

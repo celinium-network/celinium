@@ -25,7 +25,7 @@ func init() {
 
 	callbackHandlerRegistry[types.DelegateTransferCall] = delegateTransferCallbackHandler
 	callbackHandlerRegistry[types.DelegateCall] = delegateCallbackHandler
-	callbackHandlerRegistry[types.UnbondCall] = undelegateCallbackHandler
+	callbackHandlerRegistry[types.UndelegateCall] = undelegateCallbackHandler
 	callbackHandlerRegistry[types.WithdrawUnbondCall] = withdrawUnbondCallbackHandler
 	callbackHandlerRegistry[types.WithdrawDelegateRewardCall] = withdrawDelegateRewardCallbackHandler
 	callbackHandlerRegistry[types.TransferRewardCall] = transferRewardCallbackHandler
@@ -45,15 +45,10 @@ func delegateTransferCallbackHandler(k *Keeper, ctx sdk.Context, callback *types
 }
 
 func delegateCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCallback, response []*codectypes.Any) error {
-	proxyDelegationID := sdk.BigEndianToUint64([]byte(callback.Args))
-	delegation, found := k.GetProxyDelegation(ctx, proxyDelegationID)
-	if !found {
-		return nil
-	}
+	var delegateCallbackArgs types.DelegateCallbackArgs
+	k.cdc.MustUnmarshal([]byte(callback.Args), &delegateCallbackArgs)
 
-	k.Logger(ctx).Info(fmt.Sprintf("delegateCallbackHandler, chainID %s epoch %d", delegation.ChainID, delegation.EpochNumber))
-	k.AfterProxyDelegationDone(ctx, delegation, true)
-
+	k.AfterProxyDelegationDone(ctx, &delegateCallbackArgs, true)
 	return nil
 }
 
@@ -81,7 +76,7 @@ func undelegateCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCa
 		if epochUnbondings.Unbondings[i].ChainID != unbondCallArgs.ChainID {
 			continue
 		}
-		epochUnbondings.Unbondings[i].UnbondTIme = uint64(completeTime.UnixNano())
+		epochUnbondings.Unbondings[i].UnbondTime = uint64(completeTime.UnixNano())
 		epochUnbondings.Unbondings[i].Status = types.ProxyUnbondingWaitting
 
 		// update sourcechain
@@ -89,7 +84,8 @@ func undelegateCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCa
 		if !found {
 			return sdkerrors.Wrapf(types.ErrUnknownSourceChain, "unknown source chain, chainID: %s", unbondCallArgs.ChainID)
 		}
-		sourceChain.StakedAmount = sourceChain.StakedAmount.Sub(epochUnbondings.Unbondings[i].RedeemNativeToken.Amount)
+
+		sourceChain.UpdateWithUnbondingValidators(unbondCallArgs.Validators)
 
 		burnedCoin := sdk.Coins{sdk.NewCoin(sourceChain.DerivativeDenom, epochUnbondings.Unbondings[i].BurnedDerivativeAmount)}
 		if err := k.bankKeeper.BurnCoins(ctx, types.ModuleName, burnedCoin); err != nil {
@@ -120,7 +116,7 @@ func withdrawUnbondCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.I
 		}
 		unbondings[i].Status = types.ProxyUnbondingDone
 
-		for _, userUnDelegationID := range unbondings[i].UserUnbondRecordIds {
+		for _, userUnDelegationID := range unbondings[i].UserUnbondingIds {
 			userUnbonding, found := k.GetUserUnbondingID(ctx, userUnDelegationID)
 			if !found {
 				continue

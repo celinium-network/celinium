@@ -47,9 +47,9 @@ func (s *IntegrationTestSuite) mockRegisterSourceChain() *sourceChainParams {
 		valAddr := sdk.ValAddress(accAddr)
 
 		regparams.CliVals.Vals = append(regparams.CliVals.Vals, types.Validator{
-			Address:          valAddr.String(),
-			DelegationAmount: math.ZeroInt(),
-			Weight:           1000000,
+			Address:     valAddr.String(),
+			TokenAmount: math.ZeroInt(),
+			Weight:      1000000,
 		})
 	}
 
@@ -97,7 +97,6 @@ func (s *IntegrationTestSuite) LiquidStakeAddSourceChain(regparams *sourceChainP
 		return nil, err
 	}
 	s.Logf("Liquistake regisor source chain successful, chainID %s", regparams.ChainID)
-	// TODO check registe result ?
 	return &resp.SourceChain, nil
 }
 
@@ -350,7 +349,7 @@ func (s *IntegrationTestSuite) LiquistakeUndelegate(srcChain *types.SourceChain,
 
 	s.waitForNextEpoch(ctlAPIEndpoint, appparams.UndelegationEpochIdentifier, time.Second*10)
 	chainUnbondingResp, _ = queryLiquidstakeProxyUnbonding(s.ctlChain.encfg.Codec, ctlAPIEndpoint, srcChain.ChainID, uint64(epochRes.CurrentEpoch))
-	completeTimeStamp := chainUnbondingResp.ChainUnbonding.UnbondTIme
+	completeTimeStamp := chainUnbondingResp.ChainUnbonding.UnbondTime
 	completeTime := time.Unix(0, int64(completeTimeStamp))
 
 	s.Logf("Undelegate complete time %s", completeTime.Format(time.RFC3339))

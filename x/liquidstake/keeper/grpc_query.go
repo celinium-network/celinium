@@ -119,7 +119,6 @@ func (k Querier) UserUnbonding(goCtx context.Context, req *types.QueryUserUnbond
 	}
 
 	var userUnbondings []types.UserUnbonding
-	// TODO the loop maybe expensive. so get epoch from request?
 	for i := uint64(0); i < uint64(curEpoch.CurrentEpoch); i++ {
 		record, found := k.GetUserUnbonding(ctx, req.ChainID, i, req.User)
 		if !found {

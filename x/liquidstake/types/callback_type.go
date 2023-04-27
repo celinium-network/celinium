@@ -6,7 +6,7 @@ type CallType uint32
 const (
 	DelegateTransferCall CallType = iota
 	DelegateCall
-	UnbondCall
+	UndelegateCall
 	WithdrawUnbondCall
 	WithdrawDelegateRewardCall
 	TransferRewardCall

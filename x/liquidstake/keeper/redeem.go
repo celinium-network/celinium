@@ -11,10 +11,11 @@ import (
 
 // UpdateRedeemRatio update redeemrate for each source chain
 // TODO Record the rate in the last few epochs, and then average?
-// TODO make iterator sourcechain into function, it already used in `CreateProxyDelegationForEpoch`
 func (k Keeper) UpdateRedeemRatio(ctx sdk.Context, records []types.ProxyDelegation) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, types.SouceChainKeyPrefix)
+
+	chainProcessingAmts := k.GetDelegatingAmount(records)
 
 	for ; iterator.Valid(); iterator.Next() {
 		sourcechain := &types.SourceChain{}
@@ -25,10 +26,10 @@ func (k Keeper) UpdateRedeemRatio(ctx sdk.Context, records []types.ProxyDelegati
 			continue
 		}
 
-		processingAmount := k.GetProcessingFundsFromRecords(sourcechain, records)
 		doneAmount := sourcechain.StakedAmount
+		processingAmount, found := chainProcessingAmts[sourcechain.ChainID]
 
-		if processingAmount.IsZero() && doneAmount.IsZero() {
+		if (!found || processingAmount.IsZero()) || (doneAmount.IsNil() || doneAmount.IsZero()) {
 			continue
 		}
 
@@ -38,40 +39,44 @@ func (k Keeper) UpdateRedeemRatio(ctx sdk.Context, records []types.ProxyDelegati
 			continue
 		}
 
-		sourcechain.Redemptionratio = sdk.NewDecFromInt(processingAmount).Add(sdk.NewDecFromInt(doneAmount)).Quo(sdk.NewDecFromInt(derivationAmount.Amount))
+		sourcechain.Redemptionratio = sdk.NewDecFromInt(processingAmount).Add(sdk.NewDecFromInt(doneAmount)).
+			Quo(sdk.NewDecFromInt(derivationAmount.Amount))
 
 		k.SetSourceChain(ctx, sourcechain)
 	}
 }
 
-// TODO, make it return `map[chainID]math.Int`, then just loop it once.
-func (k Keeper) GetProcessingFundsFromRecords(sourceChain *types.SourceChain, records []types.ProxyDelegation) math.Int {
-	amount := math.ZeroInt()
-	for _, record := range records {
-		if record.ChainID != sourceChain.ChainID {
+func (k Keeper) GetDelegatingAmount(delegations []types.ProxyDelegation) map[string]math.Int {
+	chainAmts := make(map[string]math.Int)
+	for _, delegation := range delegations {
+		if !types.IsProxyDelegationProcessing(delegation.Status) {
+			continue
+		}
+		if delegation.Coin.Amount.IsZero() {
 			continue
 		}
 
-		if !types.IsProxyDelegationProcessing(record.Status) {
-			continue
-		}
-		if record.Coin.Amount.IsZero() {
-			continue
-		}
+		amt, found := chainAmts[delegation.ChainID]
 
-		amount = amount.Add(record.Coin.Amount)
+		if !found {
+			chainAmts[delegation.ChainID] = delegation.Coin.Amount
+		} else {
+			chainAmts[delegation.ChainID] = delegation.Coin.Amount.Add(amt)
+		}
 	}
-	return amount
+	return chainAmts
 }
 
 func (k Keeper) ClaimUnbonding(ctx sdk.Context, deletator sdk.AccAddress, epoch uint64, chainID string) (math.Int, error) {
 	undelegationRecord, found := k.GetUserUnbonding(ctx, chainID, epoch, deletator.String())
 	if !found {
-		return math.ZeroInt(), sdkerrors.Wrapf(types.ErrUserUndelegationNotExist, "chainID %s, epoch %d, address %s", chainID, epoch, deletator.String())
+		return math.ZeroInt(), sdkerrors.Wrapf(types.ErrUserUndelegationNotExist, "chainID %s, epoch %d, address %s",
+			chainID, epoch, deletator.String())
 	}
 
 	if undelegationRecord.CliamStatus != types.UserUnbondingClaimable {
-		return math.ZeroInt(), sdkerrors.Wrapf(types.ErrUserUndelegationWatting, "chainID %s, epoch %d, address %s", chainID, epoch, deletator.String())
+		return math.ZeroInt(), sdkerrors.Wrapf(types.ErrUserUndelegationWatting, "chainID %s, epoch %d, address %s",
+			chainID, epoch, deletator.String())
 	}
 
 	sourceChain, found := k.GetSourceChain(ctx, chainID)

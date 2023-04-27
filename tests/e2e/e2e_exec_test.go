@@ -253,7 +253,6 @@ func (s *IntegrationTestSuite) execBankSend(
 	expectErr bool,
 	opt ...flagOption,
 ) {
-	// TODO remove the hardcode opt after refactor, all methods should accept custom flags
 	opt = append(opt, withKeyValue(flagFees, fees))
 	opt = append(opt, withKeyValue(flagFrom, from))
 	opts := applyOptions(c, opt)

@@ -24,6 +24,7 @@ message DelegateCallbackArgs{
     // Validators with delegate funds
     repeated Validator validators  = 1 [(gogoproto.nullable)   = false];
     
+    uint64  proxyDelegationID = 2;
 }
 
 message UnbondCallbackArgs{
