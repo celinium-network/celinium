@@ -44,7 +44,7 @@ Step 2: Query the wallet balance in the celinium container
           total: "0"
         
 Step 3: Transfer from gaia to celinium            
-    docker compose exec gaia-validator-1 /opt/helper.sh wallet:ibc_transfer celi12s4myx5yehre3dte4v0lt3qtgj4jvs7n0jhu02 100000000000000ATOM
+    docker compose exec gaia-validator-1 /opt/helper.sh wallet:ibc_transfer celi1tuzx7hxh2nqxdqqj0xpwwmtumjnzsxptrlcnj2 100000000000000ATOM
     Query the balance again
         balances:
         - amount: "9999999999999999000000000"
@@ -57,7 +57,7 @@ Step 3: Transfer from gaia to celinium
     04C1A8B4EC211C89630916F8424F16DC9611148A5F300C122464CE8E996AABD0=Hash(transfer/channel-0/ATOM)
 
 Step 4: Register source chain on celinium                  
-    docker compose exec celinium /opt/liquidstake.sh register_source_chain gaia connection-0 channel-0 cosmosvaloper '{"Vals": [{"weight": 100000000,"address":"cosmosvaloper1wtn9y4repdakrwmualym506hancyygs9ndqyyk"}]}' ATOM vpATOM
+    docker compose exec celinium /opt/liquidstake.sh register_source_chain gaia connection-0 channel-0 cosmosvaloper '{"Vals": [{"weight": 100000000,"address":"cosmosvaloper1yra0kzameulzf6zej6etxffy4rkcevq5nmlqy4"}]}' ATOM vpATOM
 
     {"Vals": [{"weight": 100000000,"address":"cosmosvaloper1lgj6z9ujsv2pszwctcem47x8t0ys3tcmvsszte"}]}, 
     this is the target validator for delegation on gaia.

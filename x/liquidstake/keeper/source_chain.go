@@ -41,7 +41,8 @@ func (k Keeper) AddSouceChain(ctx sdk.Context, sourceChain *types.SourceChain) e
 	for _, a := range icaAccounts {
 		k.accountKeeper.NewAccount(ctx, a)
 		k.accountKeeper.SetAccount(ctx, a)
-		if err := k.icaCtlKeeper.RegisterInterchainAccount(ctx, sourceChain.ConnectionID, a.GetAddress().String(), string(icaVersion)); err != nil {
+		if err := k.icaCtlKeeper.RegisterInterchainAccount(ctx, sourceChain.ConnectionID,
+			a.GetAddress().String(), string(icaVersion)); err != nil {
 			return err
 		}
 	}

@@ -1,6 +1,7 @@
 package liquidstake
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/spf13/cobra"
@@ -54,7 +55,11 @@ func (AppModuleBasic) Name() string {
 }
 
 // RegisterGRPCGatewayRoutes implements module.AppModuleBasic
-func (AppModuleBasic) RegisterGRPCGatewayRoutes(client.Context, *runtime.ServeMux) {
+func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
+	err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
+	if err != nil {
+		panic(err)
+	}
 }
 
 // RegisterInterfaces implements module.AppModuleBasic
