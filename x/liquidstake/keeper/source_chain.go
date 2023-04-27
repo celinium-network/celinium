@@ -52,16 +52,16 @@ func (k Keeper) AddSouceChain(ctx sdk.Context, sourceChain *types.SourceChain) e
 		return sdkerrors.Wrapf(types.ErrUnknownEpoch, "unknown epoch, epoch identifier: %s", appparams.DelegationEpochIdentifier)
 	}
 
-	k.createChainEpochDelegationRecord(ctx, uint64(delegatieEpochInfo.CurrentEpoch), sourceChain.ChainID, sourceChain.IbcDenom)
+	k.createProxyDelegation(ctx, uint64(delegatieEpochInfo.CurrentEpoch), sourceChain.ChainID, sourceChain.IbcDenom)
 
 	k.SetSourceChain(ctx, sourceChain)
 
 	return nil
 }
 
-// CreateEpochDelegationRecord create a new DelegationRecord in current epoch for all available chain.
-// If current epoch already has DelegationRecord for the chain, then do nothing
-func (k Keeper) CreateEpochDelegationRecord(ctx sdk.Context, epochNumber uint64) {
+// CreateProxyDelegationForEpoch create a new ProxyDelegation in current epoch for all available chain.
+// If current epoch already has ProxyDelegation for the chain, then do nothing
+func (k Keeper) CreateProxyDelegationForEpoch(ctx sdk.Context, epochNumber uint64) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, types.SouceChainKeyPrefix)
 
@@ -74,80 +74,80 @@ func (k Keeper) CreateEpochDelegationRecord(ctx sdk.Context, epochNumber uint64)
 			continue
 		}
 
-		if _, found := k.GetChianDelegationRecordID(ctx, sourcechain.ChainID, epochNumber); found {
+		if _, found := k.GetChianProxyDelegationID(ctx, sourcechain.ChainID, epochNumber); found {
 			continue
 		}
 
-		k.createChainEpochDelegationRecord(ctx, epochNumber, sourcechain.ChainID, sourcechain.IbcDenom)
+		k.createProxyDelegation(ctx, epochNumber, sourcechain.ChainID, sourcechain.IbcDenom)
 	}
 }
 
-func (k Keeper) createChainEpochDelegationRecord(ctx sdk.Context, epochNumber uint64, chainID string, stakeDenom string) *types.DelegationRecord {
-	id := k.GetDelegationRecordID(ctx)
+func (k Keeper) createProxyDelegation(ctx sdk.Context, epochNumber uint64, chainID string, stakeDenom string) *types.ProxyDelegation {
+	id := k.GetProxyDelegationID(ctx)
 
-	record := types.DelegationRecord{
-		Id:             id,
-		DelegationCoin: sdk.NewCoin(stakeDenom, sdk.ZeroInt()),
-		Status:         types.DelegationPending,
-		EpochNumber:    epochNumber,
-		ChainID:        chainID,
+	delegation := types.ProxyDelegation{
+		Id:          id,
+		Coin:        sdk.NewCoin(stakeDenom, sdk.ZeroInt()),
+		Status:      types.ProxyDelegationPending,
+		EpochNumber: epochNumber,
+		ChainID:     chainID,
 	}
 
-	k.SetChainDelegationRecordID(ctx, chainID, epochNumber, id)
+	k.SetChainProxyDelegationID(ctx, chainID, epochNumber, id)
 
-	k.SetDelegationRecord(ctx, id, &record)
+	k.SetProxyDelegation(ctx, id, &delegation)
 
-	k.IncreaseDelegationRecordID(ctx)
+	k.IncreaseProxyDelegationID(ctx)
 
-	return &record
+	return &delegation
 }
 
-// CreateEpochUnbondings a new unbonding in current epoch.
-func (k Keeper) CreateEpochUnbondings(ctx sdk.Context, epochNumber uint64) *types.EpochUnbondings {
-	_, found := k.GetEpochUnboundings(ctx, epochNumber)
+// CreateProxyUnbondingForEpoch a new unbonding in current epoch.
+func (k Keeper) CreateProxyUnbondingForEpoch(ctx sdk.Context, epochNumber uint64) *types.EpochProxyUnbonding {
+	_, found := k.GetEpochProxyUnboundings(ctx, epochNumber)
 	if found {
 		return nil
 	}
 
-	epochUnbonding := types.EpochUnbondings{
+	epochUnbonding := types.EpochProxyUnbonding{
 		Epoch:      epochNumber,
-		Unbondings: []types.Unbonding{},
+		Unbondings: []types.ProxyUnbonding{},
 	}
 
-	k.SetEpochUnboundings(ctx, &epochUnbonding)
+	k.SetEpochProxyUnboundings(ctx, &epochUnbonding)
 
 	return &epochUnbonding
 }
 
-// GetDelegationRecord return DelegationRecord by id
-func (k Keeper) GetDelegationRecord(ctx sdk.Context, id uint64) (*types.DelegationRecord, bool) {
+// GetProxyDelegation return ProxyDelegation by id
+func (k Keeper) GetProxyDelegation(ctx sdk.Context, id uint64) (*types.ProxyDelegation, bool) {
 	store := ctx.KVStore(k.storeKey)
 
-	bz := store.Get(types.GetDelegationRecordKey(id))
+	bz := store.Get(types.GetProxyDelegationKey(id))
 	if bz == nil {
 		return nil, false
 	}
 
-	record := &types.DelegationRecord{}
-	k.cdc.MustUnmarshal(bz, record)
+	delegation := &types.ProxyDelegation{}
+	k.cdc.MustUnmarshal(bz, delegation)
 
-	return record, true
+	return delegation, true
 }
 
-// SetDelegationRecord store DelegationRecord
-func (k Keeper) SetDelegationRecord(ctx sdk.Context, id uint64, record *types.DelegationRecord) {
+// SetProxyDelegation store ProxyDelegation
+func (k Keeper) SetProxyDelegation(ctx sdk.Context, id uint64, delegation *types.ProxyDelegation) {
 	store := ctx.KVStore(k.storeKey)
 
-	bz := k.cdc.MustMarshal(record)
+	bz := k.cdc.MustMarshal(delegation)
 
-	store.Set(types.GetDelegationRecordKey(id), bz)
+	store.Set(types.GetProxyDelegationKey(id), bz)
 }
 
-// GetChianDelegationRecordID get DelegationRecord's ID of a chain by epoch and chainID
-func (k Keeper) GetChianDelegationRecordID(ctx sdk.Context, chainID string, epochNumber uint64) (uint64, bool) {
+// GetChianProxyDelegationID get ProxyDelegation's ID of a chain by epoch and chainID
+func (k Keeper) GetChianProxyDelegationID(ctx sdk.Context, chainID string, epochNumber uint64) (uint64, bool) {
 	store := ctx.KVStore(k.storeKey)
 
-	bz := store.Get(types.GeChainDelegationRecordIDForEpochKey(epochNumber, []byte(chainID)))
+	bz := store.Get(types.GetChainProxyDelegationIDForEpochKey(epochNumber, []byte(chainID)))
 
 	if len(bz) == 0 {
 		return 0, false
@@ -156,11 +156,11 @@ func (k Keeper) GetChianDelegationRecordID(ctx sdk.Context, chainID string, epoc
 	return sdk.BigEndianToUint64(bz), true
 }
 
-// SetChianDelegationRecordID set DelegationRecord's ID  of chain at specific epoch and chainID
-func (k Keeper) SetChainDelegationRecordID(ctx sdk.Context, chainID string, epochNumber uint64, recordID uint64) {
+// SetChianProxyDelegationID set ProxyDelegation's ID  of chain at specific epoch and chainID
+func (k Keeper) SetChainProxyDelegationID(ctx sdk.Context, chainID string, epochNumber uint64, delegationID uint64) {
 	store := ctx.KVStore(k.storeKey)
 
-	store.Set(types.GeChainDelegationRecordIDForEpochKey(epochNumber, []byte(chainID)), sdk.Uint64ToBigEndian(recordID))
+	store.Set(types.GetChainProxyDelegationIDForEpochKey(epochNumber, []byte(chainID)), sdk.Uint64ToBigEndian(delegationID))
 }
 
 func (k Keeper) GetSourceChainAddr(ctx sdk.Context, connectionID string, ctlAddress string) (string, error) {

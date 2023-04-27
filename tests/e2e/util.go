@@ -56,18 +56,18 @@ func concatFlags(originalCollection []string, commandFlags []string, generalFlag
 	return originalCollection
 }
 
-func compareDelegationRecord(oriRecord, targetRecord *liquidstaketypes.DelegationRecord) bool {
+func compareProxyDelegation(oriRecord, targetRecord *liquidstaketypes.ProxyDelegation) bool {
 	if strings.Compare(oriRecord.ChainID, targetRecord.ChainID) != 0 {
 		return false
 	}
 	if oriRecord.EpochNumber != targetRecord.EpochNumber {
 		return false
 	}
-	if strings.Compare(oriRecord.DelegationCoin.Denom, targetRecord.DelegationCoin.GetDenom()) != 0 {
+	if strings.Compare(oriRecord.Coin.Denom, targetRecord.Coin.GetDenom()) != 0 {
 		return false
 	}
 
-	if !oriRecord.DelegationCoin.Amount.Equal(targetRecord.DelegationCoin.Amount) {
+	if !oriRecord.Coin.Amount.Equal(targetRecord.Coin.Amount) {
 		return false
 	}
 	if oriRecord.Status != targetRecord.Status {

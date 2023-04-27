@@ -33,7 +33,7 @@ func (suite *KeeperTestSuite) TestCreateEpochUnbonding() {
 
 	// check epoch unbonding at epoch 2
 	controlChainApp := getCeliniumApp(suite.controlChain)
-	unbonding, found := controlChainApp.LiquidStakeKeeper.GetEpochUnboundings(suite.controlChain.GetContext(), 2)
+	unbonding, found := controlChainApp.LiquidStakeKeeper.GetEpochProxyUnboundings(suite.controlChain.GetContext(), 2)
 
 	suite.True(found)
 	suite.Equal(len(unbonding.Unbondings), 0)
@@ -81,13 +81,13 @@ func (suite *KeeperTestSuite) TestUndelegate() {
 	suite.relayIBCPacketFromCtlToSrc(nextBlockBeginRes.Events, ctlChainUserAddr)
 
 	ctx = suite.controlChain.GetContext()
-	epochUnbonding, found := ctlChainApp.LiquidStakeKeeper.GetEpochUnboundings(ctx, 2)
+	epochUnbonding, found := ctlChainApp.LiquidStakeKeeper.GetEpochProxyUnboundings(ctx, 2)
 	suite.True(found)
 	for _, unbonding := range epochUnbonding.Unbondings {
 		if unbonding.ChainID != srcChainParams.ChainID {
 			continue
 		}
-		suite.Equal(unbonding.Status, types.UnbondingWaitting)
+		suite.Equal(unbonding.Status, types.ProxyUnbondingWaitting)
 
 		suite.True(unbonding.BurnedDerivativeAmount.Equal(testCoin.Amount))
 		suite.True(unbonding.RedeemNativeToken.Amount.Equal(testCoin.Amount))
@@ -154,12 +154,12 @@ func (suite *KeeperTestSuite) TestWithdrawCompleteUnbond() {
 
 	suite.WaitForUnbondingComplete(sourceChainParams, 2)
 
-	epochUnbonding, _ := controlChainApp.LiquidStakeKeeper.GetEpochUnboundings(suite.controlChain.GetContext(), 2)
+	epochUnbonding, _ := controlChainApp.LiquidStakeKeeper.GetEpochProxyUnboundings(suite.controlChain.GetContext(), 2)
 	for _, unbonding := range epochUnbonding.Unbondings {
 		if unbonding.ChainID != sourceChainParams.ChainID {
 			continue
 		}
-		suite.Equal(unbonding.Status, types.UnbondingDone)
+		suite.Equal(unbonding.Status, types.ProxyUnbondingDone)
 	}
 	amt := controlChainApp.BankKeeper.GetBalance(
 		suite.controlChain.GetContext(),
@@ -177,7 +177,7 @@ func (suite *KeeperTestSuite) WaitForUnbondingComplete(sourceChainParams *types.
 	ctlChainUserAddr := ctlChainUserAccAddr.String()
 
 	ctx := suite.controlChain.GetContext()
-	epochUnbonding, found := controlChainApp.LiquidStakeKeeper.GetEpochUnboundings(ctx, unbondingEpoch)
+	epochUnbonding, found := controlChainApp.LiquidStakeKeeper.GetEpochProxyUnboundings(ctx, unbondingEpoch)
 	suite.True(found)
 
 	var unbondCompleteTime time.Time
@@ -185,7 +185,7 @@ func (suite *KeeperTestSuite) WaitForUnbondingComplete(sourceChainParams *types.
 		if unbonding.ChainID != sourceChainParams.ChainID {
 			continue
 		}
-		suite.Equal(unbonding.Status, types.UnbondingWaitting)
+		suite.Equal(unbonding.Status, types.ProxyUnbondingWaitting)
 		unbondCompleteTime = time.Unix(0, int64(unbonding.UnbondTIme))
 	}
 

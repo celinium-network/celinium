@@ -148,21 +148,21 @@ func (s *IntegrationTestSuite) LiquistakeDelegate(sourceChain *types.SourceChain
 	s.NoError(err)
 
 	s.True(ibcBalBefore.Sub(ibcBalAfter).Amount.Equal(amount))
-	resp, err := queryLiquidstakeDelegationRecord(s.ctlChain.encfg.Codec, chainBAPIEndpoint, s.srcChain.ID, curEpoch)
+	resp, err := queryLiquidstakeDelegation(s.ctlChain.encfg.Codec, chainBAPIEndpoint, s.srcChain.ID, curEpoch)
 	s.NoError(err)
 
-	targetDelegationRecord := types.DelegationRecord{
-		DelegationCoin: sdk.Coin{
+	targetProxyDelegation := types.ProxyDelegation{
+		Coin: sdk.Coin{
 			Denom:  sourceChain.IbcDenom,
 			Amount: amount,
 		},
-		Status:            types.DelegationPending,
+		Status:            types.ProxyDelegationPending,
 		EpochNumber:       curEpoch,
 		ChainID:           sourceChain.ChainID,
 		TransferredAmount: math.ZeroInt(),
 	}
 
-	s.True(compareDelegationRecord(&resp.Record, &targetDelegationRecord))
+	s.True(compareProxyDelegation(&resp.Record, &targetProxyDelegation))
 	s.Logf("Liquistake begin delegate successful")
 }
 
@@ -224,14 +224,14 @@ func (s *IntegrationTestSuite) LiquidstakeReinvest(sourceChain *types.SourceChai
 	// 1) The withdrawal account of delegation has been set to the interchain account corresponding to
 	//	  the withdrawal address in the source chain.
 	// 2) The withdrawal account withdraws the reward and transfers it to the delegate address.
-	// 3) The DelegationRecord belonging to the current epoch has recorded the transferred reward funds.
+	// 3) The ProxyDelegation belonging to the current epoch has recorded the transferred reward funds.
 
 	/* begin check */
 	resp, err := queryCurEpoch(s.ctlChain.encfg.Codec, ctlAPIEndpoint, appparams.DelegationEpochIdentifier)
 	s.NoError(err)
 
 	// check trannferred amount
-	rcResp, err := queryLiquidstakeDelegationRecord(s.ctlChain.encfg.Codec, ctlAPIEndpoint, sourceChain.ChainID, uint64(resp.CurrentEpoch))
+	rcResp, err := queryLiquidstakeDelegation(s.ctlChain.encfg.Codec, ctlAPIEndpoint, sourceChain.ChainID, uint64(resp.CurrentEpoch))
 	s.NoError(err)
 	s.True(rcResp.Record.TransferredAmount.GT(delegateReward))
 
@@ -331,7 +331,7 @@ func (s *IntegrationTestSuite) LiquistakeUndelegate(srcChain *types.SourceChain,
 	epochRes, err := queryCurEpoch(s.ctlChain.encfg.Codec, ctlAPIEndpoint, appparams.UndelegationEpochIdentifier)
 	s.NoError(err)
 
-	chainUnbondingResp, err := queryLiquidstakeChainUnbonding(s.ctlChain.encfg.Codec, ctlAPIEndpoint, srcChain.ChainID, uint64(epochRes.CurrentEpoch))
+	chainUnbondingResp, err := queryLiquidstakeProxyUnbonding(s.ctlChain.encfg.Codec, ctlAPIEndpoint, srcChain.ChainID, uint64(epochRes.CurrentEpoch))
 	s.NoError(err)
 	fmt.Println(chainUnbondingResp)
 
@@ -341,15 +341,15 @@ func (s *IntegrationTestSuite) LiquistakeUndelegate(srcChain *types.SourceChain,
 	// check user undelegate reocrd
 	userUnbondingResp, err := queryLiquidstakeUserUnbonding(s.ctlChain.encfg.Codec, ctlAPIEndpoint, srcChain.ChainID, ctlUser)
 	s.NoError(err)
-	for _, rc := range userUnbondingResp.UndelegationRecords {
+	for _, rc := range userUnbondingResp.UserUnbondings {
 		if rc.Epoch == uint64(epochRes.CurrentEpoch) {
-			s.True(rc.RedeemToken.Amount.Equal(undelegateAmount.Add(rewardAmount)))
-			s.Equal(rc.CliamStatus, types.UndelegationPending)
+			s.True(rc.RedeemCoin.Amount.Equal(undelegateAmount.Add(rewardAmount)))
+			s.Equal(rc.CliamStatus, types.UserUnbondingPending)
 		}
 	}
 
 	s.waitForNextEpoch(ctlAPIEndpoint, appparams.UndelegationEpochIdentifier, time.Second*10)
-	chainUnbondingResp, _ = queryLiquidstakeChainUnbonding(s.ctlChain.encfg.Codec, ctlAPIEndpoint, srcChain.ChainID, uint64(epochRes.CurrentEpoch))
+	chainUnbondingResp, _ = queryLiquidstakeProxyUnbonding(s.ctlChain.encfg.Codec, ctlAPIEndpoint, srcChain.ChainID, uint64(epochRes.CurrentEpoch))
 	completeTimeStamp := chainUnbondingResp.ChainUnbonding.UnbondTIme
 	completeTime := time.Unix(0, int64(completeTimeStamp))
 
@@ -362,10 +362,10 @@ func (s *IntegrationTestSuite) LiquistakeUndelegate(srcChain *types.SourceChain,
 
 	userUnbondingResp, err = queryLiquidstakeUserUnbonding(s.ctlChain.encfg.Codec, ctlAPIEndpoint, srcChain.ChainID, ctlUser)
 	s.NoError(err)
-	for _, rc := range userUnbondingResp.UndelegationRecords {
+	for _, rc := range userUnbondingResp.UserUnbondings {
 		if rc.Epoch == uint64(epochRes.CurrentEpoch) {
-			s.True(rc.RedeemToken.Amount.Equal(undelegateAmount.Add(rewardAmount)))
-			s.Equal(rc.CliamStatus, types.UndelegationClaimable)
+			s.True(rc.RedeemCoin.Amount.Equal(undelegateAmount.Add(rewardAmount)))
+			s.Equal(rc.CliamStatus, types.UserUnbondingClaimable)
 		}
 	}
 

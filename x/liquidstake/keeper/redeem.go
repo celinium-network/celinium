@@ -11,8 +11,8 @@ import (
 
 // UpdateRedeemRatio update redeemrate for each source chain
 // TODO Record the rate in the last few epochs, and then average?
-// TODO make iterator sourcechain into function, it already used in `CreateDelegationRecordForEpoch`
-func (k Keeper) UpdateRedeemRatio(ctx sdk.Context, records []types.DelegationRecord) {
+// TODO make iterator sourcechain into function, it already used in `CreateProxyDelegationForEpoch`
+func (k Keeper) UpdateRedeemRatio(ctx sdk.Context, records []types.ProxyDelegation) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, types.SouceChainKeyPrefix)
 
@@ -45,32 +45,32 @@ func (k Keeper) UpdateRedeemRatio(ctx sdk.Context, records []types.DelegationRec
 }
 
 // TODO, make it return `map[chainID]math.Int`, then just loop it once.
-func (k Keeper) GetProcessingFundsFromRecords(sourceChain *types.SourceChain, records []types.DelegationRecord) math.Int {
+func (k Keeper) GetProcessingFundsFromRecords(sourceChain *types.SourceChain, records []types.ProxyDelegation) math.Int {
 	amount := math.ZeroInt()
 	for _, record := range records {
 		if record.ChainID != sourceChain.ChainID {
 			continue
 		}
 
-		if !types.IsDelegationRecordProcessing(record.Status) {
+		if !types.IsProxyDelegationProcessing(record.Status) {
 			continue
 		}
-		if record.DelegationCoin.Amount.IsZero() {
+		if record.Coin.Amount.IsZero() {
 			continue
 		}
 
-		amount = amount.Add(record.DelegationCoin.Amount)
+		amount = amount.Add(record.Coin.Amount)
 	}
 	return amount
 }
 
-func (k Keeper) ClaimUndelegation(ctx sdk.Context, deletator sdk.AccAddress, epoch uint64, chainID string) (math.Int, error) {
-	undelegationRecord, found := k.GetUndelegationRecord(ctx, chainID, epoch, deletator.String())
+func (k Keeper) ClaimUnbonding(ctx sdk.Context, deletator sdk.AccAddress, epoch uint64, chainID string) (math.Int, error) {
+	undelegationRecord, found := k.GetUserUnbonding(ctx, chainID, epoch, deletator.String())
 	if !found {
 		return math.ZeroInt(), sdkerrors.Wrapf(types.ErrUserUndelegationNotExist, "chainID %s, epoch %d, address %s", chainID, epoch, deletator.String())
 	}
 
-	if undelegationRecord.CliamStatus != types.UndelegationClaimable {
+	if undelegationRecord.CliamStatus != types.UserUnbondingClaimable {
 		return math.ZeroInt(), sdkerrors.Wrapf(types.ErrUserUndelegationWatting, "chainID %s, epoch %d, address %s", chainID, epoch, deletator.String())
 	}
 
@@ -84,13 +84,13 @@ func (k Keeper) ClaimUndelegation(ctx sdk.Context, deletator sdk.AccAddress, epo
 		return math.ZeroInt(), err
 	}
 
-	err = k.sendCoinsFromAccountToAccount(ctx, chainDelegatorAccAddress, deletator, sdk.NewCoins(undelegationRecord.RedeemToken))
+	err = k.sendCoinsFromAccountToAccount(ctx, chainDelegatorAccAddress, deletator, sdk.NewCoins(undelegationRecord.RedeemCoin))
 	if err != nil {
 		return math.ZeroInt(), err
 	}
 
-	undelegationRecord.CliamStatus = types.UndelegationComplete
+	undelegationRecord.CliamStatus = types.UserUnbondingComplete
 
-	k.SetUndelegationRecord(ctx, undelegationRecord)
+	k.SetUserUnbonding(ctx, undelegationRecord)
 	return math.ZeroInt(), nil
 }

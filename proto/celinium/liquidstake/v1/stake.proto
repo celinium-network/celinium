@@ -8,14 +8,14 @@ import "cosmos/base/v1beta1/coin.proto";
 option go_package = "celinium/x/liquidstake/types";
 
 // The record of source chain delegation in a epoch.  
-message DelegationRecord{
+message ProxyDelegation{
     uint64 id = 1;
     
     // Users delegated tokens accumulated by the specified epoch
-    cosmos.base.v1beta1.Coin delegationCoin = 2 [(gogoproto.nullable) = false]; 
+    cosmos.base.v1beta1.Coin coin = 2 [(gogoproto.nullable) = false]; 
     
     // Status of the record.
-    // A DelegationRecord goes through the following status:
+    // A ProxyDelegation goes through the following status:
     //   1) Pending: The epoch he is in is not over yet
     //   2) Transfering: Transferring user-delegated funds back to the source chain.
     //   3) Transferred: Transfer back to source chain successfully.Because the funds
@@ -27,7 +27,7 @@ message DelegationRecord{
     //   1）TransferFailed: An error occurred during the process of transferring funds back to the source chain.
     //   2) DelegateFailed: An error occurred during the process of delegating in source chain. 
     uint32  status = 3[
-        (gogoproto.customtype) = "DelegationRecordStatus",
+        (gogoproto.customtype) = "ProxyDelegationStatus",
         (gogoproto.nullable) = false
     ];
 
@@ -46,7 +46,7 @@ message DelegationRecord{
 }
 
 // UndelegationRecord represents a record of a delegator's undelegation action.
-message UndelegationRecord{
+message UserUnbonding{
     // Unique identifier for the undelegation record
     string ID = 1;
 
@@ -63,21 +63,21 @@ message UndelegationRecord{
     string receiver =5;
 
      // The amount and type of funds to be redeemed.
-    cosmos.base.v1beta1.Coin redeemToken = 6 [(gogoproto.nullable) = false];
+    cosmos.base.v1beta1.Coin redeemCoin = 6 [(gogoproto.nullable) = false];
 
     // The redemption status of the undelegation.
     // 1) Pending: The undelegation request has been submitted but not yet processed or completed.
     // 2) Claimable: The undelegation has been processed and the funds are available to be claimed by the delegator.
     // 3) Complete: The funds have been successfully claimed by the delegator.
     uint32 cliamStatus = 7[
-        (gogoproto.customtype) = "UndelegationRecordStatus",
+        (gogoproto.customtype) = "UserUnbondingStatus",
         (gogoproto.nullable) = false
     ];
 }
 
 // Represents a record of an unbonding transaction, which captures the derivative token that was burned 
 // and the native token that is to be redeemed. 
-message Unbonding {
+message ProxyUnbonding {
     string chainID = 1;
     string burnedDerivativeAmount = 2[
         (cosmos_proto.scalar)  = "cosmos.Int",
@@ -97,7 +97,7 @@ message Unbonding {
     // 4) Transfering: Unbonding period has elapsed, redeeming funds from the source chain
     // 5) Done: funds have been successfully redeemed
     uint32 status = 5[
-        (gogoproto.customtype) = "UnbondingStatus",
+        (gogoproto.customtype) = "ProxyUnbondingStatus",
         (gogoproto.nullable) = false
     ];
 
@@ -106,12 +106,12 @@ message Unbonding {
 }
 
 // Represents a collection of unbonding entries for a given epoch.
-message EpochUnbondings{
+message EpochProxyUnbonding{
     // The epoch number.
     uint64 epoch = 1;
 
     // The unbonding entries.
-    repeated Unbonding unbondings = 2 [(gogoproto.nullable) = false]; 
+    repeated ProxyUnbonding unbondings = 2 [(gogoproto.nullable) = false]; 
 }
 
 message IBCQuery{

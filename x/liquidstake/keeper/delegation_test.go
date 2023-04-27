@@ -10,14 +10,14 @@ import (
 	appparams "github.com/celinium-network/celinium/app/params"
 )
 
-func (suite *KeeperTestSuite) TestCreateNewDelegationRecordAtEpochStart() {
+func (suite *KeeperTestSuite) TestCreateNewProxyDelegationAtEpochStart() {
 	suite.setSourceChainAndEpoch(suite.generateSourceChainParams(), suite.delegationEpoch())
 
 	controlChainApp := getCeliniumApp(suite.controlChain)
 
 	ctx := suite.controlChain.GetContext()
-	nextDelegationRecordID := controlChainApp.LiquidStakeKeeper.GetDelegationRecordID(ctx)
-	_, found := controlChainApp.LiquidStakeKeeper.GetDelegationRecord(ctx, nextDelegationRecordID-1)
+	nextProxyDelegationID := controlChainApp.LiquidStakeKeeper.GetProxyDelegationID(ctx)
+	_, found := controlChainApp.LiquidStakeKeeper.GetProxyDelegation(ctx, nextProxyDelegationID-1)
 	suite.True(found)
 }
 
@@ -43,10 +43,10 @@ func (suite *KeeperTestSuite) TestDelegate() {
 	suite.True(balAfter.Amount.Add(testCoin.Amount).Equal(bal.Amount))
 	suite.True(derivativeBalAfter.Amount.Sub(testCoin.Amount).Equal(derivativeBalBefore.Amount))
 
-	nextDelegationRecordID := controlChainApp.LiquidStakeKeeper.GetDelegationRecordID(ctx)
-	delegationRecord, found := controlChainApp.LiquidStakeKeeper.GetDelegationRecord(ctx, nextDelegationRecordID-1)
+	nextProxyDelegationID := controlChainApp.LiquidStakeKeeper.GetProxyDelegationID(ctx)
+	proxyDelegation, found := controlChainApp.LiquidStakeKeeper.GetProxyDelegation(ctx, nextProxyDelegationID-1)
 	suite.True(found)
-	suite.True(delegationRecord.DelegationCoin.Amount.Equal(testCoin.Amount))
+	suite.True(proxyDelegation.Coin.Amount.Equal(testCoin.Amount))
 }
 
 func (suite *KeeperTestSuite) TestDelegateWithDiffRedeemRatio() {

@@ -104,7 +104,7 @@ func (ms msgServer) Undelegate(goCtx goctx.Context, msg *types.MsgUndelegate) (*
 			sdk.NewAttribute(types.AttributeKeySourceChainID, msg.ChainID),
 			sdk.NewAttribute(types.AttributeKeyEpoch, strconv.FormatUint(record.Epoch, 10)),
 			sdk.NewAttribute(types.AttributeKeyUnbondAmt, msg.Amount.String()),
-			sdk.NewAttribute(types.AttributeKeyRedeemAmt, record.RedeemToken.Amount.String()),
+			sdk.NewAttribute(types.AttributeKeyRedeemAmt, record.RedeemCoin.Amount.String()),
 		),
 	)
 	return &types.MsgUndelegateResponse{}, nil
@@ -115,7 +115,7 @@ func (ms msgServer) Claim(goCtx goctx.Context, msg *types.MsgClaim) (*types.MsgC
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	delegatorAccAddress := sdk.MustAccAddressFromBech32(msg.Delegator)
-	claimAmt, err := ms.keeper.ClaimUndelegation(ctx, delegatorAccAddress, msg.Epoch, msg.ChainId)
+	claimAmt, err := ms.keeper.ClaimUnbonding(ctx, delegatorAccAddress, msg.Epoch, msg.ChainId)
 	if err != nil {
 		return nil, nil
 	}

@@ -26,12 +26,12 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // The record of source chain delegation in a epoch.
-type DelegationRecord struct {
+type ProxyDelegation struct {
 	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	// Users delegated tokens accumulated by the specified epoch
-	DelegationCoin types.Coin `protobuf:"bytes,2,opt,name=delegationCoin,proto3" json:"delegationCoin"`
+	Coin types.Coin `protobuf:"bytes,2,opt,name=coin,proto3" json:"coin"`
 	// Status of the record.
-	// A DelegationRecord goes through the following status:
+	// A ProxyDelegation goes through the following status:
 	//   1) Pending: The epoch he is in is not over yet
 	//   2) Transfering: Transferring user-delegated funds back to the source chain.
 	//   3) Transferred: Transfer back to source chain successfully.Because the funds
@@ -42,7 +42,7 @@ type DelegationRecord struct {
 	// Above is a successful state, but there are also states that represent failure.
 	//   1）TransferFailed: An error occurred during the process of transferring funds back to the source chain.
 	//   2) DelegateFailed: An error occurred during the process of delegating in source chain.
-	Status DelegationRecordStatus `protobuf:"varint,3,opt,name=status,proto3,customtype=DelegationRecordStatus" json:"status"`
+	Status ProxyDelegationStatus `protobuf:"varint,3,opt,name=status,proto3,customtype=ProxyDelegationStatus" json:"status"`
 	// The number of created epoch
 	EpochNumber uint64 `protobuf:"varint,4,opt,name=epochNumber,proto3" json:"epochNumber,omitempty"`
 	ChainID     string `protobuf:"bytes,5,opt,name=chainID,proto3" json:"chainID,omitempty"`
@@ -51,18 +51,18 @@ type DelegationRecord struct {
 	TransferredAmount Int `protobuf:"bytes,6,opt,name=transferredAmount,proto3,customtype=Int" json:"transferredAmount"`
 }
 
-func (m *DelegationRecord) Reset()         { *m = DelegationRecord{} }
-func (m *DelegationRecord) String() string { return proto.CompactTextString(m) }
-func (*DelegationRecord) ProtoMessage()    {}
-func (*DelegationRecord) Descriptor() ([]byte, []int) {
+func (m *ProxyDelegation) Reset()         { *m = ProxyDelegation{} }
+func (m *ProxyDelegation) String() string { return proto.CompactTextString(m) }
+func (*ProxyDelegation) ProtoMessage()    {}
+func (*ProxyDelegation) Descriptor() ([]byte, []int) {
 	return fileDescriptor_9beff2e65f7b246b, []int{0}
 }
-func (m *DelegationRecord) XXX_Unmarshal(b []byte) error {
+func (m *ProxyDelegation) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *DelegationRecord) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *ProxyDelegation) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_DelegationRecord.Marshal(b, m, deterministic)
+		return xxx_messageInfo_ProxyDelegation.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -72,40 +72,40 @@ func (m *DelegationRecord) XXX_Marshal(b []byte, deterministic bool) ([]byte, er
 		return b[:n], nil
 	}
 }
-func (m *DelegationRecord) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DelegationRecord.Merge(m, src)
+func (m *ProxyDelegation) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ProxyDelegation.Merge(m, src)
 }
-func (m *DelegationRecord) XXX_Size() int {
+func (m *ProxyDelegation) XXX_Size() int {
 	return m.Size()
 }
-func (m *DelegationRecord) XXX_DiscardUnknown() {
-	xxx_messageInfo_DelegationRecord.DiscardUnknown(m)
+func (m *ProxyDelegation) XXX_DiscardUnknown() {
+	xxx_messageInfo_ProxyDelegation.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_DelegationRecord proto.InternalMessageInfo
+var xxx_messageInfo_ProxyDelegation proto.InternalMessageInfo
 
-func (m *DelegationRecord) GetId() uint64 {
+func (m *ProxyDelegation) GetId() uint64 {
 	if m != nil {
 		return m.Id
 	}
 	return 0
 }
 
-func (m *DelegationRecord) GetDelegationCoin() types.Coin {
+func (m *ProxyDelegation) GetCoin() types.Coin {
 	if m != nil {
-		return m.DelegationCoin
+		return m.Coin
 	}
 	return types.Coin{}
 }
 
-func (m *DelegationRecord) GetEpochNumber() uint64 {
+func (m *ProxyDelegation) GetEpochNumber() uint64 {
 	if m != nil {
 		return m.EpochNumber
 	}
 	return 0
 }
 
-func (m *DelegationRecord) GetChainID() string {
+func (m *ProxyDelegation) GetChainID() string {
 	if m != nil {
 		return m.ChainID
 	}
@@ -113,7 +113,7 @@ func (m *DelegationRecord) GetChainID() string {
 }
 
 // UndelegationRecord represents a record of a delegator's undelegation action.
-type UndelegationRecord struct {
+type UserUnbonding struct {
 	// Unique identifier for the undelegation record
 	ID string `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`
 	// The chain ID of the source chain where the undelegation was initiated.
@@ -125,26 +125,26 @@ type UndelegationRecord struct {
 	// The recipient account for the redeemed funds.
 	Receiver string `protobuf:"bytes,5,opt,name=receiver,proto3" json:"receiver,omitempty"`
 	// The amount and type of funds to be redeemed.
-	RedeemToken types.Coin `protobuf:"bytes,6,opt,name=redeemToken,proto3" json:"redeemToken"`
+	RedeemCoin types.Coin `protobuf:"bytes,6,opt,name=redeemCoin,proto3" json:"redeemCoin"`
 	// The redemption status of the undelegation.
 	// 1) Pending: The undelegation request has been submitted but not yet processed or completed.
 	// 2) Claimable: The undelegation has been processed and the funds are available to be claimed by the delegator.
 	// 3) Complete: The funds have been successfully claimed by the delegator.
-	CliamStatus UndelegationRecordStatus `protobuf:"varint,7,opt,name=cliamStatus,proto3,customtype=UndelegationRecordStatus" json:"cliamStatus"`
+	CliamStatus UserUnbondingStatus `protobuf:"varint,7,opt,name=cliamStatus,proto3,customtype=UserUnbondingStatus" json:"cliamStatus"`
 }
 
-func (m *UndelegationRecord) Reset()         { *m = UndelegationRecord{} }
-func (m *UndelegationRecord) String() string { return proto.CompactTextString(m) }
-func (*UndelegationRecord) ProtoMessage()    {}
-func (*UndelegationRecord) Descriptor() ([]byte, []int) {
+func (m *UserUnbonding) Reset()         { *m = UserUnbonding{} }
+func (m *UserUnbonding) String() string { return proto.CompactTextString(m) }
+func (*UserUnbonding) ProtoMessage()    {}
+func (*UserUnbonding) Descriptor() ([]byte, []int) {
 	return fileDescriptor_9beff2e65f7b246b, []int{1}
 }
-func (m *UndelegationRecord) XXX_Unmarshal(b []byte) error {
+func (m *UserUnbonding) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *UndelegationRecord) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *UserUnbonding) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_UndelegationRecord.Marshal(b, m, deterministic)
+		return xxx_messageInfo_UserUnbonding.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -154,63 +154,63 @@ func (m *UndelegationRecord) XXX_Marshal(b []byte, deterministic bool) ([]byte, 
 		return b[:n], nil
 	}
 }
-func (m *UndelegationRecord) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_UndelegationRecord.Merge(m, src)
+func (m *UserUnbonding) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UserUnbonding.Merge(m, src)
 }
-func (m *UndelegationRecord) XXX_Size() int {
+func (m *UserUnbonding) XXX_Size() int {
 	return m.Size()
 }
-func (m *UndelegationRecord) XXX_DiscardUnknown() {
-	xxx_messageInfo_UndelegationRecord.DiscardUnknown(m)
+func (m *UserUnbonding) XXX_DiscardUnknown() {
+	xxx_messageInfo_UserUnbonding.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_UndelegationRecord proto.InternalMessageInfo
+var xxx_messageInfo_UserUnbonding proto.InternalMessageInfo
 
-func (m *UndelegationRecord) GetID() string {
+func (m *UserUnbonding) GetID() string {
 	if m != nil {
 		return m.ID
 	}
 	return ""
 }
 
-func (m *UndelegationRecord) GetChainID() string {
+func (m *UserUnbonding) GetChainID() string {
 	if m != nil {
 		return m.ChainID
 	}
 	return ""
 }
 
-func (m *UndelegationRecord) GetEpoch() uint64 {
+func (m *UserUnbonding) GetEpoch() uint64 {
 	if m != nil {
 		return m.Epoch
 	}
 	return 0
 }
 
-func (m *UndelegationRecord) GetDelegator() string {
+func (m *UserUnbonding) GetDelegator() string {
 	if m != nil {
 		return m.Delegator
 	}
 	return ""
 }
 
-func (m *UndelegationRecord) GetReceiver() string {
+func (m *UserUnbonding) GetReceiver() string {
 	if m != nil {
 		return m.Receiver
 	}
 	return ""
 }
 
-func (m *UndelegationRecord) GetRedeemToken() types.Coin {
+func (m *UserUnbonding) GetRedeemCoin() types.Coin {
 	if m != nil {
-		return m.RedeemToken
+		return m.RedeemCoin
 	}
 	return types.Coin{}
 }
 
 // Represents a record of an unbonding transaction, which captures the derivative token that was burned
 // and the native token that is to be redeemed.
-type Unbonding struct {
+type ProxyUnbonding struct {
 	ChainID                string `protobuf:"bytes,1,opt,name=chainID,proto3" json:"chainID,omitempty"`
 	BurnedDerivativeAmount Int    `protobuf:"bytes,2,opt,name=burnedDerivativeAmount,proto3,customtype=Int" json:"burnedDerivativeAmount"`
 	// The native tokens to be redeemed.
@@ -223,23 +223,23 @@ type Unbonding struct {
 	// 3) Unbonding: successfully initiated the Unbonding process
 	// 4) Transfering: Unbonding period has elapsed, redeeming funds from the source chain
 	// 5) Done: funds have been successfully redeemed
-	Status UnbondingStatus `protobuf:"varint,5,opt,name=status,proto3,customtype=UnbondingStatus" json:"status"`
+	Status ProxyUnbondingStatus `protobuf:"varint,5,opt,name=status,proto3,customtype=ProxyUnbondingStatus" json:"status"`
 	// The IDs of the UserUnbondRecord entries that correspond to this unbonding entry.
 	UserUnbondRecordIds []string `protobuf:"bytes,6,rep,name=userUnbondRecordIds,proto3" json:"userUnbondRecordIds,omitempty"`
 }
 
-func (m *Unbonding) Reset()         { *m = Unbonding{} }
-func (m *Unbonding) String() string { return proto.CompactTextString(m) }
-func (*Unbonding) ProtoMessage()    {}
-func (*Unbonding) Descriptor() ([]byte, []int) {
+func (m *ProxyUnbonding) Reset()         { *m = ProxyUnbonding{} }
+func (m *ProxyUnbonding) String() string { return proto.CompactTextString(m) }
+func (*ProxyUnbonding) ProtoMessage()    {}
+func (*ProxyUnbonding) Descriptor() ([]byte, []int) {
 	return fileDescriptor_9beff2e65f7b246b, []int{2}
 }
-func (m *Unbonding) XXX_Unmarshal(b []byte) error {
+func (m *ProxyUnbonding) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *Unbonding) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *ProxyUnbonding) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_Unbonding.Marshal(b, m, deterministic)
+		return xxx_messageInfo_ProxyUnbonding.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -249,40 +249,40 @@ func (m *Unbonding) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (m *Unbonding) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Unbonding.Merge(m, src)
+func (m *ProxyUnbonding) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ProxyUnbonding.Merge(m, src)
 }
-func (m *Unbonding) XXX_Size() int {
+func (m *ProxyUnbonding) XXX_Size() int {
 	return m.Size()
 }
-func (m *Unbonding) XXX_DiscardUnknown() {
-	xxx_messageInfo_Unbonding.DiscardUnknown(m)
+func (m *ProxyUnbonding) XXX_DiscardUnknown() {
+	xxx_messageInfo_ProxyUnbonding.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_Unbonding proto.InternalMessageInfo
+var xxx_messageInfo_ProxyUnbonding proto.InternalMessageInfo
 
-func (m *Unbonding) GetChainID() string {
+func (m *ProxyUnbonding) GetChainID() string {
 	if m != nil {
 		return m.ChainID
 	}
 	return ""
 }
 
-func (m *Unbonding) GetRedeemNativeToken() types.Coin {
+func (m *ProxyUnbonding) GetRedeemNativeToken() types.Coin {
 	if m != nil {
 		return m.RedeemNativeToken
 	}
 	return types.Coin{}
 }
 
-func (m *Unbonding) GetUnbondTIme() uint64 {
+func (m *ProxyUnbonding) GetUnbondTIme() uint64 {
 	if m != nil {
 		return m.UnbondTIme
 	}
 	return 0
 }
 
-func (m *Unbonding) GetUserUnbondRecordIds() []string {
+func (m *ProxyUnbonding) GetUserUnbondRecordIds() []string {
 	if m != nil {
 		return m.UserUnbondRecordIds
 	}
@@ -290,25 +290,25 @@ func (m *Unbonding) GetUserUnbondRecordIds() []string {
 }
 
 // Represents a collection of unbonding entries for a given epoch.
-type EpochUnbondings struct {
+type EpochProxyUnbonding struct {
 	// The epoch number.
 	Epoch uint64 `protobuf:"varint,1,opt,name=epoch,proto3" json:"epoch,omitempty"`
 	// The unbonding entries.
-	Unbondings []Unbonding `protobuf:"bytes,2,rep,name=unbondings,proto3" json:"unbondings"`
+	Unbondings []ProxyUnbonding `protobuf:"bytes,2,rep,name=unbondings,proto3" json:"unbondings"`
 }
 
-func (m *EpochUnbondings) Reset()         { *m = EpochUnbondings{} }
-func (m *EpochUnbondings) String() string { return proto.CompactTextString(m) }
-func (*EpochUnbondings) ProtoMessage()    {}
-func (*EpochUnbondings) Descriptor() ([]byte, []int) {
+func (m *EpochProxyUnbonding) Reset()         { *m = EpochProxyUnbonding{} }
+func (m *EpochProxyUnbonding) String() string { return proto.CompactTextString(m) }
+func (*EpochProxyUnbonding) ProtoMessage()    {}
+func (*EpochProxyUnbonding) Descriptor() ([]byte, []int) {
 	return fileDescriptor_9beff2e65f7b246b, []int{3}
 }
-func (m *EpochUnbondings) XXX_Unmarshal(b []byte) error {
+func (m *EpochProxyUnbonding) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *EpochUnbondings) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *EpochProxyUnbonding) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_EpochUnbondings.Marshal(b, m, deterministic)
+		return xxx_messageInfo_EpochProxyUnbonding.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -318,26 +318,26 @@ func (m *EpochUnbondings) XXX_Marshal(b []byte, deterministic bool) ([]byte, err
 		return b[:n], nil
 	}
 }
-func (m *EpochUnbondings) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_EpochUnbondings.Merge(m, src)
+func (m *EpochProxyUnbonding) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EpochProxyUnbonding.Merge(m, src)
 }
-func (m *EpochUnbondings) XXX_Size() int {
+func (m *EpochProxyUnbonding) XXX_Size() int {
 	return m.Size()
 }
-func (m *EpochUnbondings) XXX_DiscardUnknown() {
-	xxx_messageInfo_EpochUnbondings.DiscardUnknown(m)
+func (m *EpochProxyUnbonding) XXX_DiscardUnknown() {
+	xxx_messageInfo_EpochProxyUnbonding.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_EpochUnbondings proto.InternalMessageInfo
+var xxx_messageInfo_EpochProxyUnbonding proto.InternalMessageInfo
 
-func (m *EpochUnbondings) GetEpoch() uint64 {
+func (m *EpochProxyUnbonding) GetEpoch() uint64 {
 	if m != nil {
 		return m.Epoch
 	}
 	return 0
 }
 
-func (m *EpochUnbondings) GetUnbondings() []Unbonding {
+func (m *EpochProxyUnbonding) GetUnbondings() []ProxyUnbonding {
 	if m != nil {
 		return m.Unbondings
 	}
@@ -429,10 +429,10 @@ func (m *IBCQuery) GetEpoch() uint64 {
 }
 
 func init() {
-	proto.RegisterType((*DelegationRecord)(nil), "celinium.liquidstake.v1.DelegationRecord")
-	proto.RegisterType((*UndelegationRecord)(nil), "celinium.liquidstake.v1.UndelegationRecord")
-	proto.RegisterType((*Unbonding)(nil), "celinium.liquidstake.v1.Unbonding")
-	proto.RegisterType((*EpochUnbondings)(nil), "celinium.liquidstake.v1.EpochUnbondings")
+	proto.RegisterType((*ProxyDelegation)(nil), "celinium.liquidstake.v1.ProxyDelegation")
+	proto.RegisterType((*UserUnbonding)(nil), "celinium.liquidstake.v1.UserUnbonding")
+	proto.RegisterType((*ProxyUnbonding)(nil), "celinium.liquidstake.v1.ProxyUnbonding")
+	proto.RegisterType((*EpochProxyUnbonding)(nil), "celinium.liquidstake.v1.EpochProxyUnbonding")
 	proto.RegisterType((*IBCQuery)(nil), "celinium.liquidstake.v1.IBCQuery")
 }
 
@@ -441,52 +441,53 @@ func init() {
 }
 
 var fileDescriptor_9beff2e65f7b246b = []byte{
-	// 670 bytes of a gzipped FileDescriptorProto
+	// 680 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x54, 0xc1, 0x4e, 0xdb, 0x4c,
-	0x10, 0x8e, 0x9d, 0x10, 0xc8, 0x86, 0x1f, 0x7e, 0xb6, 0x08, 0x0c, 0x42, 0xc6, 0x72, 0x2f, 0xb9,
-	0xd4, 0x2e, 0x54, 0xe2, 0x4e, 0x48, 0x45, 0xad, 0xaa, 0xa8, 0xb8, 0x70, 0xe9, 0xa5, 0x72, 0xec,
-	0x69, 0x58, 0x11, 0xef, 0x86, 0xf5, 0x3a, 0x6a, 0xde, 0xa2, 0x97, 0xbe, 0x43, 0x1f, 0xa0, 0xa7,
-	0x3e, 0x01, 0xea, 0x09, 0xf5, 0x54, 0xf5, 0x80, 0x2a, 0x78, 0x91, 0xca, 0xeb, 0x8d, 0xe3, 0x10,
-	0x50, 0xb9, 0x79, 0x66, 0xbf, 0x99, 0x9d, 0xef, 0x9b, 0xcf, 0x8b, 0x9e, 0x86, 0xd0, 0x27, 0x94,
-	0xa4, 0xb1, 0xdb, 0x27, 0x17, 0x29, 0x89, 0x12, 0x11, 0x9c, 0x83, 0x3b, 0xdc, 0x71, 0xe5, 0x87,
-	0x33, 0xe0, 0x4c, 0x30, 0xbc, 0x3e, 0x06, 0x39, 0x25, 0x90, 0x33, 0xdc, 0xd9, 0x5c, 0xed, 0xb1,
-	0x1e, 0x93, 0x18, 0x37, 0xfb, 0xca, 0xe1, 0x9b, 0x1b, 0x21, 0x4b, 0x62, 0x96, 0x7c, 0xc8, 0x0f,
-	0xf2, 0x40, 0x1d, 0x99, 0x79, 0xe4, 0x76, 0x83, 0x24, 0xbb, 0xa5, 0x0b, 0x22, 0xd8, 0x71, 0x43,
-	0x46, 0x68, 0x7e, 0x6e, 0x7f, 0xd5, 0xd1, 0xff, 0x1d, 0xe8, 0x43, 0x2f, 0x10, 0x84, 0x51, 0x1f,
-	0x42, 0xc6, 0x23, 0xbc, 0x84, 0x74, 0x12, 0x19, 0x9a, 0xa5, 0xb5, 0x6a, 0xbe, 0x4e, 0x22, 0x7c,
-	0x88, 0x96, 0xa2, 0x02, 0x73, 0xc0, 0x08, 0x35, 0x74, 0x4b, 0x6b, 0x35, 0x77, 0x37, 0x1c, 0x75,
-	0x57, 0xd6, 0xdd, 0x51, 0xdd, 0x9d, 0x0c, 0xd0, 0xae, 0x5d, 0x5e, 0x6f, 0x57, 0xfc, 0x3b, 0x65,
-	0x78, 0x0f, 0xd5, 0x13, 0x11, 0x88, 0x34, 0x31, 0xaa, 0x96, 0xd6, 0xfa, 0xaf, 0x6d, 0x66, 0xa8,
-	0xdf, 0xd7, 0xdb, 0x6b, 0x77, 0x47, 0x78, 0x27, 0x51, 0xbe, 0x42, 0x63, 0x0b, 0x35, 0x61, 0xc0,
-	0xc2, 0xb3, 0xa3, 0x34, 0xee, 0x02, 0x37, 0x6a, 0x72, 0xb2, 0x72, 0x0a, 0x1b, 0x68, 0x3e, 0x3c,
-	0x0b, 0x08, 0xf5, 0x3a, 0xc6, 0x9c, 0xa5, 0xb5, 0x1a, 0xfe, 0x38, 0xc4, 0x87, 0x68, 0x45, 0xf0,
-	0x80, 0x26, 0x1f, 0x81, 0x73, 0x88, 0xf6, 0x63, 0x96, 0x52, 0x61, 0xd4, 0x33, 0x4c, 0x7b, 0x43,
-	0x5d, 0x5f, 0xf5, 0xa8, 0xf8, 0xf9, 0xed, 0x19, 0x52, 0x6c, 0x3c, 0x2a, 0xfc, 0xd9, 0x1a, 0xfb,
-	0x8b, 0x8e, 0xf0, 0x29, 0x8d, 0xee, 0x11, 0xcb, 0xeb, 0x48, 0xb1, 0x1a, 0xbe, 0xee, 0x75, 0xca,
-	0x93, 0xe8, 0xd3, 0x93, 0xac, 0xa2, 0x39, 0x39, 0xb2, 0x24, 0x5f, 0xf3, 0xf3, 0x00, 0x6f, 0xa1,
-	0x86, 0xea, 0xc9, 0x72, 0x66, 0x0d, 0x7f, 0x92, 0xc0, 0x9b, 0x68, 0x81, 0x43, 0x08, 0x64, 0x08,
-	0x5c, 0x11, 0x2b, 0x62, 0xbc, 0x8f, 0x9a, 0x1c, 0x22, 0x80, 0xf8, 0x84, 0x9d, 0x03, 0x95, 0x9c,
-	0x1e, 0xb1, 0x93, 0x72, 0x0d, 0x6e, 0xa3, 0x66, 0xd8, 0x27, 0x41, 0x9c, 0xeb, 0x6d, 0xcc, 0xcb,
-	0xad, 0x58, 0x4a, 0x16, 0x63, 0x96, 0xad, 0xda, 0x4b, 0xb9, 0xc8, 0xfe, 0xa1, 0xa3, 0xc6, 0x29,
-	0xed, 0x32, 0x1a, 0x11, 0xda, 0x2b, 0xd3, 0xd7, 0xa6, 0xe9, 0x1f, 0xa3, 0xb5, 0x6e, 0xca, 0x29,
-	0x44, 0x1d, 0xe0, 0x64, 0x18, 0x08, 0x32, 0x04, 0xb5, 0x0d, 0xfd, 0x5f, 0xdb, 0x78, 0xa0, 0x10,
-	0xbf, 0x41, 0x2b, 0x39, 0x9b, 0x23, 0x99, 0xcd, 0x75, 0xa8, 0x3e, 0x4e, 0x87, 0xd9, 0x4a, 0x6c,
-	0x22, 0x94, 0x4a, 0x22, 0x27, 0x5e, 0x0c, 0xca, 0x65, 0xa5, 0x0c, 0x76, 0x0b, 0xfb, 0xce, 0x49,
-	0xa1, 0xd6, 0xd5, 0xc4, 0xcb, 0x05, 0xfd, 0x3b, 0xbe, 0x7d, 0x8e, 0x9e, 0xa4, 0x09, 0xf0, 0xfc,
-	0x38, 0x57, 0xd0, 0x8b, 0x12, 0xa3, 0x6e, 0x55, 0x5b, 0x0d, 0xff, 0xbe, 0x23, 0xfb, 0x02, 0x2d,
-	0xbf, 0xcc, 0x6c, 0x51, 0x74, 0x4c, 0x26, 0xb6, 0xd1, 0xca, 0xb6, 0x79, 0x35, 0x9e, 0x35, 0xc3,
-	0x18, 0xba, 0x55, 0x6d, 0x35, 0x77, 0x6d, 0xe7, 0x81, 0x77, 0xc3, 0x29, 0xda, 0x29, 0xf2, 0xa5,
-	0x5a, 0xfb, 0xbb, 0x86, 0x16, 0xbc, 0xf6, 0xc1, 0x71, 0x0a, 0x7c, 0x94, 0xb9, 0xf1, 0x22, 0xfb,
-	0x38, 0x19, 0x0d, 0x40, 0x2d, 0x70, 0x92, 0xc0, 0x36, 0x5a, 0x94, 0xc1, 0xdb, 0x40, 0x9c, 0xbd,
-	0x86, 0x91, 0x32, 0xf8, 0x54, 0x2e, 0x33, 0x80, 0x20, 0x31, 0xb0, 0x54, 0x28, 0x9f, 0x8f, 0xc3,
-	0xb2, 0x35, 0x6a, 0xd3, 0xd6, 0xb0, 0xd1, 0x62, 0xc8, 0x28, 0x85, 0x30, 0x73, 0x5a, 0xf1, 0x0b,
-	0x4f, 0xe5, 0x26, 0x32, 0xd4, 0x4b, 0x32, 0xb4, 0xf7, 0x2e, 0x6f, 0x4c, 0xed, 0xea, 0xc6, 0xd4,
-	0xfe, 0xdc, 0x98, 0xda, 0xe7, 0x5b, 0xb3, 0x72, 0x75, 0x6b, 0x56, 0x7e, 0xdd, 0x9a, 0x95, 0xf7,
-	0x5b, 0xc5, 0x43, 0xfb, 0x69, 0xea, 0xa9, 0x15, 0xa3, 0x01, 0x24, 0xdd, 0xba, 0x7c, 0xfe, 0x5e,
-	0xfc, 0x0d, 0x00, 0x00, 0xff, 0xff, 0x6e, 0xf4, 0x1a, 0xe4, 0x8f, 0x05, 0x00, 0x00,
+	0x10, 0x8e, 0x9d, 0x10, 0xc8, 0x06, 0xf8, 0xc5, 0xc2, 0xdf, 0x1a, 0x4a, 0x8d, 0xe5, 0x1e, 0x9a,
+	0x4b, 0x9d, 0x02, 0x6d, 0x6f, 0x55, 0xd5, 0x90, 0xaa, 0xb2, 0x2a, 0x10, 0xb8, 0x70, 0xe9, 0xa5,
+	0x72, 0xec, 0x69, 0x58, 0x11, 0xef, 0x86, 0xf5, 0x3a, 0x22, 0x7d, 0x83, 0xde, 0xaa, 0x3e, 0x4b,
+	0x4f, 0x7d, 0x02, 0x8e, 0xa8, 0xea, 0xa1, 0xea, 0x01, 0x55, 0xf0, 0x22, 0x95, 0xd7, 0x9b, 0xc4,
+	0x86, 0xa2, 0x72, 0xf3, 0xcc, 0x7e, 0xb3, 0x3b, 0xdf, 0x37, 0x9f, 0x07, 0x3d, 0x08, 0xa0, 0x47,
+	0x28, 0x49, 0xa2, 0x66, 0x8f, 0x1c, 0x27, 0x24, 0x8c, 0x85, 0x7f, 0x04, 0xcd, 0xc1, 0x7a, 0x53,
+	0x7e, 0x38, 0x7d, 0xce, 0x04, 0xc3, 0x77, 0x47, 0x20, 0x27, 0x07, 0x72, 0x06, 0xeb, 0x2b, 0x4b,
+	0x5d, 0xd6, 0x65, 0x12, 0xd3, 0x4c, 0xbf, 0x32, 0xf8, 0xca, 0x72, 0xc0, 0xe2, 0x88, 0xc5, 0xef,
+	0xb3, 0x83, 0x2c, 0x50, 0x47, 0x66, 0x16, 0x35, 0x3b, 0x7e, 0x9c, 0xbe, 0xd2, 0x01, 0xe1, 0xaf,
+	0x37, 0x03, 0x46, 0x68, 0x76, 0x6e, 0x7f, 0xd1, 0xd1, 0x7f, 0xbb, 0x9c, 0x9d, 0x0c, 0xdb, 0xd0,
+	0x83, 0xae, 0x2f, 0x08, 0xa3, 0x78, 0x1e, 0xe9, 0x24, 0x34, 0x34, 0x4b, 0x6b, 0x54, 0x3c, 0x9d,
+	0x84, 0x78, 0x13, 0x55, 0xd2, 0x0a, 0x43, 0xb7, 0xb4, 0x46, 0x7d, 0x63, 0xd9, 0x51, 0x0f, 0xa4,
+	0x57, 0x3a, 0xea, 0x4a, 0x67, 0x8b, 0x11, 0xda, 0xaa, 0x9c, 0x9e, 0xaf, 0x95, 0x3c, 0x09, 0xc6,
+	0x4f, 0x51, 0x35, 0x16, 0xbe, 0x48, 0x62, 0xa3, 0x6c, 0x69, 0x8d, 0xb9, 0xd6, 0xfd, 0xf4, 0xec,
+	0xd7, 0xf9, 0xda, 0xff, 0x57, 0x5e, 0x7b, 0x2b, 0x41, 0x9e, 0x02, 0x63, 0x0b, 0xd5, 0xa1, 0xcf,
+	0x82, 0xc3, 0x9d, 0x24, 0xea, 0x00, 0x37, 0x2a, 0xb2, 0x89, 0x7c, 0x0a, 0x1b, 0x68, 0x3a, 0x38,
+	0xf4, 0x09, 0x75, 0xdb, 0xc6, 0x94, 0xa5, 0x35, 0x6a, 0xde, 0x28, 0xc4, 0xaf, 0xd1, 0x82, 0xe0,
+	0x3e, 0x8d, 0x3f, 0x00, 0xe7, 0x10, 0xbe, 0x8c, 0x58, 0x42, 0x85, 0x51, 0x4d, 0x31, 0xad, 0x65,
+	0xf5, 0x7a, 0xd9, 0xa5, 0xe2, 0xfb, 0xd7, 0x47, 0x48, 0x51, 0x70, 0xa9, 0xf0, 0xae, 0xd7, 0xd8,
+	0x9f, 0x74, 0x34, 0x77, 0x10, 0x03, 0x3f, 0xa0, 0x1d, 0x46, 0x43, 0x42, 0xbb, 0xa9, 0x24, 0x6e,
+	0x5b, 0x4a, 0x52, 0xf3, 0x74, 0xb7, 0x9d, 0x6f, 0x42, 0x2f, 0x36, 0xb1, 0x84, 0xa6, 0x64, 0xb7,
+	0x92, 0x76, 0xc5, 0xcb, 0x02, 0xbc, 0x8a, 0x6a, 0x61, 0x46, 0x99, 0x65, 0xa4, 0x6a, 0xde, 0x24,
+	0x81, 0x57, 0xd0, 0x0c, 0x87, 0x00, 0xc8, 0x00, 0xb8, 0xe2, 0x34, 0x8e, 0xf1, 0x0b, 0x84, 0x38,
+	0x84, 0x00, 0x51, 0xaa, 0xb0, 0x64, 0x73, 0x8b, 0x11, 0xe4, 0x4a, 0xf0, 0x73, 0x54, 0x0f, 0x7a,
+	0xc4, 0x8f, 0x32, 0xa1, 0x8d, 0x69, 0x39, 0x8d, 0x7b, 0x4a, 0x8f, 0xc5, 0x02, 0x4d, 0x35, 0x8b,
+	0x3c, 0xde, 0xfe, 0xa1, 0xa3, 0x79, 0x39, 0xb2, 0x89, 0x18, 0x39, 0xf2, 0x5a, 0x91, 0xfc, 0x1e,
+	0xba, 0xd3, 0x49, 0x38, 0x85, 0xb0, 0x0d, 0x9c, 0x0c, 0x7c, 0x41, 0x06, 0xa0, 0xc6, 0xa0, 0xff,
+	0x6b, 0x0c, 0x37, 0x14, 0xe2, 0x6d, 0xb4, 0x90, 0x91, 0xd9, 0x91, 0xd9, 0x7d, 0x76, 0x04, 0x54,
+	0x6a, 0x7b, 0x0b, 0x19, 0xae, 0x57, 0x62, 0x13, 0xa1, 0x44, 0x12, 0xd9, 0x77, 0x23, 0x50, 0xf6,
+	0xca, 0x65, 0xf0, 0x93, 0xb1, 0x6d, 0xa7, 0xa4, 0x50, 0xab, 0xaa, 0xe3, 0xa5, 0xa2, 0x06, 0x57,
+	0x5c, 0xfb, 0x18, 0x2d, 0x26, 0x63, 0x21, 0x3d, 0x08, 0x18, 0x0f, 0xdd, 0x30, 0x36, 0xaa, 0x56,
+	0xb9, 0x51, 0xf3, 0xfe, 0x76, 0x64, 0x7f, 0x44, 0x8b, 0xaf, 0x52, 0x67, 0x5c, 0x91, 0x76, 0xec,
+	0x1e, 0x2d, 0xef, 0x9e, 0xed, 0x51, 0xd3, 0x84, 0x76, 0x63, 0x43, 0xb7, 0xca, 0x8d, 0xfa, 0xc6,
+	0x43, 0xe7, 0x86, 0x1d, 0xe1, 0x14, 0xaf, 0x1c, 0x39, 0x62, 0x72, 0x81, 0xfd, 0x4d, 0x43, 0x33,
+	0x6e, 0x6b, 0x6b, 0x2f, 0x01, 0x3e, 0x4c, 0x9d, 0x79, 0x9c, 0x7e, 0xec, 0x0f, 0xfb, 0xa0, 0xc6,
+	0x39, 0x49, 0x60, 0x1b, 0xcd, 0xca, 0x60, 0xd7, 0x17, 0x87, 0x6f, 0x60, 0xa8, 0xcc, 0x5e, 0xc8,
+	0xa5, 0x76, 0x10, 0x24, 0x02, 0x96, 0x08, 0xe5, 0xf9, 0x51, 0x98, 0x37, 0x4a, 0xa5, 0x68, 0x14,
+	0x1b, 0xcd, 0x06, 0x8c, 0x52, 0x08, 0xd2, 0x15, 0x30, 0xfe, 0x93, 0x0b, 0xb9, 0x89, 0x16, 0xd5,
+	0x9c, 0x16, 0xad, 0x67, 0xa7, 0x17, 0xa6, 0x76, 0x76, 0x61, 0x6a, 0xbf, 0x2f, 0x4c, 0xed, 0xf3,
+	0xa5, 0x59, 0x3a, 0xbb, 0x34, 0x4b, 0x3f, 0x2f, 0xcd, 0xd2, 0xbb, 0xd5, 0xf1, 0x66, 0x3d, 0x29,
+	0xec, 0x56, 0x31, 0xec, 0x43, 0xdc, 0xa9, 0xca, 0x7d, 0xb7, 0xf9, 0x27, 0x00, 0x00, 0xff, 0xff,
+	0xe9, 0xff, 0xa9, 0xde, 0x80, 0x05, 0x00, 0x00,
 }
 
-func (m *DelegationRecord) Marshal() (dAtA []byte, err error) {
+func (m *ProxyDelegation) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -496,12 +497,12 @@ func (m *DelegationRecord) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *DelegationRecord) MarshalTo(dAtA []byte) (int, error) {
+func (m *ProxyDelegation) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *DelegationRecord) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *ProxyDelegation) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -534,7 +535,7 @@ func (m *DelegationRecord) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		dAtA[i] = 0x18
 	}
 	{
-		size, err := m.DelegationCoin.MarshalToSizedBuffer(dAtA[:i])
+		size, err := m.Coin.MarshalToSizedBuffer(dAtA[:i])
 		if err != nil {
 			return 0, err
 		}
@@ -551,7 +552,7 @@ func (m *DelegationRecord) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *UndelegationRecord) Marshal() (dAtA []byte, err error) {
+func (m *UserUnbonding) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -561,12 +562,12 @@ func (m *UndelegationRecord) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *UndelegationRecord) MarshalTo(dAtA []byte) (int, error) {
+func (m *UserUnbonding) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *UndelegationRecord) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *UserUnbonding) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -577,7 +578,7 @@ func (m *UndelegationRecord) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		dAtA[i] = 0x38
 	}
 	{
-		size, err := m.RedeemToken.MarshalToSizedBuffer(dAtA[:i])
+		size, err := m.RedeemCoin.MarshalToSizedBuffer(dAtA[:i])
 		if err != nil {
 			return 0, err
 		}
@@ -622,7 +623,7 @@ func (m *UndelegationRecord) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *Unbonding) Marshal() (dAtA []byte, err error) {
+func (m *ProxyUnbonding) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -632,12 +633,12 @@ func (m *Unbonding) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *Unbonding) MarshalTo(dAtA []byte) (int, error) {
+func (m *ProxyUnbonding) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *Unbonding) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *ProxyUnbonding) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -691,7 +692,7 @@ func (m *Unbonding) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *EpochUnbondings) Marshal() (dAtA []byte, err error) {
+func (m *EpochProxyUnbonding) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -701,12 +702,12 @@ func (m *EpochUnbondings) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *EpochUnbondings) MarshalTo(dAtA []byte) (int, error) {
+func (m *EpochProxyUnbonding) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *EpochUnbondings) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *EpochProxyUnbonding) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -805,7 +806,7 @@ func encodeVarintStake(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *DelegationRecord) Size() (n int) {
+func (m *ProxyDelegation) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -814,7 +815,7 @@ func (m *DelegationRecord) Size() (n int) {
 	if m.Id != 0 {
 		n += 1 + sovStake(uint64(m.Id))
 	}
-	l = m.DelegationCoin.Size()
+	l = m.Coin.Size()
 	n += 1 + l + sovStake(uint64(l))
 	if m.Status != 0 {
 		n += 1 + sovStake(uint64(m.Status))
@@ -831,7 +832,7 @@ func (m *DelegationRecord) Size() (n int) {
 	return n
 }
 
-func (m *UndelegationRecord) Size() (n int) {
+func (m *UserUnbonding) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -856,7 +857,7 @@ func (m *UndelegationRecord) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovStake(uint64(l))
 	}
-	l = m.RedeemToken.Size()
+	l = m.RedeemCoin.Size()
 	n += 1 + l + sovStake(uint64(l))
 	if m.CliamStatus != 0 {
 		n += 1 + sovStake(uint64(m.CliamStatus))
@@ -864,7 +865,7 @@ func (m *UndelegationRecord) Size() (n int) {
 	return n
 }
 
-func (m *Unbonding) Size() (n int) {
+func (m *ProxyUnbonding) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -893,7 +894,7 @@ func (m *Unbonding) Size() (n int) {
 	return n
 }
 
-func (m *EpochUnbondings) Size() (n int) {
+func (m *EpochProxyUnbonding) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -948,7 +949,7 @@ func sovStake(x uint64) (n int) {
 func sozStake(x uint64) (n int) {
 	return sovStake(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (m *DelegationRecord) Unmarshal(dAtA []byte) error {
+func (m *ProxyDelegation) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -971,10 +972,10 @@ func (m *DelegationRecord) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: DelegationRecord: wiretype end group for non-group")
+			return fmt.Errorf("proto: ProxyDelegation: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: DelegationRecord: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: ProxyDelegation: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -998,7 +999,7 @@ func (m *DelegationRecord) Unmarshal(dAtA []byte) error {
 			}
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DelegationCoin", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Coin", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -1025,7 +1026,7 @@ func (m *DelegationRecord) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := m.DelegationCoin.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.Coin.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -1043,7 +1044,7 @@ func (m *DelegationRecord) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Status |= DelegationRecordStatus(b&0x7F) << shift
+				m.Status |= ProxyDelegationStatus(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1154,7 +1155,7 @@ func (m *DelegationRecord) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *UndelegationRecord) Unmarshal(dAtA []byte) error {
+func (m *UserUnbonding) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1177,10 +1178,10 @@ func (m *UndelegationRecord) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: UndelegationRecord: wiretype end group for non-group")
+			return fmt.Errorf("proto: UserUnbonding: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: UndelegationRecord: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: UserUnbonding: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1332,7 +1333,7 @@ func (m *UndelegationRecord) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 6:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RedeemToken", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field RedeemCoin", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -1359,7 +1360,7 @@ func (m *UndelegationRecord) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := m.RedeemToken.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.RedeemCoin.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -1377,7 +1378,7 @@ func (m *UndelegationRecord) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.CliamStatus |= UndelegationRecordStatus(b&0x7F) << shift
+				m.CliamStatus |= UserUnbondingStatus(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1403,7 +1404,7 @@ func (m *UndelegationRecord) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *Unbonding) Unmarshal(dAtA []byte) error {
+func (m *ProxyUnbonding) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1426,10 +1427,10 @@ func (m *Unbonding) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: Unbonding: wiretype end group for non-group")
+			return fmt.Errorf("proto: ProxyUnbonding: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Unbonding: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: ProxyUnbonding: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1564,7 +1565,7 @@ func (m *Unbonding) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Status |= UnbondingStatus(b&0x7F) << shift
+				m.Status |= ProxyUnbondingStatus(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1622,7 +1623,7 @@ func (m *Unbonding) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *EpochUnbondings) Unmarshal(dAtA []byte) error {
+func (m *EpochProxyUnbonding) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1645,10 +1646,10 @@ func (m *EpochUnbondings) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: EpochUnbondings: wiretype end group for non-group")
+			return fmt.Errorf("proto: EpochProxyUnbonding: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: EpochUnbondings: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: EpochProxyUnbonding: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1699,7 +1700,7 @@ func (m *EpochUnbondings) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Unbondings = append(m.Unbondings, Unbonding{})
+			m.Unbondings = append(m.Unbondings, ProxyUnbonding{})
 			if err := m.Unbondings[len(m.Unbondings)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}

@@ -19,7 +19,7 @@ import (
 
 // Delegate performs a liquid stake delegation. delegator transfer the ibcToken to module account then
 // get derivative token by the rate.
-func (k *Keeper) Delegate(ctx sdk.Context, chainID string, amount math.Int, caller sdk.AccAddress) (*types.DelegationRecord, error) {
+func (k *Keeper) Delegate(ctx sdk.Context, chainID string, amount math.Int, caller sdk.AccAddress) (*types.ProxyDelegation, error) {
 	sourceChain, found := k.GetSourceChain(ctx, chainID)
 	if !found {
 		return nil, sdkerrors.Wrapf(types.ErrUnknownSourceChain, "unknown source chain, chainID: %s", chainID)
@@ -31,14 +31,14 @@ func (k *Keeper) Delegate(ctx sdk.Context, chainID string, amount math.Int, call
 	}
 
 	currentEpoch := uint64(epochInfo.CurrentEpoch)
-	recordID, found := k.GetChianDelegationRecordID(ctx, chainID, currentEpoch)
+	delegationID, found := k.GetChianProxyDelegationID(ctx, chainID, currentEpoch)
 	if !found {
-		return nil, sdkerrors.Wrapf(types.ErrNoExistDelegationRecord, "chainID %s, epoch %d", chainID, currentEpoch)
+		return nil, sdkerrors.Wrapf(types.ErrNoExistProxyDelegation, "chainID %s, epoch %d", chainID, currentEpoch)
 	}
 
-	record, found := k.GetDelegationRecord(ctx, recordID)
+	proxyDelegation, found := k.GetProxyDelegation(ctx, delegationID)
 	if !found {
-		return nil, sdkerrors.Wrapf(types.ErrNoExistDelegationRecord, "chainID %s, epoch %d, recorID %d", chainID, currentEpoch, recordID)
+		return nil, sdkerrors.Wrapf(types.ErrNoExistProxyDelegation, "chainID %s, epoch %d, recorID %d", chainID, currentEpoch, delegationID)
 	}
 
 	ecsrowAccAddress := sdk.MustAccAddressFromBech32(sourceChain.EcsrowAddress)
@@ -54,17 +54,17 @@ func (k *Keeper) Delegate(ctx sdk.Context, chainID string, amount math.Int, call
 		return nil, err
 	}
 
-	record.DelegationCoin = record.DelegationCoin.AddAmount(amount)
+	proxyDelegation.Coin = proxyDelegation.Coin.AddAmount(amount)
 
-	k.SetDelegationRecord(ctx, recordID, record)
+	k.SetProxyDelegation(ctx, delegationID, proxyDelegation)
 
-	return record, nil
+	return proxyDelegation, nil
 }
 
-// ProcessDelegationRecord start liquid stake on source chain with provide delegation records.
-// This process will continue to advance the status of the DelegationRecord according to the IBC ack.
+// ProcessProxyDelegation start liquid stake on source chain with provide delegation records.
+// This process will continue to advance the status of the ProxyDelegation according to the IBC ack.
 // So here just start and restart the process.
-func (k *Keeper) ProcessDelegationRecord(ctx sdk.Context, curEpochNumber uint64, records []types.DelegationRecord) {
+func (k *Keeper) ProcessProxyDelegation(ctx sdk.Context, curEpochNumber uint64, records []types.ProxyDelegation) {
 	for _, r := range records {
 		// wait current done
 		if curEpochNumber <= r.EpochNumber {
@@ -72,11 +72,11 @@ func (k *Keeper) ProcessDelegationRecord(ctx sdk.Context, curEpochNumber uint64,
 		}
 
 		switch r.Status {
-		case types.DelegationPending:
-			k.handlePendingDelegationRecord(ctx, r)
-		case types.DelegationTransferFailed:
+		case types.ProxyDelegationPending:
+			k.handlePendingProxyDelegation(ctx, r)
+		case types.ProxyDelegationTransferFailed:
 			// become pending, transfer next epoch
-		case types.DelegateFailed:
+		case types.ProxyDelegationFailed:
 			// become transferred, delegate next epoch
 		default:
 			// do nothing
@@ -84,20 +84,20 @@ func (k *Keeper) ProcessDelegationRecord(ctx sdk.Context, curEpochNumber uint64,
 	}
 }
 
-func (k Keeper) handlePendingDelegationRecord(ctx sdk.Context, record types.DelegationRecord) error {
-	if record.DelegationCoin.Amount.IsZero() {
+func (k Keeper) handlePendingProxyDelegation(ctx sdk.Context, record types.ProxyDelegation) error {
+	if record.Coin.Amount.IsZero() {
 		return nil
 	}
 
-	transferCoin := record.DelegationCoin
+	transferCoin := record.Coin
 	if !record.TransferredAmount.IsZero() {
 		transferCoin = transferCoin.SubAmount(record.TransferredAmount)
 	}
 
-	if transferCoin.IsZero() && !record.DelegationCoin.IsZero() {
+	if transferCoin.IsZero() && !record.Coin.IsZero() {
 		// Only in the Delegate Epoch, no user participates in the Delegate,
 		// but `Reinvest` has withdrawn rewards on the source chain
-		return k.AfterDelegateTransfer(ctx, &record, true)
+		return k.AfterProxyDelegationTransfer(ctx, &record, true)
 	}
 
 	sourceChain, _ := k.GetSourceChain(ctx, record.ChainID)
@@ -106,7 +106,7 @@ func (k Keeper) handlePendingDelegationRecord(ctx sdk.Context, record types.Dele
 	if err := k.sendCoinsFromAccountToAccount(ctx,
 		sdk.MustAccAddressFromBech32(sourceChain.EcsrowAddress),
 		sdk.MustAccAddressFromBech32(sourceChain.DelegateAddress),
-		sdk.Coins{record.DelegationCoin},
+		sdk.Coins{record.Coin},
 	); err != nil {
 		return err
 	}
@@ -121,7 +121,7 @@ func (k Keeper) handlePendingDelegationRecord(ctx sdk.Context, record types.Dele
 	msg := ibctransfertypes.MsgTransfer{
 		SourcePort:       ibctransfertypes.PortID,
 		SourceChannel:    sourceChain.TransferChannelID,
-		Token:            record.DelegationCoin,
+		Token:            record.Coin,
 		Sender:           sourceChain.DelegateAddress,
 		Receiver:         hostAddr,
 		TimeoutHeight:    ibcclienttypes.Height{},
@@ -130,7 +130,7 @@ func (k Keeper) handlePendingDelegationRecord(ctx sdk.Context, record types.Dele
 	}
 
 	ctx.Logger().Info(fmt.Sprintf("transfer pending delegation record epoch: %d coin: %v",
-		record.EpochNumber, record.DelegationCoin))
+		record.EpochNumber, record.Coin))
 
 	resp, err := k.ibcTransferKeeper.Transfer(ctx, &msg)
 	if err != nil {
@@ -147,16 +147,16 @@ func (k Keeper) handlePendingDelegationRecord(ctx sdk.Context, record types.Dele
 	k.SetCallBack(ctx, msg.SourceChannel, msg.SourcePort, resp.Sequence, &callback)
 
 	// update & save record
-	record.Status = types.DelegationTransferring
-	k.SetDelegationRecord(ctx, record.Id, &record)
+	record.Status = types.ProxyDelegationTransferring
+	k.SetProxyDelegation(ctx, record.Id, &record)
 
 	return nil
 }
 
-func (k Keeper) AfterDelegateTransfer(ctx sdk.Context, record *types.DelegationRecord, successfulTransfer bool) error {
+func (k Keeper) AfterProxyDelegationTransfer(ctx sdk.Context, record *types.ProxyDelegation, successfulTransfer bool) error {
 	if !successfulTransfer {
-		record.Status = types.DelegationTransferFailed
-		k.SetDelegationRecord(ctx, record.Id, record)
+		record.Status = types.ProxyDelegationTransferFailed
+		k.SetProxyDelegation(ctx, record.Id, record)
 		return nil
 	}
 
@@ -169,7 +169,7 @@ func (k Keeper) AfterDelegateTransfer(ctx sdk.Context, record *types.DelegationR
 	if err != nil {
 		return err
 	}
-	allocatedFunds := sourceChain.AllocateFundsForValidator(record.DelegationCoin.Amount)
+	allocatedFunds := sourceChain.AllocateFundsForValidator(record.Coin.Amount)
 
 	stakingMsgs := make([]proto.Message, 0)
 	for _, valFund := range allocatedFunds {
@@ -188,8 +188,8 @@ func (k Keeper) AfterDelegateTransfer(ctx sdk.Context, record *types.DelegationR
 		return err
 	}
 
-	record.Status = types.Delegating
-	k.SetDelegationRecord(ctx, record.Id, record)
+	record.Status = types.ProxyDelegating
+	k.SetProxyDelegation(ctx, record.Id, record)
 
 	bzArg := sdk.Uint64ToBigEndian(record.Id)
 	callback := types.IBCCallback{
@@ -205,10 +205,10 @@ func (k Keeper) AfterDelegateTransfer(ctx sdk.Context, record *types.DelegationR
 	return nil
 }
 
-func (k Keeper) AfterCrosschainDelegate(ctx sdk.Context, record *types.DelegationRecord, delegationSuccessful bool) error {
+func (k Keeper) AfterProxyDelegationDone(ctx sdk.Context, record *types.ProxyDelegation, delegationSuccessful bool) error {
 	if !delegationSuccessful {
-		record.Status = types.DelegateFailed
-		k.SetDelegationRecord(ctx, record.Id, record)
+		record.Status = types.ProxyDelegationFailed
+		k.SetProxyDelegation(ctx, record.Id, record)
 		return nil
 	}
 
@@ -217,11 +217,11 @@ func (k Keeper) AfterCrosschainDelegate(ctx sdk.Context, record *types.Delegatio
 		return sdkerrors.Wrapf(types.ErrUnknownSourceChain, "unknown source chain, chainID: %s", record.ChainID)
 	}
 
-	record.Status = types.DelegationDone
+	record.Status = types.ProxyDelegationDone
 
-	k.SetDelegationRecord(ctx, record.Id, record)
+	k.SetProxyDelegation(ctx, record.Id, record)
 
-	sourceChain.UpdateWithDelegationRecord(record)
+	sourceChain.UpdateWithProxyDelegation(record)
 
 	// save source chain
 	k.SetSourceChain(ctx, sourceChain)

@@ -9,7 +9,7 @@ var (
 	ErrBannedIBCTransfer        = sdkioerrors.Register(ModuleName, 2, "ibc transfer is banned")
 	ErrSourceChainParameter     = sdkioerrors.Register(ModuleName, 3, "add source chain parameter has error")
 	ErrUnknownEpoch             = sdkioerrors.Register(ModuleName, 4, "unknown epoch")
-	ErrNoExistDelegationRecord  = sdkioerrors.Register(ModuleName, 5, "delegation record don't exist")
+	ErrNoExistProxyDelegation   = sdkioerrors.Register(ModuleName, 5, "delegation record don't exist")
 	ErrUnknownSourceChain       = sdkioerrors.Register(ModuleName, 6, "source chain is not exist")
 	ErrRepeatUndelegate         = sdkioerrors.Register(ModuleName, 7, "repeattly delegate in a epoch")
 	ErrInternalError            = sdkioerrors.Register(ModuleName, 8, "internal error")

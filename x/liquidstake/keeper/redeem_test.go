@@ -39,7 +39,7 @@ func (suite *KeeperTestSuite) TestRedeemAfterUnbondingComplete() {
 
 	ctx = suite.controlChain.GetContext()
 	balBefore := controlChainApp.BankKeeper.GetBalance(ctx, ctlChainUserAccAddr, sourceChainParams.IbcDenom)
-	_, err = controlChainApp.LiquidStakeKeeper.ClaimUndelegation(ctx, ctlChainUserAccAddr, 2, sourceChainParams.ChainID)
+	_, err = controlChainApp.LiquidStakeKeeper.ClaimUnbonding(ctx, ctlChainUserAccAddr, 2, sourceChainParams.ChainID)
 	balAfter := controlChainApp.BankKeeper.GetBalance(ctx, ctlChainUserAccAddr, sourceChainParams.IbcDenom)
 	suite.NoError(err)
 	suite.True(balAfter.Sub(balBefore).Amount.Equal(testCoin.Amount))

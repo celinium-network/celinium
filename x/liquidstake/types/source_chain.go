@@ -126,8 +126,8 @@ func (s SourceChain) AllocateFundsForValidator(amount math.Int) []ValidatorFund 
 	return validatorFunds
 }
 
-func (s *SourceChain) UpdateWithDelegationRecord(record *DelegationRecord) {
-	s.StakedAmount = s.StakedAmount.Add(record.DelegationCoin.Amount)
+func (s *SourceChain) UpdateWithProxyDelegation(record *ProxyDelegation) {
+	s.StakedAmount = s.StakedAmount.Add(record.Coin.Amount)
 	// TODO update delegation amout for every validators, it't will be used for rebalance.
 	// (1) should not calcaute from weight at now
 	// (2) record at callback'Args

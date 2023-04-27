@@ -118,25 +118,23 @@ func (m *QuerySourceChainResponse) GetSourceChain() SourceChain {
 	return SourceChain{}
 }
 
-type QueryChainEpochDelegationRecordRequest struct {
+type QueryProxyDelegationRequest struct {
 	Epoch   uint64 `protobuf:"varint,1,opt,name=epoch,proto3" json:"epoch,omitempty"`
 	ChainID string `protobuf:"bytes,2,opt,name=chainID,proto3" json:"chainID,omitempty"`
 }
 
-func (m *QueryChainEpochDelegationRecordRequest) Reset() {
-	*m = QueryChainEpochDelegationRecordRequest{}
-}
-func (m *QueryChainEpochDelegationRecordRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryChainEpochDelegationRecordRequest) ProtoMessage()    {}
-func (*QueryChainEpochDelegationRecordRequest) Descriptor() ([]byte, []int) {
+func (m *QueryProxyDelegationRequest) Reset()         { *m = QueryProxyDelegationRequest{} }
+func (m *QueryProxyDelegationRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryProxyDelegationRequest) ProtoMessage()    {}
+func (*QueryProxyDelegationRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_4a1fda13ab20bfc7, []int{2}
 }
-func (m *QueryChainEpochDelegationRecordRequest) XXX_Unmarshal(b []byte) error {
+func (m *QueryProxyDelegationRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryChainEpochDelegationRecordRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryProxyDelegationRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryChainEpochDelegationRecordRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryProxyDelegationRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -146,50 +144,48 @@ func (m *QueryChainEpochDelegationRecordRequest) XXX_Marshal(b []byte, determini
 		return b[:n], nil
 	}
 }
-func (m *QueryChainEpochDelegationRecordRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryChainEpochDelegationRecordRequest.Merge(m, src)
+func (m *QueryProxyDelegationRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryProxyDelegationRequest.Merge(m, src)
 }
-func (m *QueryChainEpochDelegationRecordRequest) XXX_Size() int {
+func (m *QueryProxyDelegationRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryChainEpochDelegationRecordRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryChainEpochDelegationRecordRequest.DiscardUnknown(m)
+func (m *QueryProxyDelegationRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryProxyDelegationRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryChainEpochDelegationRecordRequest proto.InternalMessageInfo
+var xxx_messageInfo_QueryProxyDelegationRequest proto.InternalMessageInfo
 
-func (m *QueryChainEpochDelegationRecordRequest) GetEpoch() uint64 {
+func (m *QueryProxyDelegationRequest) GetEpoch() uint64 {
 	if m != nil {
 		return m.Epoch
 	}
 	return 0
 }
 
-func (m *QueryChainEpochDelegationRecordRequest) GetChainID() string {
+func (m *QueryProxyDelegationRequest) GetChainID() string {
 	if m != nil {
 		return m.ChainID
 	}
 	return ""
 }
 
-type QueryChainEpochDelegationRecordResponse struct {
-	Record DelegationRecord `protobuf:"bytes,1,opt,name=record,proto3" json:"record"`
+type QueryProxyDelegationResponse struct {
+	Record ProxyDelegation `protobuf:"bytes,1,opt,name=record,proto3" json:"record"`
 }
 
-func (m *QueryChainEpochDelegationRecordResponse) Reset() {
-	*m = QueryChainEpochDelegationRecordResponse{}
-}
-func (m *QueryChainEpochDelegationRecordResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryChainEpochDelegationRecordResponse) ProtoMessage()    {}
-func (*QueryChainEpochDelegationRecordResponse) Descriptor() ([]byte, []int) {
+func (m *QueryProxyDelegationResponse) Reset()         { *m = QueryProxyDelegationResponse{} }
+func (m *QueryProxyDelegationResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryProxyDelegationResponse) ProtoMessage()    {}
+func (*QueryProxyDelegationResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_4a1fda13ab20bfc7, []int{3}
 }
-func (m *QueryChainEpochDelegationRecordResponse) XXX_Unmarshal(b []byte) error {
+func (m *QueryProxyDelegationResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryChainEpochDelegationRecordResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryProxyDelegationResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryChainEpochDelegationRecordResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryProxyDelegationResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -199,42 +195,42 @@ func (m *QueryChainEpochDelegationRecordResponse) XXX_Marshal(b []byte, determin
 		return b[:n], nil
 	}
 }
-func (m *QueryChainEpochDelegationRecordResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryChainEpochDelegationRecordResponse.Merge(m, src)
+func (m *QueryProxyDelegationResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryProxyDelegationResponse.Merge(m, src)
 }
-func (m *QueryChainEpochDelegationRecordResponse) XXX_Size() int {
+func (m *QueryProxyDelegationResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryChainEpochDelegationRecordResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryChainEpochDelegationRecordResponse.DiscardUnknown(m)
+func (m *QueryProxyDelegationResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryProxyDelegationResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryChainEpochDelegationRecordResponse proto.InternalMessageInfo
+var xxx_messageInfo_QueryProxyDelegationResponse proto.InternalMessageInfo
 
-func (m *QueryChainEpochDelegationRecordResponse) GetRecord() DelegationRecord {
+func (m *QueryProxyDelegationResponse) GetRecord() ProxyDelegation {
 	if m != nil {
 		return m.Record
 	}
-	return DelegationRecord{}
+	return ProxyDelegation{}
 }
 
-type QueryChainEpochUnbondingRequest struct {
+type QueryEpochProxyUnbondingRequest struct {
 	Epoch   uint64 `protobuf:"varint,1,opt,name=epoch,proto3" json:"epoch,omitempty"`
 	ChainID string `protobuf:"bytes,2,opt,name=chainID,proto3" json:"chainID,omitempty"`
 }
 
-func (m *QueryChainEpochUnbondingRequest) Reset()         { *m = QueryChainEpochUnbondingRequest{} }
-func (m *QueryChainEpochUnbondingRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryChainEpochUnbondingRequest) ProtoMessage()    {}
-func (*QueryChainEpochUnbondingRequest) Descriptor() ([]byte, []int) {
+func (m *QueryEpochProxyUnbondingRequest) Reset()         { *m = QueryEpochProxyUnbondingRequest{} }
+func (m *QueryEpochProxyUnbondingRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryEpochProxyUnbondingRequest) ProtoMessage()    {}
+func (*QueryEpochProxyUnbondingRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_4a1fda13ab20bfc7, []int{4}
 }
-func (m *QueryChainEpochUnbondingRequest) XXX_Unmarshal(b []byte) error {
+func (m *QueryEpochProxyUnbondingRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryChainEpochUnbondingRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryEpochProxyUnbondingRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryChainEpochUnbondingRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryEpochProxyUnbondingRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -244,48 +240,48 @@ func (m *QueryChainEpochUnbondingRequest) XXX_Marshal(b []byte, deterministic bo
 		return b[:n], nil
 	}
 }
-func (m *QueryChainEpochUnbondingRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryChainEpochUnbondingRequest.Merge(m, src)
+func (m *QueryEpochProxyUnbondingRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryEpochProxyUnbondingRequest.Merge(m, src)
 }
-func (m *QueryChainEpochUnbondingRequest) XXX_Size() int {
+func (m *QueryEpochProxyUnbondingRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryChainEpochUnbondingRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryChainEpochUnbondingRequest.DiscardUnknown(m)
+func (m *QueryEpochProxyUnbondingRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryEpochProxyUnbondingRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryChainEpochUnbondingRequest proto.InternalMessageInfo
+var xxx_messageInfo_QueryEpochProxyUnbondingRequest proto.InternalMessageInfo
 
-func (m *QueryChainEpochUnbondingRequest) GetEpoch() uint64 {
+func (m *QueryEpochProxyUnbondingRequest) GetEpoch() uint64 {
 	if m != nil {
 		return m.Epoch
 	}
 	return 0
 }
 
-func (m *QueryChainEpochUnbondingRequest) GetChainID() string {
+func (m *QueryEpochProxyUnbondingRequest) GetChainID() string {
 	if m != nil {
 		return m.ChainID
 	}
 	return ""
 }
 
-type QueryChainEpochUnbondingResponse struct {
-	ChainUnbonding Unbonding `protobuf:"bytes,1,opt,name=chainUnbonding,proto3" json:"chainUnbonding"`
+type QueryEpochProxyUnbondingResponse struct {
+	ChainUnbonding ProxyUnbonding `protobuf:"bytes,1,opt,name=chainUnbonding,proto3" json:"chainUnbonding"`
 }
 
-func (m *QueryChainEpochUnbondingResponse) Reset()         { *m = QueryChainEpochUnbondingResponse{} }
-func (m *QueryChainEpochUnbondingResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryChainEpochUnbondingResponse) ProtoMessage()    {}
-func (*QueryChainEpochUnbondingResponse) Descriptor() ([]byte, []int) {
+func (m *QueryEpochProxyUnbondingResponse) Reset()         { *m = QueryEpochProxyUnbondingResponse{} }
+func (m *QueryEpochProxyUnbondingResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryEpochProxyUnbondingResponse) ProtoMessage()    {}
+func (*QueryEpochProxyUnbondingResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_4a1fda13ab20bfc7, []int{5}
 }
-func (m *QueryChainEpochUnbondingResponse) XXX_Unmarshal(b []byte) error {
+func (m *QueryEpochProxyUnbondingResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryChainEpochUnbondingResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryEpochProxyUnbondingResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryChainEpochUnbondingResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryEpochProxyUnbondingResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -295,42 +291,42 @@ func (m *QueryChainEpochUnbondingResponse) XXX_Marshal(b []byte, deterministic b
 		return b[:n], nil
 	}
 }
-func (m *QueryChainEpochUnbondingResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryChainEpochUnbondingResponse.Merge(m, src)
+func (m *QueryEpochProxyUnbondingResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryEpochProxyUnbondingResponse.Merge(m, src)
 }
-func (m *QueryChainEpochUnbondingResponse) XXX_Size() int {
+func (m *QueryEpochProxyUnbondingResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryChainEpochUnbondingResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryChainEpochUnbondingResponse.DiscardUnknown(m)
+func (m *QueryEpochProxyUnbondingResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryEpochProxyUnbondingResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryChainEpochUnbondingResponse proto.InternalMessageInfo
+var xxx_messageInfo_QueryEpochProxyUnbondingResponse proto.InternalMessageInfo
 
-func (m *QueryChainEpochUnbondingResponse) GetChainUnbonding() Unbonding {
+func (m *QueryEpochProxyUnbondingResponse) GetChainUnbonding() ProxyUnbonding {
 	if m != nil {
 		return m.ChainUnbonding
 	}
-	return Unbonding{}
+	return ProxyUnbonding{}
 }
 
-type QueryUserUndelegationRecordRequest struct {
+type QueryUserUnbondingRequest struct {
 	ChainID string `protobuf:"bytes,1,opt,name=chainID,proto3" json:"chainID,omitempty"`
 	User    string `protobuf:"bytes,2,opt,name=user,proto3" json:"user,omitempty"`
 }
 
-func (m *QueryUserUndelegationRecordRequest) Reset()         { *m = QueryUserUndelegationRecordRequest{} }
-func (m *QueryUserUndelegationRecordRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryUserUndelegationRecordRequest) ProtoMessage()    {}
-func (*QueryUserUndelegationRecordRequest) Descriptor() ([]byte, []int) {
+func (m *QueryUserUnbondingRequest) Reset()         { *m = QueryUserUnbondingRequest{} }
+func (m *QueryUserUnbondingRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryUserUnbondingRequest) ProtoMessage()    {}
+func (*QueryUserUnbondingRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_4a1fda13ab20bfc7, []int{6}
 }
-func (m *QueryUserUndelegationRecordRequest) XXX_Unmarshal(b []byte) error {
+func (m *QueryUserUnbondingRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryUserUndelegationRecordRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryUserUnbondingRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryUserUndelegationRecordRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryUserUnbondingRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -340,48 +336,48 @@ func (m *QueryUserUndelegationRecordRequest) XXX_Marshal(b []byte, deterministic
 		return b[:n], nil
 	}
 }
-func (m *QueryUserUndelegationRecordRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryUserUndelegationRecordRequest.Merge(m, src)
+func (m *QueryUserUnbondingRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryUserUnbondingRequest.Merge(m, src)
 }
-func (m *QueryUserUndelegationRecordRequest) XXX_Size() int {
+func (m *QueryUserUnbondingRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryUserUndelegationRecordRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryUserUndelegationRecordRequest.DiscardUnknown(m)
+func (m *QueryUserUnbondingRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryUserUnbondingRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryUserUndelegationRecordRequest proto.InternalMessageInfo
+var xxx_messageInfo_QueryUserUnbondingRequest proto.InternalMessageInfo
 
-func (m *QueryUserUndelegationRecordRequest) GetChainID() string {
+func (m *QueryUserUnbondingRequest) GetChainID() string {
 	if m != nil {
 		return m.ChainID
 	}
 	return ""
 }
 
-func (m *QueryUserUndelegationRecordRequest) GetUser() string {
+func (m *QueryUserUnbondingRequest) GetUser() string {
 	if m != nil {
 		return m.User
 	}
 	return ""
 }
 
-type QueryUserUndelegationRecordResponse struct {
-	UndelegationRecords []UndelegationRecord `protobuf:"bytes,1,rep,name=undelegationRecords,proto3" json:"undelegationRecords"`
+type QueryUserUnbondingResponse struct {
+	UserUnbondings []UserUnbonding `protobuf:"bytes,1,rep,name=userUnbondings,proto3" json:"userUnbondings"`
 }
 
-func (m *QueryUserUndelegationRecordResponse) Reset()         { *m = QueryUserUndelegationRecordResponse{} }
-func (m *QueryUserUndelegationRecordResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryUserUndelegationRecordResponse) ProtoMessage()    {}
-func (*QueryUserUndelegationRecordResponse) Descriptor() ([]byte, []int) {
+func (m *QueryUserUnbondingResponse) Reset()         { *m = QueryUserUnbondingResponse{} }
+func (m *QueryUserUnbondingResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryUserUnbondingResponse) ProtoMessage()    {}
+func (*QueryUserUnbondingResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_4a1fda13ab20bfc7, []int{7}
 }
-func (m *QueryUserUndelegationRecordResponse) XXX_Unmarshal(b []byte) error {
+func (m *QueryUserUnbondingResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryUserUndelegationRecordResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryUserUnbondingResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryUserUndelegationRecordResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryUserUnbondingResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -391,21 +387,21 @@ func (m *QueryUserUndelegationRecordResponse) XXX_Marshal(b []byte, deterministi
 		return b[:n], nil
 	}
 }
-func (m *QueryUserUndelegationRecordResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryUserUndelegationRecordResponse.Merge(m, src)
+func (m *QueryUserUnbondingResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryUserUnbondingResponse.Merge(m, src)
 }
-func (m *QueryUserUndelegationRecordResponse) XXX_Size() int {
+func (m *QueryUserUnbondingResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryUserUndelegationRecordResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryUserUndelegationRecordResponse.DiscardUnknown(m)
+func (m *QueryUserUnbondingResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryUserUnbondingResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryUserUndelegationRecordResponse proto.InternalMessageInfo
+var xxx_messageInfo_QueryUserUnbondingResponse proto.InternalMessageInfo
 
-func (m *QueryUserUndelegationRecordResponse) GetUndelegationRecords() []UndelegationRecord {
+func (m *QueryUserUnbondingResponse) GetUserUnbondings() []UserUnbonding {
 	if m != nil {
-		return m.UndelegationRecords
+		return m.UserUnbondings
 	}
 	return nil
 }
@@ -413,12 +409,12 @@ func (m *QueryUserUndelegationRecordResponse) GetUndelegationRecords() []Undeleg
 func init() {
 	proto.RegisterType((*QuerySourceChainRequest)(nil), "celinium.liquidstake.v1.QuerySourceChainRequest")
 	proto.RegisterType((*QuerySourceChainResponse)(nil), "celinium.liquidstake.v1.QuerySourceChainResponse")
-	proto.RegisterType((*QueryChainEpochDelegationRecordRequest)(nil), "celinium.liquidstake.v1.QueryChainEpochDelegationRecordRequest")
-	proto.RegisterType((*QueryChainEpochDelegationRecordResponse)(nil), "celinium.liquidstake.v1.QueryChainEpochDelegationRecordResponse")
-	proto.RegisterType((*QueryChainEpochUnbondingRequest)(nil), "celinium.liquidstake.v1.QueryChainEpochUnbondingRequest")
-	proto.RegisterType((*QueryChainEpochUnbondingResponse)(nil), "celinium.liquidstake.v1.QueryChainEpochUnbondingResponse")
-	proto.RegisterType((*QueryUserUndelegationRecordRequest)(nil), "celinium.liquidstake.v1.QueryUserUndelegationRecordRequest")
-	proto.RegisterType((*QueryUserUndelegationRecordResponse)(nil), "celinium.liquidstake.v1.QueryUserUndelegationRecordResponse")
+	proto.RegisterType((*QueryProxyDelegationRequest)(nil), "celinium.liquidstake.v1.QueryProxyDelegationRequest")
+	proto.RegisterType((*QueryProxyDelegationResponse)(nil), "celinium.liquidstake.v1.QueryProxyDelegationResponse")
+	proto.RegisterType((*QueryEpochProxyUnbondingRequest)(nil), "celinium.liquidstake.v1.QueryEpochProxyUnbondingRequest")
+	proto.RegisterType((*QueryEpochProxyUnbondingResponse)(nil), "celinium.liquidstake.v1.QueryEpochProxyUnbondingResponse")
+	proto.RegisterType((*QueryUserUnbondingRequest)(nil), "celinium.liquidstake.v1.QueryUserUnbondingRequest")
+	proto.RegisterType((*QueryUserUnbondingResponse)(nil), "celinium.liquidstake.v1.QueryUserUnbondingResponse")
 }
 
 func init() {
@@ -426,45 +422,44 @@ func init() {
 }
 
 var fileDescriptor_4a1fda13ab20bfc7 = []byte{
-	// 595 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x95, 0x41, 0x6b, 0x13, 0x41,
-	0x14, 0xc7, 0x33, 0xb5, 0x8d, 0xf8, 0x02, 0x1e, 0xa6, 0xc5, 0xc6, 0xa5, 0x6c, 0xc3, 0x56, 0x6d,
-	0x55, 0xdc, 0x6d, 0x12, 0xa8, 0x16, 0x05, 0xa5, 0x56, 0x44, 0xf0, 0x60, 0x57, 0x02, 0xe2, 0x65,
-	0x49, 0x37, 0xc3, 0x66, 0x31, 0xdd, 0x49, 0x76, 0x76, 0x8b, 0xbd, 0x7a, 0xf4, 0x24, 0x78, 0xf5,
-	0xe2, 0x57, 0xf1, 0xd4, 0x93, 0x14, 0xbc, 0xf4, 0x24, 0x92, 0xf8, 0x41, 0x64, 0xdf, 0x4e, 0xd2,
-	0x6d, 0x9a, 0xd9, 0xc6, 0xdc, 0xf6, 0xed, 0x7b, 0xff, 0x37, 0xff, 0xdf, 0xce, 0x7b, 0x09, 0xac,
-	0xb9, 0xac, 0xe3, 0x07, 0x7e, 0x7c, 0x60, 0x75, 0xfc, 0x5e, 0xec, 0xb7, 0x44, 0xd4, 0xfc, 0xc0,
-	0xac, 0xc3, 0xaa, 0xd5, 0x8b, 0x59, 0x78, 0x64, 0x76, 0x43, 0x1e, 0x71, 0xba, 0x3c, 0x2c, 0x32,
-	0x33, 0x45, 0xe6, 0x61, 0x55, 0x5b, 0xf2, 0xb8, 0xc7, 0xb1, 0xc6, 0x4a, 0x9e, 0xd2, 0x72, 0xed,
-	0xa6, 0xcb, 0xc5, 0x01, 0x17, 0x4e, 0x9a, 0x48, 0x03, 0x99, 0x5a, 0xf1, 0x38, 0xf7, 0x3a, 0xcc,
-	0x6a, 0x76, 0x7d, 0xab, 0x19, 0x04, 0x3c, 0x6a, 0x46, 0x3e, 0x0f, 0x86, 0xd9, 0x7b, 0x2a, 0x33,
-	0x82, 0xc7, 0xa1, 0xcb, 0x1c, 0xb7, 0xdd, 0xf4, 0x03, 0x59, 0xab, 0x34, 0x9e, 0x9a, 0xc3, 0x22,
-	0xa3, 0x0e, 0xcb, 0x7b, 0x09, 0xc7, 0x5b, 0xd4, 0x3f, 0x4f, 0xe4, 0x36, 0xeb, 0xc5, 0x4c, 0x44,
-	0xb4, 0x0c, 0x57, 0x31, 0x7e, 0xb5, 0x5b, 0x26, 0x15, 0xb2, 0x71, 0xcd, 0x1e, 0x86, 0x46, 0x1b,
-	0xca, 0x17, 0x45, 0xa2, 0xcb, 0x03, 0xc1, 0xe8, 0x6b, 0x28, 0x89, 0xb3, 0xd7, 0xa8, 0x2c, 0xd5,
-	0x6e, 0x99, 0x8a, 0xef, 0x63, 0x66, 0x5a, 0xec, 0xcc, 0x1f, 0xff, 0x5e, 0x2d, 0xd8, 0x59, 0xb9,
-	0xf1, 0x0e, 0xee, 0xe0, 0x49, 0x18, 0xbd, 0xe8, 0x72, 0xb7, 0xbd, 0xcb, 0x3a, 0xcc, 0xc3, 0x6f,
-	0x62, 0x33, 0x97, 0x87, 0xad, 0xa1, 0xdb, 0x25, 0x58, 0x60, 0x49, 0x1e, 0x4f, 0x9c, 0xb7, 0xd3,
-	0x20, 0x61, 0x70, 0x25, 0xc3, 0x5c, 0xca, 0x20, 0x43, 0x23, 0x84, 0xf5, 0x4b, 0x3b, 0x4b, 0xa4,
-	0x97, 0x50, 0x0c, 0xf1, 0x8d, 0xa4, 0xb9, 0xab, 0xa4, 0x19, 0x6f, 0x21, 0x91, 0xa4, 0xdc, 0xd8,
-	0x83, 0xd5, 0xb1, 0x33, 0x1b, 0xc1, 0x3e, 0x0f, 0x5a, 0x7e, 0xe0, 0xcd, 0x8a, 0x11, 0x41, 0x45,
-	0xdd, 0x52, 0xfa, 0x7f, 0x03, 0xd7, 0xb1, 0x7c, 0x94, 0x91, 0x1c, 0x86, 0x92, 0x63, 0x54, 0x29,
-	0x01, 0xc6, 0xf4, 0x86, 0x0d, 0x06, 0x9e, 0xda, 0x10, 0x2c, 0x6c, 0x04, 0x2d, 0xc5, 0x95, 0x64,
-	0x5c, 0x93, 0x73, 0xae, 0x29, 0x85, 0xf9, 0x58, 0xb0, 0x50, 0xc2, 0xe0, 0xb3, 0xf1, 0x99, 0xc0,
-	0x5a, 0x6e, 0x53, 0x49, 0xe3, 0xc2, 0x62, 0x7c, 0x21, 0x2b, 0xca, 0xa4, 0x72, 0x65, 0xa3, 0x54,
-	0xbb, 0x9f, 0x83, 0xd4, 0x9a, 0x7c, 0x39, 0x93, 0xba, 0xd5, 0xbe, 0x15, 0x61, 0x01, 0xcd, 0xd0,
-	0xef, 0x04, 0x4a, 0x99, 0x21, 0xa5, 0x9b, 0xca, 0x13, 0x14, 0x7b, 0xa4, 0x55, 0xff, 0x43, 0x91,
-	0x32, 0x1a, 0x0f, 0x3e, 0xfd, 0xfa, 0xfb, 0x75, 0x6e, 0x9d, 0xde, 0xb6, 0xa6, 0xd9, 0x77, 0x7a,
-	0x4a, 0x40, 0x53, 0xcf, 0x31, 0x7d, 0x9a, 0x6f, 0xe0, 0xd2, 0xdd, 0xd2, 0x9e, 0xcd, 0xde, 0x40,
-	0x02, 0x3d, 0x44, 0xa0, 0x2a, 0xb5, 0x94, 0x40, 0x48, 0xe2, 0xe0, 0xb8, 0x3b, 0x67, 0xf7, 0x41,
-	0x7f, 0x10, 0x58, 0x9c, 0x30, 0xdb, 0xf4, 0xd1, 0xb4, 0x96, 0xc6, 0x37, 0x4c, 0xdb, 0x9e, 0x41,
-	0x29, 0x29, 0xb6, 0x90, 0x62, 0x93, 0x9a, 0x53, 0x51, 0xc4, 0x23, 0xb3, 0x3f, 0x09, 0xdc, 0x98,
-	0x3c, 0xd5, 0xf4, 0x71, 0xbe, 0x9b, 0xdc, 0x05, 0xd3, 0x9e, 0xcc, 0x26, 0x96, 0x34, 0xdb, 0x48,
-	0x53, 0xa7, 0x55, 0x25, 0x4d, 0xb2, 0x97, 0x4e, 0x76, 0x3d, 0x9c, 0xf4, 0x87, 0x6c, 0x67, 0xeb,
-	0xb8, 0xaf, 0x93, 0x93, 0xbe, 0x4e, 0xfe, 0xf4, 0x75, 0xf2, 0x65, 0xa0, 0x17, 0x4e, 0x06, 0x7a,
-	0xe1, 0x74, 0xa0, 0x17, 0xde, 0xaf, 0x8c, 0x7a, 0x7d, 0x3c, 0xd7, 0x2d, 0x3a, 0xea, 0x32, 0xb1,
-	0x5f, 0xc4, 0x3f, 0x9d, 0xfa, 0xbf, 0x00, 0x00, 0x00, 0xff, 0xff, 0x97, 0x4d, 0xaa, 0xdc, 0x54,
-	0x07, 0x00, 0x00,
+	// 589 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x94, 0xcf, 0x6e, 0xd3, 0x4e,
+	0x10, 0xc7, 0xb3, 0xfd, 0x25, 0xfd, 0x89, 0x89, 0x28, 0xd2, 0x52, 0xa9, 0xa9, 0x89, 0xdc, 0xc8,
+	0xfc, 0x49, 0x0a, 0xc2, 0x6e, 0x12, 0xa8, 0xe0, 0x5a, 0x0a, 0x52, 0x25, 0x90, 0x68, 0x20, 0x17,
+	0x2e, 0x51, 0xea, 0x2c, 0x8e, 0x45, 0xea, 0x75, 0xbc, 0x76, 0xd5, 0x5c, 0x79, 0x02, 0x24, 0x9e,
+	0x80, 0x23, 0x47, 0x5e, 0x81, 0x53, 0x8f, 0x91, 0xb8, 0x70, 0x42, 0x28, 0xe1, 0x41, 0x90, 0xd7,
+	0xeb, 0xc4, 0x4e, 0xbd, 0x11, 0xe9, 0xcd, 0x93, 0x99, 0xef, 0x77, 0x3e, 0xb3, 0x9a, 0x09, 0xdc,
+	0x36, 0xc9, 0xc0, 0x76, 0xec, 0xe0, 0xd4, 0x18, 0xd8, 0xc3, 0xc0, 0xee, 0x31, 0xbf, 0xfb, 0x81,
+	0x18, 0x67, 0x75, 0x63, 0x18, 0x10, 0x6f, 0xa4, 0xbb, 0x1e, 0xf5, 0x29, 0xde, 0x8a, 0x8b, 0xf4,
+	0x44, 0x91, 0x7e, 0x56, 0x57, 0x36, 0x2d, 0x6a, 0x51, 0x5e, 0x63, 0x84, 0x5f, 0x51, 0xb9, 0xb2,
+	0x6d, 0x52, 0x76, 0x4a, 0x59, 0x27, 0x4a, 0x44, 0x81, 0x48, 0x95, 0x2d, 0x4a, 0xad, 0x01, 0x31,
+	0xba, 0xae, 0x6d, 0x74, 0x1d, 0x87, 0xfa, 0x5d, 0xdf, 0xa6, 0x4e, 0x9c, 0xbd, 0x2f, 0x83, 0x61,
+	0x34, 0xf0, 0x4c, 0xd2, 0x31, 0xfb, 0x5d, 0xdb, 0x11, 0xb5, 0x52, 0xf0, 0x08, 0x8e, 0x17, 0x69,
+	0x4d, 0xd8, 0x3a, 0x0e, 0xe7, 0x78, 0xc3, 0xf5, 0xcf, 0x42, 0x79, 0x8b, 0x0c, 0x03, 0xc2, 0x7c,
+	0x5c, 0x82, 0xff, 0x79, 0x7c, 0x74, 0x58, 0x42, 0x15, 0x54, 0xbb, 0xd6, 0x8a, 0x43, 0xad, 0x0f,
+	0xa5, 0xcb, 0x22, 0xe6, 0x52, 0x87, 0x11, 0xfc, 0x12, 0x8a, 0x6c, 0xfe, 0x33, 0x57, 0x16, 0x1b,
+	0x77, 0x74, 0xc9, 0xfb, 0xe8, 0x09, 0x8b, 0x83, 0xfc, 0xc5, 0xaf, 0x9d, 0x5c, 0x2b, 0x29, 0xd7,
+	0x5e, 0xc1, 0x2d, 0xde, 0xe9, 0xb5, 0x47, 0xcf, 0x47, 0x87, 0x64, 0x40, 0x2c, 0xfe, 0x1c, 0x31,
+	0xe2, 0x26, 0x14, 0x88, 0x4b, 0xcd, 0x3e, 0x6f, 0x93, 0x6f, 0x45, 0x41, 0x08, 0x6e, 0x0a, 0xf0,
+	0xb5, 0x08, 0x5c, 0x84, 0xda, 0x7b, 0x28, 0x67, 0xdb, 0x09, 0xf8, 0x17, 0xb0, 0xee, 0x11, 0x93,
+	0x7a, 0x3d, 0xc1, 0x5d, 0x93, 0x72, 0x2f, 0x38, 0x08, 0x76, 0xa1, 0xd6, 0x8e, 0x61, 0x87, 0xf7,
+	0x79, 0x1e, 0xf2, 0xf0, 0xd2, 0xb6, 0x73, 0x42, 0x9d, 0x9e, 0xed, 0x58, 0x57, 0x45, 0x1f, 0x41,
+	0x45, 0x6e, 0x29, 0xf0, 0xdb, 0xb0, 0xc1, 0xcb, 0x67, 0x19, 0x31, 0x46, 0x75, 0xf9, 0x18, 0xb3,
+	0x72, 0x31, 0xc5, 0x82, 0x89, 0x76, 0x04, 0xdb, 0xbc, 0x75, 0x9b, 0x11, 0xef, 0xd2, 0x1c, 0x09,
+	0x62, 0x94, 0x22, 0xc6, 0x18, 0xf2, 0x01, 0x23, 0x9e, 0x18, 0x84, 0x7f, 0x6b, 0x1e, 0x28, 0x59,
+	0x56, 0x82, 0xff, 0x2d, 0x6c, 0x04, 0xc9, 0x04, 0x2b, 0xa1, 0xca, 0x7f, 0xb5, 0x62, 0xe3, 0x9e,
+	0x94, 0x3f, 0xe5, 0x13, 0xe3, 0xa7, 0x3d, 0x1a, 0xe3, 0x02, 0x14, 0x78, 0x53, 0xfc, 0x05, 0x41,
+	0x31, 0xb1, 0x70, 0x78, 0x4f, 0xea, 0x2b, 0xb9, 0x09, 0xa5, 0xbe, 0x82, 0x22, 0x1a, 0x4a, 0x7b,
+	0xf8, 0xf1, 0xc7, 0x9f, 0xcf, 0x6b, 0x55, 0x7c, 0xd7, 0xf8, 0x97, 0xdb, 0xc5, 0xdf, 0x10, 0xdc,
+	0x58, 0x58, 0x2e, 0xfc, 0x68, 0x79, 0xd7, 0xec, 0xe3, 0x50, 0x1e, 0xaf, 0xa8, 0x12, 0xbc, 0x75,
+	0xce, 0xfb, 0x00, 0xef, 0x4a, 0x79, 0xdd, 0x50, 0xd9, 0xe9, 0xcd, 0xf9, 0xbe, 0x23, 0xb8, 0x99,
+	0xb1, 0x97, 0xf8, 0xc9, 0x72, 0x02, 0xf9, 0x75, 0x28, 0x4f, 0xaf, 0xa0, 0x14, 0xfc, 0xfb, 0x9c,
+	0x7f, 0x0f, 0xeb, 0x52, 0x7e, 0x7e, 0x6a, 0x9d, 0x68, 0x8a, 0x60, 0x06, 0xfb, 0x15, 0xc1, 0xf5,
+	0xd4, 0x3a, 0xe1, 0xc6, 0x72, 0x88, 0xac, 0x73, 0x50, 0x9a, 0x2b, 0x69, 0x04, 0xb2, 0xc1, 0x91,
+	0x77, 0x71, 0x55, 0x8a, 0x1c, 0xae, 0xf4, 0x9c, 0xf5, 0x60, 0xff, 0x62, 0xa2, 0xa2, 0xf1, 0x44,
+	0x45, 0xbf, 0x27, 0x2a, 0xfa, 0x34, 0x55, 0x73, 0xe3, 0xa9, 0x9a, 0xfb, 0x39, 0x55, 0x73, 0xef,
+	0xca, 0x33, 0x87, 0xf3, 0x94, 0x87, 0x3f, 0x72, 0x09, 0x3b, 0x59, 0xe7, 0x7f, 0xfa, 0xcd, 0xbf,
+	0x01, 0x00, 0x00, 0xff, 0xff, 0xa4, 0x05, 0x56, 0xbb, 0xd4, 0x06, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -480,9 +475,9 @@ const _ = grpc.SupportPackageIsVersion4
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type QueryClient interface {
 	SourceChain(ctx context.Context, in *QuerySourceChainRequest, opts ...grpc.CallOption) (*QuerySourceChainResponse, error)
-	ChainEpochDelegationRecord(ctx context.Context, in *QueryChainEpochDelegationRecordRequest, opts ...grpc.CallOption) (*QueryChainEpochDelegationRecordResponse, error)
-	ChainEpochUnbonding(ctx context.Context, in *QueryChainEpochUnbondingRequest, opts ...grpc.CallOption) (*QueryChainEpochUnbondingResponse, error)
-	UserUndelegationRecord(ctx context.Context, in *QueryUserUndelegationRecordRequest, opts ...grpc.CallOption) (*QueryUserUndelegationRecordResponse, error)
+	ProxyDelegation(ctx context.Context, in *QueryProxyDelegationRequest, opts ...grpc.CallOption) (*QueryProxyDelegationResponse, error)
+	EpochProxyUnbonding(ctx context.Context, in *QueryEpochProxyUnbondingRequest, opts ...grpc.CallOption) (*QueryEpochProxyUnbondingResponse, error)
+	UserUnbonding(ctx context.Context, in *QueryUserUnbondingRequest, opts ...grpc.CallOption) (*QueryUserUnbondingResponse, error)
 }
 
 type queryClient struct {
@@ -502,27 +497,27 @@ func (c *queryClient) SourceChain(ctx context.Context, in *QuerySourceChainReque
 	return out, nil
 }
 
-func (c *queryClient) ChainEpochDelegationRecord(ctx context.Context, in *QueryChainEpochDelegationRecordRequest, opts ...grpc.CallOption) (*QueryChainEpochDelegationRecordResponse, error) {
-	out := new(QueryChainEpochDelegationRecordResponse)
-	err := c.cc.Invoke(ctx, "/celinium.liquidstake.v1.Query/ChainEpochDelegationRecord", in, out, opts...)
+func (c *queryClient) ProxyDelegation(ctx context.Context, in *QueryProxyDelegationRequest, opts ...grpc.CallOption) (*QueryProxyDelegationResponse, error) {
+	out := new(QueryProxyDelegationResponse)
+	err := c.cc.Invoke(ctx, "/celinium.liquidstake.v1.Query/ProxyDelegation", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) ChainEpochUnbonding(ctx context.Context, in *QueryChainEpochUnbondingRequest, opts ...grpc.CallOption) (*QueryChainEpochUnbondingResponse, error) {
-	out := new(QueryChainEpochUnbondingResponse)
-	err := c.cc.Invoke(ctx, "/celinium.liquidstake.v1.Query/ChainEpochUnbonding", in, out, opts...)
+func (c *queryClient) EpochProxyUnbonding(ctx context.Context, in *QueryEpochProxyUnbondingRequest, opts ...grpc.CallOption) (*QueryEpochProxyUnbondingResponse, error) {
+	out := new(QueryEpochProxyUnbondingResponse)
+	err := c.cc.Invoke(ctx, "/celinium.liquidstake.v1.Query/EpochProxyUnbonding", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) UserUndelegationRecord(ctx context.Context, in *QueryUserUndelegationRecordRequest, opts ...grpc.CallOption) (*QueryUserUndelegationRecordResponse, error) {
-	out := new(QueryUserUndelegationRecordResponse)
-	err := c.cc.Invoke(ctx, "/celinium.liquidstake.v1.Query/UserUndelegationRecord", in, out, opts...)
+func (c *queryClient) UserUnbonding(ctx context.Context, in *QueryUserUnbondingRequest, opts ...grpc.CallOption) (*QueryUserUnbondingResponse, error) {
+	out := new(QueryUserUnbondingResponse)
+	err := c.cc.Invoke(ctx, "/celinium.liquidstake.v1.Query/UserUnbonding", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -532,9 +527,9 @@ func (c *queryClient) UserUndelegationRecord(ctx context.Context, in *QueryUserU
 // QueryServer is the server API for Query service.
 type QueryServer interface {
 	SourceChain(context.Context, *QuerySourceChainRequest) (*QuerySourceChainResponse, error)
-	ChainEpochDelegationRecord(context.Context, *QueryChainEpochDelegationRecordRequest) (*QueryChainEpochDelegationRecordResponse, error)
-	ChainEpochUnbonding(context.Context, *QueryChainEpochUnbondingRequest) (*QueryChainEpochUnbondingResponse, error)
-	UserUndelegationRecord(context.Context, *QueryUserUndelegationRecordRequest) (*QueryUserUndelegationRecordResponse, error)
+	ProxyDelegation(context.Context, *QueryProxyDelegationRequest) (*QueryProxyDelegationResponse, error)
+	EpochProxyUnbonding(context.Context, *QueryEpochProxyUnbondingRequest) (*QueryEpochProxyUnbondingResponse, error)
+	UserUnbonding(context.Context, *QueryUserUnbondingRequest) (*QueryUserUnbondingResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
@@ -544,14 +539,14 @@ type UnimplementedQueryServer struct {
 func (*UnimplementedQueryServer) SourceChain(ctx context.Context, req *QuerySourceChainRequest) (*QuerySourceChainResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SourceChain not implemented")
 }
-func (*UnimplementedQueryServer) ChainEpochDelegationRecord(ctx context.Context, req *QueryChainEpochDelegationRecordRequest) (*QueryChainEpochDelegationRecordResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ChainEpochDelegationRecord not implemented")
+func (*UnimplementedQueryServer) ProxyDelegation(ctx context.Context, req *QueryProxyDelegationRequest) (*QueryProxyDelegationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ProxyDelegation not implemented")
 }
-func (*UnimplementedQueryServer) ChainEpochUnbonding(ctx context.Context, req *QueryChainEpochUnbondingRequest) (*QueryChainEpochUnbondingResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ChainEpochUnbonding not implemented")
+func (*UnimplementedQueryServer) EpochProxyUnbonding(ctx context.Context, req *QueryEpochProxyUnbondingRequest) (*QueryEpochProxyUnbondingResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EpochProxyUnbonding not implemented")
 }
-func (*UnimplementedQueryServer) UserUndelegationRecord(ctx context.Context, req *QueryUserUndelegationRecordRequest) (*QueryUserUndelegationRecordResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UserUndelegationRecord not implemented")
+func (*UnimplementedQueryServer) UserUnbonding(ctx context.Context, req *QueryUserUnbondingRequest) (*QueryUserUnbondingResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UserUnbonding not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
@@ -576,56 +571,56 @@ func _Query_SourceChain_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_ChainEpochDelegationRecord_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryChainEpochDelegationRecordRequest)
+func _Query_ProxyDelegation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryProxyDelegationRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).ChainEpochDelegationRecord(ctx, in)
+		return srv.(QueryServer).ProxyDelegation(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/celinium.liquidstake.v1.Query/ChainEpochDelegationRecord",
+		FullMethod: "/celinium.liquidstake.v1.Query/ProxyDelegation",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).ChainEpochDelegationRecord(ctx, req.(*QueryChainEpochDelegationRecordRequest))
+		return srv.(QueryServer).ProxyDelegation(ctx, req.(*QueryProxyDelegationRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_ChainEpochUnbonding_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryChainEpochUnbondingRequest)
+func _Query_EpochProxyUnbonding_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryEpochProxyUnbondingRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).ChainEpochUnbonding(ctx, in)
+		return srv.(QueryServer).EpochProxyUnbonding(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/celinium.liquidstake.v1.Query/ChainEpochUnbonding",
+		FullMethod: "/celinium.liquidstake.v1.Query/EpochProxyUnbonding",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).ChainEpochUnbonding(ctx, req.(*QueryChainEpochUnbondingRequest))
+		return srv.(QueryServer).EpochProxyUnbonding(ctx, req.(*QueryEpochProxyUnbondingRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_UserUndelegationRecord_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryUserUndelegationRecordRequest)
+func _Query_UserUnbonding_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryUserUnbondingRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).UserUndelegationRecord(ctx, in)
+		return srv.(QueryServer).UserUnbonding(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/celinium.liquidstake.v1.Query/UserUndelegationRecord",
+		FullMethod: "/celinium.liquidstake.v1.Query/UserUnbonding",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).UserUndelegationRecord(ctx, req.(*QueryUserUndelegationRecordRequest))
+		return srv.(QueryServer).UserUnbonding(ctx, req.(*QueryUserUnbondingRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -639,16 +634,16 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Query_SourceChain_Handler,
 		},
 		{
-			MethodName: "ChainEpochDelegationRecord",
-			Handler:    _Query_ChainEpochDelegationRecord_Handler,
+			MethodName: "ProxyDelegation",
+			Handler:    _Query_ProxyDelegation_Handler,
 		},
 		{
-			MethodName: "ChainEpochUnbonding",
-			Handler:    _Query_ChainEpochUnbonding_Handler,
+			MethodName: "EpochProxyUnbonding",
+			Handler:    _Query_EpochProxyUnbonding_Handler,
 		},
 		{
-			MethodName: "UserUndelegationRecord",
-			Handler:    _Query_UserUndelegationRecord_Handler,
+			MethodName: "UserUnbonding",
+			Handler:    _Query_UserUnbonding_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -718,7 +713,7 @@ func (m *QuerySourceChainResponse) MarshalToSizedBuffer(dAtA []byte) (int, error
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryChainEpochDelegationRecordRequest) Marshal() (dAtA []byte, err error) {
+func (m *QueryProxyDelegationRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -728,12 +723,12 @@ func (m *QueryChainEpochDelegationRecordRequest) Marshal() (dAtA []byte, err err
 	return dAtA[:n], nil
 }
 
-func (m *QueryChainEpochDelegationRecordRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryProxyDelegationRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryChainEpochDelegationRecordRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryProxyDelegationRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -753,7 +748,7 @@ func (m *QueryChainEpochDelegationRecordRequest) MarshalToSizedBuffer(dAtA []byt
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryChainEpochDelegationRecordResponse) Marshal() (dAtA []byte, err error) {
+func (m *QueryProxyDelegationResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -763,12 +758,12 @@ func (m *QueryChainEpochDelegationRecordResponse) Marshal() (dAtA []byte, err er
 	return dAtA[:n], nil
 }
 
-func (m *QueryChainEpochDelegationRecordResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryProxyDelegationResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryChainEpochDelegationRecordResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryProxyDelegationResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -786,7 +781,7 @@ func (m *QueryChainEpochDelegationRecordResponse) MarshalToSizedBuffer(dAtA []by
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryChainEpochUnbondingRequest) Marshal() (dAtA []byte, err error) {
+func (m *QueryEpochProxyUnbondingRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -796,12 +791,12 @@ func (m *QueryChainEpochUnbondingRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryChainEpochUnbondingRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryEpochProxyUnbondingRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryChainEpochUnbondingRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryEpochProxyUnbondingRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -821,7 +816,7 @@ func (m *QueryChainEpochUnbondingRequest) MarshalToSizedBuffer(dAtA []byte) (int
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryChainEpochUnbondingResponse) Marshal() (dAtA []byte, err error) {
+func (m *QueryEpochProxyUnbondingResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -831,12 +826,12 @@ func (m *QueryChainEpochUnbondingResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryChainEpochUnbondingResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryEpochProxyUnbondingResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryChainEpochUnbondingResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryEpochProxyUnbondingResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -854,7 +849,7 @@ func (m *QueryChainEpochUnbondingResponse) MarshalToSizedBuffer(dAtA []byte) (in
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryUserUndelegationRecordRequest) Marshal() (dAtA []byte, err error) {
+func (m *QueryUserUnbondingRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -864,12 +859,12 @@ func (m *QueryUserUndelegationRecordRequest) Marshal() (dAtA []byte, err error) 
 	return dAtA[:n], nil
 }
 
-func (m *QueryUserUndelegationRecordRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryUserUnbondingRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryUserUndelegationRecordRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryUserUnbondingRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -891,7 +886,7 @@ func (m *QueryUserUndelegationRecordRequest) MarshalToSizedBuffer(dAtA []byte) (
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryUserUndelegationRecordResponse) Marshal() (dAtA []byte, err error) {
+func (m *QueryUserUnbondingResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -901,20 +896,20 @@ func (m *QueryUserUndelegationRecordResponse) Marshal() (dAtA []byte, err error)
 	return dAtA[:n], nil
 }
 
-func (m *QueryUserUndelegationRecordResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryUserUnbondingResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryUserUndelegationRecordResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryUserUnbondingResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.UndelegationRecords) > 0 {
-		for iNdEx := len(m.UndelegationRecords) - 1; iNdEx >= 0; iNdEx-- {
+	if len(m.UserUnbondings) > 0 {
+		for iNdEx := len(m.UserUnbondings) - 1; iNdEx >= 0; iNdEx-- {
 			{
-				size, err := m.UndelegationRecords[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				size, err := m.UserUnbondings[iNdEx].MarshalToSizedBuffer(dAtA[:i])
 				if err != nil {
 					return 0, err
 				}
@@ -963,7 +958,7 @@ func (m *QuerySourceChainResponse) Size() (n int) {
 	return n
 }
 
-func (m *QueryChainEpochDelegationRecordRequest) Size() (n int) {
+func (m *QueryProxyDelegationRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -979,7 +974,7 @@ func (m *QueryChainEpochDelegationRecordRequest) Size() (n int) {
 	return n
 }
 
-func (m *QueryChainEpochDelegationRecordResponse) Size() (n int) {
+func (m *QueryProxyDelegationResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -990,7 +985,7 @@ func (m *QueryChainEpochDelegationRecordResponse) Size() (n int) {
 	return n
 }
 
-func (m *QueryChainEpochUnbondingRequest) Size() (n int) {
+func (m *QueryEpochProxyUnbondingRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1006,7 +1001,7 @@ func (m *QueryChainEpochUnbondingRequest) Size() (n int) {
 	return n
 }
 
-func (m *QueryChainEpochUnbondingResponse) Size() (n int) {
+func (m *QueryEpochProxyUnbondingResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1017,7 +1012,7 @@ func (m *QueryChainEpochUnbondingResponse) Size() (n int) {
 	return n
 }
 
-func (m *QueryUserUndelegationRecordRequest) Size() (n int) {
+func (m *QueryUserUnbondingRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1034,14 +1029,14 @@ func (m *QueryUserUndelegationRecordRequest) Size() (n int) {
 	return n
 }
 
-func (m *QueryUserUndelegationRecordResponse) Size() (n int) {
+func (m *QueryUserUnbondingResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if len(m.UndelegationRecords) > 0 {
-		for _, e := range m.UndelegationRecords {
+	if len(m.UserUnbondings) > 0 {
+		for _, e := range m.UserUnbondings {
 			l = e.Size()
 			n += 1 + l + sovQuery(uint64(l))
 		}
@@ -1220,7 +1215,7 @@ func (m *QuerySourceChainResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryChainEpochDelegationRecordRequest) Unmarshal(dAtA []byte) error {
+func (m *QueryProxyDelegationRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1243,10 +1238,10 @@ func (m *QueryChainEpochDelegationRecordRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryChainEpochDelegationRecordRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryProxyDelegationRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryChainEpochDelegationRecordRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryProxyDelegationRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1321,7 +1316,7 @@ func (m *QueryChainEpochDelegationRecordRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryChainEpochDelegationRecordResponse) Unmarshal(dAtA []byte) error {
+func (m *QueryProxyDelegationResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1344,10 +1339,10 @@ func (m *QueryChainEpochDelegationRecordResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryChainEpochDelegationRecordResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryProxyDelegationResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryChainEpochDelegationRecordResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryProxyDelegationResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1404,7 +1399,7 @@ func (m *QueryChainEpochDelegationRecordResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryChainEpochUnbondingRequest) Unmarshal(dAtA []byte) error {
+func (m *QueryEpochProxyUnbondingRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1427,10 +1422,10 @@ func (m *QueryChainEpochUnbondingRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryChainEpochUnbondingRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryEpochProxyUnbondingRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryChainEpochUnbondingRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryEpochProxyUnbondingRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1505,7 +1500,7 @@ func (m *QueryChainEpochUnbondingRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryChainEpochUnbondingResponse) Unmarshal(dAtA []byte) error {
+func (m *QueryEpochProxyUnbondingResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1528,10 +1523,10 @@ func (m *QueryChainEpochUnbondingResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryChainEpochUnbondingResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryEpochProxyUnbondingResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryChainEpochUnbondingResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryEpochProxyUnbondingResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1588,7 +1583,7 @@ func (m *QueryChainEpochUnbondingResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryUserUndelegationRecordRequest) Unmarshal(dAtA []byte) error {
+func (m *QueryUserUnbondingRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1611,10 +1606,10 @@ func (m *QueryUserUndelegationRecordRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryUserUndelegationRecordRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryUserUnbondingRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryUserUndelegationRecordRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryUserUnbondingRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1702,7 +1697,7 @@ func (m *QueryUserUndelegationRecordRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryUserUndelegationRecordResponse) Unmarshal(dAtA []byte) error {
+func (m *QueryUserUnbondingResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1725,15 +1720,15 @@ func (m *QueryUserUndelegationRecordResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryUserUndelegationRecordResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryUserUnbondingResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryUserUndelegationRecordResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryUserUnbondingResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field UndelegationRecords", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field UserUnbondings", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -1760,8 +1755,8 @@ func (m *QueryUserUndelegationRecordResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.UndelegationRecords = append(m.UndelegationRecords, UndelegationRecord{})
-			if err := m.UndelegationRecords[len(m.UndelegationRecords)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			m.UserUnbondings = append(m.UserUnbondings, UserUnbonding{})
+			if err := m.UserUnbondings[len(m.UserUnbondings)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

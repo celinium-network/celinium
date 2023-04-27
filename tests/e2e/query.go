@@ -241,11 +241,11 @@ func queryLiquidstakeSourceChain(cdc codec.Codec, endpoint string, chainID strin
 	return res, nil
 }
 
-func queryLiquidstakeDelegationRecord(cdc codec.Codec, endpoint string, chainID string, epoch uint64) (
-	liquidstaketypes.QueryChainEpochDelegationRecordResponse, error,
+func queryLiquidstakeDelegation(cdc codec.Codec, endpoint string, chainID string, epoch uint64) (
+	liquidstaketypes.QueryProxyDelegationResponse, error,
 ) {
-	var res liquidstaketypes.QueryChainEpochDelegationRecordResponse
-	body, err := httpGet(fmt.Sprintf("%s/celinium/liquidstake/v1/chain_epoch_delegation?chainID=%s&epoch=%d", endpoint, chainID, epoch))
+	var res liquidstaketypes.QueryProxyDelegationResponse
+	body, err := httpGet(fmt.Sprintf("%s/celinium/liquidstake/v1/proxy_delegation?chainID=%s&epoch=%d", endpoint, chainID, epoch))
 	if err != nil {
 		return res, err
 	}
@@ -256,11 +256,11 @@ func queryLiquidstakeDelegationRecord(cdc codec.Codec, endpoint string, chainID 
 	return res, nil
 }
 
-func queryLiquidstakeChainUnbonding(cdc codec.Codec, endpoint string, chainID string, epoch uint64) (
-	liquidstaketypes.QueryChainEpochUnbondingResponse, error,
+func queryLiquidstakeProxyUnbonding(cdc codec.Codec, endpoint string, chainID string, epoch uint64) (
+	liquidstaketypes.QueryEpochProxyUnbondingResponse, error,
 ) {
-	var res liquidstaketypes.QueryChainEpochUnbondingResponse
-	body, err := httpGet(fmt.Sprintf("%s/celinium/liquidstake/v1/chain_epoch_unbonding?chainID=%s&epoch=%d", endpoint, chainID, epoch))
+	var res liquidstaketypes.QueryEpochProxyUnbondingResponse
+	body, err := httpGet(fmt.Sprintf("%s/celinium/liquidstake/v1/epoch_proxy_unbonding?chainID=%s&epoch=%d", endpoint, chainID, epoch))
 	if err != nil {
 		return res, err
 	}
@@ -272,10 +272,10 @@ func queryLiquidstakeChainUnbonding(cdc codec.Codec, endpoint string, chainID st
 }
 
 func queryLiquidstakeUserUnbonding(cdc codec.Codec, endpoint, chainID, userAddr string) (
-	liquidstaketypes.QueryUserUndelegationRecordResponse, error,
+	liquidstaketypes.QueryUserUnbondingResponse, error,
 ) {
-	var res liquidstaketypes.QueryUserUndelegationRecordResponse
-	body, err := httpGet(fmt.Sprintf("%s/celinium/liquidstake/v1/user_undelegation_record?chainID=%s&user=%s", endpoint, chainID, userAddr))
+	var res liquidstaketypes.QueryUserUnbondingResponse
+	body, err := httpGet(fmt.Sprintf("%s/celinium/liquidstake/v1/user_unbonding?chainID=%s&user=%s", endpoint, chainID, userAddr))
 	if err != nil {
 		return res, err
 	}

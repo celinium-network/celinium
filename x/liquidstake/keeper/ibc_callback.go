@@ -14,13 +14,13 @@ func (k Keeper) SetCallBack(ctx sdk.Context, channel string, port string, sequen
 	store := ctx.KVStore(k.storeKey)
 
 	bz := k.cdc.MustMarshal(callback)
-	store.Set(types.GetIBCDelegationCallbackKey([]byte(channel), []byte(port), sequence), bz)
+	store.Set(types.GetIBCCallbackKey([]byte(channel), []byte(port), sequence), bz)
 }
 
 func (k Keeper) GetCallBack(ctx sdk.Context, channel string, port string, sequence uint64) (*types.IBCCallback, bool) {
 	store := ctx.KVStore(k.storeKey)
 
-	bz := store.Get(types.GetIBCDelegationCallbackKey([]byte(channel), []byte(port), sequence))
+	bz := store.Get(types.GetIBCCallbackKey([]byte(channel), []byte(port), sequence))
 	if bz == nil {
 		return nil, false
 	}
