@@ -178,7 +178,7 @@ func transferRewardCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.I
 	}
 
 	delegation.Coin = delegation.Coin.AddAmount(callbackArgs.Amount)
-	delegation.TransferredAmount = delegation.TransferredAmount.Add(callbackArgs.Amount)
+	delegation.ReinvestAmount = delegation.ReinvestAmount.Add(callbackArgs.Amount)
 	k.SetProxyDelegation(ctx, delegationID, delegation)
 	return nil
 }

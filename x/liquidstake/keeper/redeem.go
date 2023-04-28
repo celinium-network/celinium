@@ -9,13 +9,13 @@ import (
 	"github.com/celinium-network/celinium/x/liquidstake/types"
 )
 
-// UpdateRedeemRatio update redeemrate for each source chain
+// UpdateRedeemRate update redeemrate for each source chain
 // TODO Record the rate in the last few epochs, and then average?
-func (k Keeper) UpdateRedeemRatio(ctx sdk.Context, records []types.ProxyDelegation) {
+func (k Keeper) UpdateRedeemRate(ctx sdk.Context, delegations []types.ProxyDelegation) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, types.SouceChainKeyPrefix)
 
-	chainProcessingAmts := k.GetDelegatingAmount(records)
+	chainProcessingAmts := k.GetDelegaionProcessingAmount(delegations)
 
 	for ; iterator.Valid(); iterator.Next() {
 		sourcechain := &types.SourceChain{}
@@ -26,6 +26,8 @@ func (k Keeper) UpdateRedeemRatio(ctx sdk.Context, records []types.ProxyDelegati
 			continue
 		}
 
+		// If the status of a ProxyDelegation is `ProxyDelegationDone`, it maybe remove from the store.
+		// So the doneAmount = stakedAmount.
 		doneAmount := sourcechain.StakedAmount
 		processingAmount, found := chainProcessingAmts[sourcechain.ChainID]
 
@@ -46,7 +48,7 @@ func (k Keeper) UpdateRedeemRatio(ctx sdk.Context, records []types.ProxyDelegati
 	}
 }
 
-func (k Keeper) GetDelegatingAmount(delegations []types.ProxyDelegation) map[string]math.Int {
+func (k Keeper) GetDelegaionProcessingAmount(delegations []types.ProxyDelegation) map[string]math.Int {
 	chainAmts := make(map[string]math.Int)
 	for _, delegation := range delegations {
 		if !types.IsProxyDelegationProcessing(delegation.Status) {
@@ -58,15 +60,21 @@ func (k Keeper) GetDelegatingAmount(delegations []types.ProxyDelegation) map[str
 
 		amt, found := chainAmts[delegation.ChainID]
 
+		userDelegationAmt := delegation.Coin.Amount
+		if !delegation.ReinvestAmount.IsZero() {
+			userDelegationAmt = userDelegationAmt.Sub(delegation.ReinvestAmount)
+		}
+
 		if !found {
-			chainAmts[delegation.ChainID] = delegation.Coin.Amount
+			chainAmts[delegation.ChainID] = userDelegationAmt
 		} else {
-			chainAmts[delegation.ChainID] = delegation.Coin.Amount.Add(amt)
+			chainAmts[delegation.ChainID] = userDelegationAmt.Add(amt)
 		}
 	}
 	return chainAmts
 }
 
+// ClaimUnbonding implement delegator claim reward and stake token.
 func (k Keeper) ClaimUnbonding(ctx sdk.Context, deletator sdk.AccAddress, epoch uint64, chainID string) (math.Int, error) {
 	undelegationRecord, found := k.GetUserUnbonding(ctx, chainID, epoch, deletator.String())
 	if !found {

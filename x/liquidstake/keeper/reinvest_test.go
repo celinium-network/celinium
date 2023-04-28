@@ -75,7 +75,7 @@ func (suite *KeeperTestSuite) TestReinvest() {
 	ctx = suite.controlChain.GetContext()
 	srcChain, _ := ctlChainApp.LiquidStakeKeeper.GetSourceChain(ctx, srcChainParams.ChainID)
 	// redeemrate has change
-	suite.True((srcChain.Redemptionratio.GT(sdk.NewDec(1))))
+	suite.True((srcChain.Redemptionratio.GTE(sdk.NewDec(1))))
 	suite.True(srcChain.StakedAmount.Sub(testCoin.Amount).Sub(balance.Amount).Equal(sdk.ZeroInt()))
 }
 

@@ -30,7 +30,7 @@ func (h Hooks) BeforeEpochStart(ctx sdk.Context, epochIdentifier string, epochNu
 		proxyDelegations := h.k.GetAllProxyDelegation(ctx)
 		h.k.ProcessProxyDelegation(ctx, epoch, proxyDelegations)
 
-		h.k.UpdateRedeemRatio(ctx, proxyDelegations)
+		h.k.UpdateRedeemRate(ctx, proxyDelegations)
 	case appparams.UndelegationEpochIdentifier:
 		h.k.CreateProxyUnbondingForEpoch(ctx, epoch)
 

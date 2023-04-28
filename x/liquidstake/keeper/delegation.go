@@ -72,8 +72,6 @@ func (k *Keeper) ProcessProxyDelegation(ctx sdk.Context, curEpochNumber uint64, 
 		switch r.Status {
 		case types.ProxyDelegationPending:
 			k.handlePendingProxyDelegation(ctx, r)
-		case types.ProxyDelegationTransferFailed:
-			// become pending, transfer next epoch
 		case types.ProxyDelegationFailed:
 			// become transferred, delegate next epoch
 		default:
@@ -82,29 +80,29 @@ func (k *Keeper) ProcessProxyDelegation(ctx sdk.Context, curEpochNumber uint64, 
 	}
 }
 
-func (k Keeper) handlePendingProxyDelegation(ctx sdk.Context, record types.ProxyDelegation) error {
-	if record.Coin.Amount.IsZero() {
+func (k Keeper) handlePendingProxyDelegation(ctx sdk.Context, delegation types.ProxyDelegation) error {
+	if delegation.Coin.Amount.IsZero() {
 		return nil
 	}
 
-	transferCoin := record.Coin
-	if !record.TransferredAmount.IsZero() {
-		transferCoin = transferCoin.SubAmount(record.TransferredAmount)
+	transferCoin := delegation.Coin
+	if !delegation.ReinvestAmount.IsZero() {
+		transferCoin = transferCoin.SubAmount(delegation.ReinvestAmount)
 	}
 
-	if transferCoin.IsZero() && !record.Coin.IsZero() {
+	if transferCoin.IsZero() && !delegation.Coin.IsZero() {
 		// Only in the Delegate Epoch, no user participates in the Delegate,
 		// but `Reinvest` has withdrawn rewards on the source chain
-		return k.AfterProxyDelegationTransfer(ctx, &record, true)
+		return k.AfterProxyDelegationTransfer(ctx, &delegation, true)
 	}
 
-	sourceChain, _ := k.GetSourceChain(ctx, record.ChainID)
+	sourceChain, _ := k.GetSourceChain(ctx, delegation.ChainID)
 
 	// send token from sourceChain's DelegateAddress to sourceChain's UnboudAddress
 	if err := k.sendCoinsFromAccountToAccount(ctx,
 		sdk.MustAccAddressFromBech32(sourceChain.EcsrowAddress),
 		sdk.MustAccAddressFromBech32(sourceChain.DelegateAddress),
-		sdk.Coins{record.Coin},
+		sdk.Coins{delegation.Coin},
 	); err != nil {
 		return err
 	}
@@ -118,7 +116,7 @@ func (k Keeper) handlePendingProxyDelegation(ctx sdk.Context, record types.Proxy
 	msg := ibctransfertypes.MsgTransfer{
 		SourcePort:       ibctransfertypes.PortID,
 		SourceChannel:    sourceChain.TransferChannelID,
-		Token:            record.Coin,
+		Token:            delegation.Coin,
 		Sender:           sourceChain.DelegateAddress,
 		Receiver:         hostAddr,
 		TimeoutHeight:    ibcclienttypes.Height{},
@@ -127,14 +125,14 @@ func (k Keeper) handlePendingProxyDelegation(ctx sdk.Context, record types.Proxy
 	}
 
 	ctx.Logger().Info(fmt.Sprintf("transfer pending delegation record epoch: %d coin: %v",
-		record.EpochNumber, record.Coin))
+		delegation.EpochNumber, delegation.Coin))
 
 	resp, err := k.ibcTransferKeeper.Transfer(ctx, &msg)
 	if err != nil {
 		return err
 	}
 
-	bzArg := sdk.Uint64ToBigEndian(record.Id)
+	bzArg := sdk.Uint64ToBigEndian(delegation.Id)
 	callback := types.IBCCallback{
 		CallType: types.DelegateTransferCall,
 		Args:     string(bzArg),
@@ -144,29 +142,34 @@ func (k Keeper) handlePendingProxyDelegation(ctx sdk.Context, record types.Proxy
 	k.SetCallBack(ctx, msg.SourceChannel, msg.SourcePort, resp.Sequence, &callback)
 
 	// update & save record
-	record.Status = types.ProxyDelegationTransferring
-	k.SetProxyDelegation(ctx, record.Id, &record)
+	delegation.Status = types.ProxyDelegationTransferring
+	k.SetProxyDelegation(ctx, delegation.Id, &delegation)
 
 	return nil
 }
 
-func (k Keeper) AfterProxyDelegationTransfer(ctx sdk.Context, record *types.ProxyDelegation, successfulTransfer bool) error {
+func (k Keeper) AfterProxyDelegationTransfer(ctx sdk.Context, delegation *types.ProxyDelegation, successfulTransfer bool) error {
 	if !successfulTransfer {
-		record.Status = types.ProxyDelegationTransferFailed
-		k.SetProxyDelegation(ctx, record.Id, record)
+		k.Logger(ctx).Error(fmt.Sprintf("proxydelegation ibc transfer failed. chainID %s, epoch %d",
+			delegation.ChainID, delegation.EpochNumber))
+
+		// let delegation become pending, try ibc send in next epoch.
+		delegation.Status = types.ProxyDelegationPending
+		k.SetProxyDelegation(ctx, delegation.Id, delegation)
 		return nil
 	}
 
-	sourceChain, found := k.GetSourceChain(ctx, record.ChainID)
+	sourceChain, found := k.GetSourceChain(ctx, delegation.ChainID)
 	if !found {
-		return sdkerrors.Wrapf(types.ErrUnknownSourceChain, "unknown source chain, chainID: %s", record.ChainID)
+		return sdkerrors.Wrapf(types.ErrUnknownSourceChain, "unknown source chain, chainID: %s", delegation.ChainID)
 	}
 
 	sourceChainDelegateAddr, err := k.GetSourceChainAddr(ctx, sourceChain.ConnectionID, sourceChain.DelegateAddress)
 	if err != nil {
 		return err
 	}
-	allocTokenVals := sourceChain.AllocateTokenForValidator(record.Coin.Amount)
+
+	allocTokenVals := sourceChain.AllocateTokenForValidator(delegation.Coin.Amount)
 
 	stakingMsgs := make([]proto.Message, 0)
 	for _, val := range allocTokenVals.Validators {
@@ -185,12 +188,12 @@ func (k Keeper) AfterProxyDelegationTransfer(ctx sdk.Context, record *types.Prox
 		return err
 	}
 
-	record.Status = types.ProxyDelegating
-	k.SetProxyDelegation(ctx, record.Id, record)
+	delegation.Status = types.ProxyDelegating
+	k.SetProxyDelegation(ctx, delegation.Id, delegation)
 
 	callbackArgs := types.DelegateCallbackArgs{
 		Validators:        allocTokenVals.Validators,
-		ProxyDelegationID: record.Id,
+		ProxyDelegationID: delegation.Id,
 	}
 
 	bzArg := k.cdc.MustMarshal(&callbackArgs)

@@ -49,7 +49,9 @@ func (k Querier) ProxyDelegation(goCtx context.Context, req *types.QueryProxyDel
 }
 
 // EpochProxyUnbonding implements types.QueryServer
-func (k Querier) EpochProxyUnbonding(goCtx context.Context, req *types.QueryEpochProxyUnbondingRequest) (*types.QueryEpochProxyUnbondingResponse, error) {
+func (k Querier) EpochProxyUnbonding(goCtx context.Context, req *types.QueryEpochProxyUnbondingRequest) (
+	*types.QueryEpochProxyUnbondingResponse, error,
+) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}

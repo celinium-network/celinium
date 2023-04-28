@@ -23,3 +23,5 @@ celiniumd
 # vendor/
 
 go.work.sum
+
+.VSCodeCounter

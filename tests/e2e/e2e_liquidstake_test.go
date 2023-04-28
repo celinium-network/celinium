@@ -155,10 +155,10 @@ func (s *IntegrationTestSuite) LiquistakeDelegate(sourceChain *types.SourceChain
 			Denom:  sourceChain.IbcDenom,
 			Amount: amount,
 		},
-		Status:            types.ProxyDelegationPending,
-		EpochNumber:       curEpoch,
-		ChainID:           sourceChain.ChainID,
-		TransferredAmount: math.ZeroInt(),
+		Status:         types.ProxyDelegationPending,
+		EpochNumber:    curEpoch,
+		ChainID:        sourceChain.ChainID,
+		ReinvestAmount: math.ZeroInt(),
 	}
 
 	s.True(compareProxyDelegation(&resp.Record, &targetProxyDelegation))
@@ -232,7 +232,7 @@ func (s *IntegrationTestSuite) LiquidstakeReinvest(sourceChain *types.SourceChai
 	// check trannferred amount
 	rcResp, err := queryLiquidstakeDelegation(s.ctlChain.encfg.Codec, ctlAPIEndpoint, sourceChain.ChainID, uint64(resp.CurrentEpoch))
 	s.NoError(err)
-	s.True(rcResp.Record.TransferredAmount.GT(delegateReward))
+	s.True(rcResp.Record.ReinvestAmount.GT(delegateReward))
 
 	// check withdraw address has been correctly setted.
 	withdrawAddressResp, err := queryDelegatorWithdrawalAddress(s.srcChain.encfg.Codec, srcAPIEndpoint, delegateICA)
@@ -245,7 +245,7 @@ func (s *IntegrationTestSuite) LiquidstakeReinvest(sourceChain *types.SourceChai
 	// check all reward has transferred to delegatorICA and correctly record.
 	balance, err := getSpecificBalance(s.srcChain.encfg.Codec, srcAPIEndpoint, delegateICA, sourceChain.NativeDenom)
 	s.NoError(err)
-	s.True(rcResp.Record.TransferredAmount.Equal(balance.Amount))
+	s.True(rcResp.Record.ReinvestAmount.Equal(balance.Amount))
 
 	s.Logf("Reinvest successfully")
 	return balance.Amount
