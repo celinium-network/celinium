@@ -7,7 +7,7 @@ import (
 )
 
 func (suite *KeeperTestSuite) TestReinvest() {
-	srcChainParams := suite.generateSourceChainParams()
+	srcChainParams := suite.mockSourceChainParams()
 	delegationEpoch := suite.delegationEpoch()
 	suite.setSourceChainAndEpoch(srcChainParams, delegationEpoch)
 
@@ -80,7 +80,7 @@ func (suite *KeeperTestSuite) TestReinvest() {
 }
 
 func (suite *KeeperTestSuite) TestSetWithdrawAddress() {
-	sourceChainParams := suite.generateSourceChainParams()
+	sourceChainParams := suite.mockSourceChainParams()
 	epochInfo := suite.delegationEpoch()
 	suite.setSourceChainAndEpoch(sourceChainParams, epochInfo)
 

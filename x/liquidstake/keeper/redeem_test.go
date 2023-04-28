@@ -2,12 +2,13 @@ package keeper_test
 
 import (
 	"cosmossdk.io/math"
+	"github.com/celinium-network/celinium/app"
 	"github.com/celinium-network/celinium/x/liquidstake/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 func (suite *KeeperTestSuite) TestRedeemAfterUnbondingComplete() {
-	sourceChainParams := suite.generateSourceChainParams()
+	sourceChainParams := suite.mockSourceChainParams()
 	delegationEpochInfo := suite.delegationEpoch()
 	suite.setSourceChainAndEpoch(sourceChainParams, delegationEpochInfo)
 
@@ -52,21 +53,18 @@ func (suite *KeeperTestSuite) TestRedeemAfterUnbondingComplete() {
 }
 
 func (suite *KeeperTestSuite) TestUpdateRedeemRateWithMultiDelegationStatus() {
-	// different delegation status => expect rate
 	amount := sdk.NewIntFromUint64(10000000)
-	srcChainParams := suite.generateSourceChainParams()
+	srcChainParams := suite.mockSourceChainParams()
 	srcChainParams.StakedAmount = amount
 	delegationEpochInfo := suite.delegationEpoch()
 
 	suite.setSourceChainAndEpoch(srcChainParams, delegationEpochInfo)
 
 	proxyDelegationTemplate := types.ProxyDelegation{
-		Id: 0,
 		Coin: sdk.Coin{
 			Denom:  srcChainParams.NativeDenom,
 			Amount: amount,
 		},
-		EpochNumber:    0,
 		ChainID:        srcChainParams.ChainID,
 		ReinvestAmount: math.ZeroInt(),
 	}
@@ -108,13 +106,117 @@ func (suite *KeeperTestSuite) TestUpdateRedeemRateWithMultiDelegationStatus() {
 	// rate should not be change, because reinvest delegation is pending.
 	// The rate should be changed after reinvest delegataion done.
 	// Otherwise, it may be oversubscribed during undelegation.
-	sourceChain.Redemptionratio.Equal(sdk.MustNewDecFromStr("1.0"))
+	suite.True(sourceChain.Redemptionratio.Equal(sdk.MustNewDecFromStr("1.0")))
 }
 
-func (suite *KeeperTestSuite) TestUpdateRedeemRateAfterUndelegate() {
-	// step1: rate 1
-	// step2: rate 1.5
-	// step3: undelegate
-	// step4: rate 1.2
-	// step5: undelegate all => rate 1:1
+func (suite *KeeperTestSuite) TestUpdateRedeemRateAfterEffect() {
+	srcChainParams := suite.mockSourceChainParams()
+	ctlChainApp := getCeliniumApp(suite.controlChain)
+	ctx := suite.controlChain.GetContext()
+	ctlAccAddr := suite.controlChain.SenderAccount.GetAddress()
+	ctlAccAddr2 := suite.controlChain.SenderAccounts[2].SenderAccount.GetAddress()
+
+	amount := sdk.NewIntFromUint64(10000000)
+	delegationEpochInfo := suite.delegationEpoch()
+	suite.setSourceChainAndEpoch(srcChainParams, delegationEpochInfo)
+
+	suite.mockEnvAfterDelegate(srcChainParams, ctlChainApp, ctx, ctlAccAddr, amount)
+
+	proxyDelegations := ctlChainApp.LiquidStakeKeeper.GetAllProxyDelegation(ctx)
+	ctlChainApp.LiquidStakeKeeper.UpdateRedeemRate(ctx, proxyDelegations)
+
+	sourceChain, found := ctlChainApp.LiquidStakeKeeper.GetSourceChain(ctx, srcChainParams.ChainID)
+	suite.True(found)
+	suite.True(sourceChain.Redemptionratio.Equal(sdk.MustNewDecFromStr("1.0")))
+
+	suite.mockEnvAfterReinvest(srcChainParams, ctlChainApp, ctx, amount)
+	proxyDelegations = ctlChainApp.LiquidStakeKeeper.GetAllProxyDelegation(ctx)
+	ctlChainApp.LiquidStakeKeeper.UpdateRedeemRate(ctx, proxyDelegations)
+
+	sourceChain, found = ctlChainApp.LiquidStakeKeeper.GetSourceChain(ctx, srcChainParams.ChainID)
+	suite.True(found)
+	suite.True(sourceChain.Redemptionratio.Equal(sdk.MustNewDecFromStr("2.0")))
+
+	suite.mintTestCoin(ctlChainApp, ctx, sdk.Coin{
+		Denom:  srcChainParams.IbcDenom,
+		Amount: amount,
+	}, ctlAccAddr2)
+
+	_, err := ctlChainApp.LiquidStakeKeeper.Delegate(ctx, srcChainParams.ChainID, amount, ctlAccAddr2)
+	suite.NoError(err)
+	derivativeCoin := suite.getBalance(ctlChainApp, ctx, srcChainParams.DerivativeDenom, ctlAccAddr2)
+	suite.True(derivativeCoin.Amount.Equal(amount.QuoRaw(2)))
+
+	// create undelegate call complete env
+	srcChainParams.StakedAmount = math.ZeroInt()
+	suite.burnTestCoin(ctlChainApp, ctx, derivativeCoin, ctlAccAddr2)
+	ctlAccAddrBalance := suite.getBalance(ctlChainApp, ctx, srcChainParams.DerivativeDenom, ctlAccAddr)
+	suite.burnTestCoin(ctlChainApp, ctx, ctlAccAddrBalance, ctlAccAddr)
+	ctlChainApp.LiquidStakeKeeper.UpdateRedeemRate(ctx, []types.ProxyDelegation{})
+
+	// check ratio
+	sourceChain, found = ctlChainApp.LiquidStakeKeeper.GetSourceChain(ctx, srcChainParams.ChainID)
+	suite.True(found)
+	suite.True(sourceChain.Redemptionratio.Equal(sdk.MustNewDecFromStr("1.0")))
+}
+
+func (suite *KeeperTestSuite) mockEnvAfterDelegate(srcChainParams *types.SourceChain,
+	app *app.App, ctx sdk.Context, delegator sdk.AccAddress, amount math.Int,
+) {
+	proxyDelegation := types.ProxyDelegation{
+		Coin: sdk.Coin{
+			Denom:  srcChainParams.NativeDenom,
+			Amount: amount,
+		},
+		ChainID:        srcChainParams.ChainID,
+		ReinvestAmount: math.ZeroInt(),
+		Status:         types.ProxyDelegationDone,
+	}
+	srcChainParams.StakedAmount = srcChainParams.StakedAmount.Add(amount)
+
+	id := app.LiquidStakeKeeper.GetProxyDelegationID(ctx)
+	app.LiquidStakeKeeper.IncreaseProxyDelegationID(ctx)
+	app.LiquidStakeKeeper.SetProxyDelegation(ctx, id, &proxyDelegation)
+	app.LiquidStakeKeeper.SetSourceChain(ctx, srcChainParams)
+
+	derivativeAmt := sdk.NewDecFromInt(amount).Quo(srcChainParams.Redemptionratio).TruncateInt()
+
+	derivativeCoin := sdk.Coin{
+		Denom:  srcChainParams.DerivativeDenom,
+		Amount: derivativeAmt,
+	}
+	app.BankKeeper.MintCoins(ctx, types.ModuleName, sdk.Coins{derivativeCoin})
+	app.BankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, delegator, sdk.Coins{derivativeCoin})
+}
+
+func (suite *KeeperTestSuite) mockEnvAfterReinvest(srcChainParams *types.SourceChain, app *app.App, ctx sdk.Context, amount math.Int) {
+	proxyDelegation := types.ProxyDelegation{
+		Coin: sdk.Coin{
+			Denom:  srcChainParams.NativeDenom,
+			Amount: amount,
+		},
+		ChainID:        srcChainParams.ChainID,
+		ReinvestAmount: amount,
+		Status:         types.ProxyDelegationDone,
+	}
+	srcChainParams.StakedAmount = srcChainParams.StakedAmount.Add(amount)
+
+	id := app.LiquidStakeKeeper.GetProxyDelegationID(ctx)
+	app.LiquidStakeKeeper.IncreaseProxyDelegationID(ctx)
+	app.LiquidStakeKeeper.SetProxyDelegation(ctx, id, &proxyDelegation)
+	app.LiquidStakeKeeper.SetSourceChain(ctx, srcChainParams)
+}
+
+func (suite *KeeperTestSuite) mintTestCoin(app *app.App, ctx sdk.Context, coin sdk.Coin, dest sdk.AccAddress) {
+	app.BankKeeper.MintCoins(ctx, types.ModuleName, sdk.Coins{coin})
+	app.BankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, dest, sdk.Coins{coin})
+}
+
+func (suite *KeeperTestSuite) burnTestCoin(app *app.App, ctx sdk.Context, coin sdk.Coin, dest sdk.AccAddress) {
+	app.BankKeeper.SendCoinsFromAccountToModule(ctx, dest, types.ModuleName, sdk.Coins{coin})
+	app.BankKeeper.BurnCoins(ctx, types.ModuleName, sdk.Coins{coin})
+}
+
+func (suite *KeeperTestSuite) getBalance(app *app.App, ctx sdk.Context, denom string, dest sdk.AccAddress) sdk.Coin {
+	return app.BankKeeper.GetBalance(ctx, dest, denom)
 }

@@ -27,22 +27,27 @@ func (k Keeper) UpdateRedeemRate(ctx sdk.Context, delegations []types.ProxyDeleg
 		}
 
 		// If the status of a ProxyDelegation is `ProxyDelegationDone`, it maybe remove from the store.
-		// So the doneAmount = stakedAmount.
-		doneAmount := sourcechain.StakedAmount
+		// So the stakingAmount = stakedAmount.
+		stakingAmount := sourcechain.StakedAmount
 		processingAmount, found := chainProcessingAmts[sourcechain.ChainID]
-
-		if (!found || processingAmount.IsZero()) || (doneAmount.IsNil() || doneAmount.IsZero()) {
-			continue
+		if !found {
+			processingAmount = math.ZeroInt()
 		}
+
+		if stakingAmount.IsNil() {
+			stakingAmount = math.ZeroInt()
+		}
+
+		stakingAmount = stakingAmount.Add(processingAmount)
 
 		derivationAmount := k.bankKeeper.GetSupply(ctx, sourcechain.DerivativeDenom)
 
-		if derivationAmount.IsZero() {
-			continue
+		if derivationAmount.IsZero() || stakingAmount.IsZero() {
+			// TODO precise
+			sourcechain.Redemptionratio = sdk.NewDec(1)
+		} else {
+			sourcechain.Redemptionratio = sdk.NewDecFromInt(stakingAmount).Quo(sdk.NewDecFromInt(derivationAmount.Amount))
 		}
-
-		sourcechain.Redemptionratio = sdk.NewDecFromInt(processingAmount).Add(sdk.NewDecFromInt(doneAmount)).
-			Quo(sdk.NewDecFromInt(derivationAmount.Amount))
 
 		k.SetSourceChain(ctx, sourcechain)
 	}

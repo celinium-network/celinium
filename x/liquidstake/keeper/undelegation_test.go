@@ -29,7 +29,7 @@ func (suite *KeeperTestSuite) TestCreateEpochUnbonding() {
 	ctx := suite.controlChain.GetContext()
 	ctlChainApp.EpochsKeeper.SetEpochInfo(ctx, *suite.delegationEpoch())
 
-	suite.setSourceChainAndEpoch(suite.generateSourceChainParams(), suite.unbondEpoch())
+	suite.setSourceChainAndEpoch(suite.mockSourceChainParams(), suite.unbondEpoch())
 
 	// check epoch unbonding at epoch 2
 	controlChainApp := getCeliniumApp(suite.controlChain)
@@ -40,7 +40,7 @@ func (suite *KeeperTestSuite) TestCreateEpochUnbonding() {
 }
 
 func (suite *KeeperTestSuite) TestUndelegate() {
-	srcChainParams := suite.generateSourceChainParams()
+	srcChainParams := suite.mockSourceChainParams()
 	delegationEpochInfo := suite.delegationEpoch()
 	suite.setSourceChainAndEpoch(srcChainParams, delegationEpochInfo)
 
@@ -118,7 +118,7 @@ func (suite *KeeperTestSuite) TestUndelegate() {
 }
 
 func (suite *KeeperTestSuite) TestWithdrawCompleteUnbond() {
-	sourceChainParams := suite.generateSourceChainParams()
+	sourceChainParams := suite.mockSourceChainParams()
 	delegationEpochInfo := suite.delegationEpoch()
 	suite.setSourceChainAndEpoch(sourceChainParams, delegationEpochInfo)
 
