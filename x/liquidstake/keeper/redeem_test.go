@@ -109,7 +109,7 @@ func (suite *KeeperTestSuite) TestUpdateRedeemRateWithMultiDelegationStatus() {
 	suite.True(sourceChain.Redemptionratio.Equal(sdk.MustNewDecFromStr("1.0")))
 }
 
-func (suite *KeeperTestSuite) TestUpdateRedeemRateAfterEffect() {
+func (suite *KeeperTestSuite) TestUpdateRedeemRateEffect() {
 	srcChainParams := suite.mockSourceChainParams()
 	ctlChainApp := getCeliniumApp(suite.controlChain)
 	ctx := suite.controlChain.GetContext()
