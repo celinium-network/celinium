@@ -4,7 +4,9 @@ import (
 	"fmt"
 
 	"cosmossdk.io/math"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
 
 	liquidstaketypes "github.com/celinium-network/celinium/x/liquidstake/types"
@@ -94,4 +96,106 @@ func (suite *KeeperTestSuite) TestHandleDelegateTransferIBCAck() {
 			tc.checker(&tc.packet, &tc.delegation)
 		})
 	}
+}
+
+func (suite *KeeperTestSuite) TestHandleDelegateIBC_WithErrorAck() {
+	srcChainParams := suite.mockSourceChainParams()
+	epoch := suite.delegationEpoch()
+	suite.setSourceChainAndEpoch(srcChainParams, epoch)
+
+	ctx := suite.controlChain.GetContext()
+	controlChainApp := getCeliniumApp(suite.controlChain)
+	cdc := suite.controlChain.Codec
+
+	delegation := liquidstaketypes.ProxyDelegation{
+		Id:             1,
+		Status:         liquidstaketypes.ProxyDelegationTransferred,
+		EpochNumber:    uint64(epoch.CurrentEpoch),
+		ChainID:        srcChainParams.ChainID,
+		ReinvestAmount: math.Int{},
+	}
+
+	srcChainParams.AllocateTokenForValidator(sdk.NewIntFromUint64(10000))
+
+	callback := liquidstaketypes.IBCCallback{
+		CallType: liquidstaketypes.DelegateCall,
+		Args: string(cdc.MustMarshal(&liquidstaketypes.DelegateCallbackArgs{
+			Validators:        srcChainParams.Validators,
+			ProxyDelegationID: 1,
+		})),
+	}
+
+	ack := channeltypes.NewErrorAcknowledgement(fmt.Errorf("failed"))
+	packet := channeltypes.Packet{
+		Sequence:      0,
+		SourcePort:    "transfer",
+		SourceChannel: "channel-0",
+	}
+	controlChainApp.LiquidStakeKeeper.SetProxyDelegation(ctx, delegation.Id, &delegation)
+	controlChainApp.LiquidStakeKeeper.SetCallBack(ctx, packet.SourceChannel, packet.SourcePort, packet.Sequence, &callback)
+
+	ackBz := channeltypes.SubModuleCdc.MustMarshalJSON(&ack)
+
+	controlChainApp.LiquidStakeKeeper.HandleIBCAcknowledgement(ctx, &packet, ackBz)
+
+	_, found := controlChainApp.LiquidStakeKeeper.GetCallBack(ctx, packet.SourceChannel, packet.SourcePort, packet.Sequence)
+	suite.Require().True(found)
+
+	handledDelegation, _ := controlChainApp.LiquidStakeKeeper.GetProxyDelegation(ctx, delegation.Id)
+	suite.Require().Equal(handledDelegation.Status, liquidstaketypes.ProxyDelegationFailed)
+}
+
+func (suite *KeeperTestSuite) TestHandleDelegateIBC_WithMismatchRespAck() {
+	srcChainParams := suite.mockSourceChainParams()
+	epoch := suite.delegationEpoch()
+	suite.setSourceChainAndEpoch(srcChainParams, epoch)
+
+	ctx := suite.controlChain.GetContext()
+	controlChainApp := getCeliniumApp(suite.controlChain)
+	cdc := suite.controlChain.Codec
+
+	delegation := liquidstaketypes.ProxyDelegation{
+		Id:             1,
+		Status:         liquidstaketypes.ProxyDelegationTransferred,
+		EpochNumber:    uint64(epoch.CurrentEpoch),
+		ChainID:        srcChainParams.ChainID,
+		ReinvestAmount: math.Int{},
+	}
+
+	srcChainParams.AllocateTokenForValidator(sdk.NewIntFromUint64(10000))
+
+	callback := liquidstaketypes.IBCCallback{
+		CallType: liquidstaketypes.DelegateCall,
+		Args: string(cdc.MustMarshal(&liquidstaketypes.DelegateCallbackArgs{
+			Validators:        srcChainParams.Validators,
+			ProxyDelegationID: 1,
+		})),
+	}
+
+	delegateRespMsgs := &stakingtypes.MsgDelegateResponse{}
+
+	delegateRespMsgsVal, err := codectypes.NewAnyWithValue(delegateRespMsgs)
+	suite.NoError(err)
+	delegateTxMsg := sdk.TxMsgData{
+		MsgResponses: []*codectypes.Any{delegateRespMsgsVal},
+	}
+
+	delegateTxMsgBz := cdc.MustMarshal(&delegateTxMsg)
+	ack := channeltypes.NewResultAcknowledgement(delegateTxMsgBz)
+
+	mockPacket := channeltypes.Packet{
+		Sequence:      0,
+		SourcePort:    "transfer",
+		SourceChannel: "channel-0",
+	}
+	controlChainApp.LiquidStakeKeeper.SetProxyDelegation(ctx, delegation.Id, &delegation)
+	controlChainApp.LiquidStakeKeeper.SetCallBack(ctx, mockPacket.SourceChannel, mockPacket.SourcePort, mockPacket.Sequence, &callback)
+
+	ackBz := channeltypes.SubModuleCdc.MustMarshalJSON(&ack)
+	controlChainApp.LiquidStakeKeeper.HandleIBCAcknowledgement(ctx, &mockPacket, ackBz)
+
+	_, found := controlChainApp.LiquidStakeKeeper.GetCallBack(ctx, mockPacket.SourceChannel, mockPacket.SourcePort, mockPacket.Sequence)
+	suite.Require().True(found)
+	handledDelegation, _ := controlChainApp.LiquidStakeKeeper.GetProxyDelegation(ctx, delegation.Id)
+	suite.Require().Equal(handledDelegation.Status, liquidstaketypes.ProxyDelegationFailed)
 }

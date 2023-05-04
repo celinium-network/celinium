@@ -63,17 +63,20 @@ func (k *Keeper) Delegate(ctx sdk.Context, chainID string, amount math.Int, call
 // This process will continue to advance the status of the ProxyDelegation according to the IBC ack.
 // So here just start and restart the process.
 func (k *Keeper) ProcessProxyDelegation(ctx sdk.Context, curEpochNumber uint64, records []types.ProxyDelegation) {
-	for _, r := range records {
-		// wait current done
-		if curEpochNumber <= r.EpochNumber {
+	for i := 0; i < len(records); i++ {
+		if curEpochNumber <= records[i].EpochNumber {
 			continue
 		}
 
-		switch r.Status {
+		switch records[i].Status {
 		case types.ProxyDelegationPending:
-			k.handlePendingProxyDelegation(ctx, r)
+			k.handlePendingProxyDelegation(ctx, records[i])
 		case types.ProxyDelegationFailed:
-			// become transferred, delegate next epoch
+			// become transferred, retry delegate next epoch
+			records[i].Status = types.ProxyDelegationTransferred
+			k.SetProxyDelegation(ctx, curEpochNumber, &records[i])
+		case types.ProxyDelegationTransferred:
+			k.afterProxyDelegationTransfer(ctx, &records[i])
 		default:
 			// do nothing
 		}
@@ -93,7 +96,7 @@ func (k Keeper) handlePendingProxyDelegation(ctx sdk.Context, delegation types.P
 	if transferCoin.IsZero() && !delegation.Coin.IsZero() {
 		// Only in the Delegate Epoch, no user participates in the Delegate,
 		// but `Reinvest` has withdrawn rewards on the source chain
-		return k.AfterProxyDelegationTransfer(ctx, &delegation)
+		return k.afterProxyDelegationTransfer(ctx, &delegation)
 	}
 
 	sourceChain, _ := k.GetSourceChain(ctx, delegation.ChainID)
@@ -148,7 +151,7 @@ func (k Keeper) handlePendingProxyDelegation(ctx sdk.Context, delegation types.P
 	return nil
 }
 
-func (k Keeper) AfterProxyDelegationTransfer(ctx sdk.Context, delegation *types.ProxyDelegation) error {
+func (k Keeper) afterProxyDelegationTransfer(ctx sdk.Context, delegation *types.ProxyDelegation) error {
 	sourceChain, found := k.GetSourceChain(ctx, delegation.ChainID)
 	if !found {
 		return sdkerrors.Wrapf(types.ErrUnknownSourceChain, "unknown source chain, chainID: %s", delegation.ChainID)
@@ -201,7 +204,7 @@ func (k Keeper) AfterProxyDelegationTransfer(ctx sdk.Context, delegation *types.
 	return nil
 }
 
-func (k Keeper) AfterProxyDelegationDone(ctx sdk.Context, delegateCallbackArgs *types.DelegateCallbackArgs, delegationSuccessful bool) error {
+func (k Keeper) afterProxyDelegationDone(ctx sdk.Context, delegateCallbackArgs *types.DelegateCallbackArgs, delegationSuccessful bool) error {
 	delegation, found := k.GetProxyDelegation(ctx, delegateCallbackArgs.ProxyDelegationID)
 	if !found {
 		return types.ErrNoExistProxyDelegation

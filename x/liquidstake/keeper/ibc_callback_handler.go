@@ -57,37 +57,46 @@ func delegateTransferCallbackHandler(k *Keeper, ctx sdk.Context, callback *types
 		return err
 	}
 
-	return k.AfterProxyDelegationTransfer(ctx, delegation)
+	return k.afterProxyDelegationTransfer(ctx, delegation)
 }
 
 func delegateCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCallback, acknowledgement []byte) error {
-	res, err := GetResultFromAcknowledgement(acknowledgement)
+	var delegateCallbackArgs types.DelegateCallbackArgs
+	k.cdc.MustUnmarshal([]byte(callback.Args), &delegateCallbackArgs)
+
+	checkProxyDelegationAck := true
+
+	defer func() { k.afterProxyDelegationDone(ctx, &delegateCallbackArgs, checkProxyDelegationAck) }()
+
+	ackRes, err := GetResultFromAcknowledgement(acknowledgement)
 	if err != nil {
+		checkProxyDelegationAck = false
 		return err
 	}
 
 	var txMsgData sdk.TxMsgData
-	if err := k.cdc.Unmarshal(res, &txMsgData); err != nil {
+	if err := k.cdc.Unmarshal(ackRes, &txMsgData); err != nil {
+		checkProxyDelegationAck = false
 		return err
 	}
 
-	var delegateCallbackArgs types.DelegateCallbackArgs
-	k.cdc.MustUnmarshal([]byte(callback.Args), &delegateCallbackArgs)
-
 	respLen := 0
 	for _, r := range txMsgData.MsgResponses {
-		if strings.Contains(r.TypeUrl, "MsgDelegate") {
-			response := stakingtypes.MsgDelegate{}
-			if err := k.cdc.Unmarshal(r.Value, &response); err != nil {
-				return err
-			}
-			respLen++
+		if !strings.Contains(r.TypeUrl, "MsgDelegateResponse") { // "/cosmos.staking.v1beta1.MsgDelegateResponse"
+			continue
 		}
+		response := stakingtypes.MsgDelegate{}
+		if err := k.cdc.Unmarshal(r.Value, &response); err != nil {
+			checkProxyDelegationAck = false
+			return err
+		}
+		respLen++
 	}
 
-	proxyDelegateSuccessfully := respLen == len(delegateCallbackArgs.Validators)
-
-	return k.AfterProxyDelegationDone(ctx, &delegateCallbackArgs, proxyDelegateSuccessfully)
+	if checkProxyDelegationAck = (respLen == len(delegateCallbackArgs.Validators)); !checkProxyDelegationAck {
+		return types.ErrCallbackMismatch
+	}
+	return nil
 }
 
 func undelegateCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCallback, acknowledgement []byte) error {
