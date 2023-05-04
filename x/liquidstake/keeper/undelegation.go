@@ -163,7 +163,6 @@ func (k Keeper) ProcessUndelegationEpoch(ctx sdk.Context, epochNumber uint64) {
 	for ; iterator.Valid(); iterator.Next() {
 		bz := iterator.Value()
 		if bz == nil {
-			// TODO why come here ?
 			continue
 		}
 		epochProxyUnbondings := types.EpochProxyUnbonding{}
@@ -191,7 +190,6 @@ func (k Keeper) ProcessEpochProxyUnbondings(ctx sdk.Context, epoch uint64, proxy
 	for i, unbonding := range proxyUnbondings {
 		sourceChian, found := k.GetSourceChain(ctx, unbonding.ChainID)
 		if !found {
-			// TODO why come here ?
 			continue
 		}
 
@@ -218,7 +216,6 @@ func (k Keeper) ProcessEpochProxyUnbondings(ctx sdk.Context, epoch uint64, proxy
 			// TODO become pending and retry next epoch or retry now ?
 			// retry now maybe deadloop ?
 		case types.ProxyUnbondingWaitting:
-			// TODO timestamp become int64
 			if ctx.BlockTime().Before(time.Unix(0, int64(unbonding.UnbondTime)).Add(5 * time.Minute)) {
 				continue
 			}

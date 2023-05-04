@@ -20,7 +20,7 @@ type IBCMiddleware struct {
 
 // OnAcknowledgementPacket implements types.Middleware
 func (im IBCMiddleware) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, acknowledgement []byte, relayer sdk.AccAddress) error {
-	if err := im.keeper.HandleIBCTransferAcknowledgement(ctx, &packet, acknowledgement); err != nil {
+	if err := im.keeper.HandleIBCAcknowledgement(ctx, &packet, acknowledgement); err != nil {
 		return err
 	}
 

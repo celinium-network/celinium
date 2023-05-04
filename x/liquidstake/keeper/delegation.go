@@ -93,7 +93,7 @@ func (k Keeper) handlePendingProxyDelegation(ctx sdk.Context, delegation types.P
 	if transferCoin.IsZero() && !delegation.Coin.IsZero() {
 		// Only in the Delegate Epoch, no user participates in the Delegate,
 		// but `Reinvest` has withdrawn rewards on the source chain
-		return k.AfterProxyDelegationTransfer(ctx, &delegation, true)
+		return k.AfterProxyDelegationTransfer(ctx, &delegation)
 	}
 
 	sourceChain, _ := k.GetSourceChain(ctx, delegation.ChainID)
@@ -148,17 +148,7 @@ func (k Keeper) handlePendingProxyDelegation(ctx sdk.Context, delegation types.P
 	return nil
 }
 
-func (k Keeper) AfterProxyDelegationTransfer(ctx sdk.Context, delegation *types.ProxyDelegation, successfulTransfer bool) error {
-	if !successfulTransfer {
-		k.Logger(ctx).Error(fmt.Sprintf("proxydelegation ibc transfer failed. chainID %s, epoch %d",
-			delegation.ChainID, delegation.EpochNumber))
-
-		// let delegation become pending, try ibc send in next epoch.
-		delegation.Status = types.ProxyDelegationPending
-		k.SetProxyDelegation(ctx, delegation.Id, delegation)
-		return nil
-	}
-
+func (k Keeper) AfterProxyDelegationTransfer(ctx sdk.Context, delegation *types.ProxyDelegation) error {
 	sourceChain, found := k.GetSourceChain(ctx, delegation.ChainID)
 	if !found {
 		return sdkerrors.Wrapf(types.ErrUnknownSourceChain, "unknown source chain, chainID: %s", delegation.ChainID)
@@ -214,7 +204,7 @@ func (k Keeper) AfterProxyDelegationTransfer(ctx sdk.Context, delegation *types.
 func (k Keeper) AfterProxyDelegationDone(ctx sdk.Context, delegateCallbackArgs *types.DelegateCallbackArgs, delegationSuccessful bool) error {
 	delegation, found := k.GetProxyDelegation(ctx, delegateCallbackArgs.ProxyDelegationID)
 	if !found {
-		return nil
+		return types.ErrNoExistProxyDelegation
 	}
 
 	k.Logger(ctx).Info(fmt.Sprintf("delegateCallbackHandler, chainID %s epoch %d", delegation.ChainID, delegation.EpochNumber))
@@ -222,7 +212,7 @@ func (k Keeper) AfterProxyDelegationDone(ctx sdk.Context, delegateCallbackArgs *
 	if !delegationSuccessful {
 		delegation.Status = types.ProxyDelegationFailed
 		k.SetProxyDelegation(ctx, delegation.Id, delegation)
-		return nil
+		return types.ErrCallbackMismatch
 	}
 
 	sourceChain, found := k.GetSourceChain(ctx, delegation.ChainID)
