@@ -60,13 +60,13 @@ func delegateTransferCallbackHandler(k *Keeper, ctx sdk.Context, callback *types
 	return k.afterProxyDelegationTransfer(ctx, delegation)
 }
 
-func delegateCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCallback, acknowledgement []byte) error {
+func delegateCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCallback, acknowledgement []byte) (err error) {
 	var delegateCallbackArgs types.DelegateCallbackArgs
 	k.cdc.MustUnmarshal([]byte(callback.Args), &delegateCallbackArgs)
 
 	checkProxyDelegationAck := true
 
-	defer func() { k.afterProxyDelegationDone(ctx, &delegateCallbackArgs, checkProxyDelegationAck) }()
+	defer func() { err = k.afterProxyDelegationDone(ctx, &delegateCallbackArgs, checkProxyDelegationAck) }()
 
 	ackRes, err := GetResultFromAcknowledgement(acknowledgement)
 	if err != nil {
