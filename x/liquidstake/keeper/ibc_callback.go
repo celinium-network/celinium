@@ -71,8 +71,9 @@ func (k Keeper) HandleIBCAcknowledgement(ctx sdk.Context, packet *channeltypes.P
 	err := handler(&k, ctx, callback, acknowledgement)
 	if err == nil {
 		k.RemoveCallBack(ctx, packet.SourceChannel, packet.SourcePort, packet.Sequence)
+	} else {
+		k.Logger(ctx).Error(fmt.Sprintf("Handle IBC acknowledgement error: %v", err))
 	}
 
-	k.Logger(ctx).Error(fmt.Sprintf("Handle IBC acknowledgement error: %v", err))
 	return nil
 }

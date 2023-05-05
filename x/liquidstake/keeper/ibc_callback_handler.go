@@ -110,19 +110,27 @@ func undelegateCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCa
 		return err
 	}
 
-	var completeTime time.Time
-	for _, r := range txMsgData.MsgResponses {
-		if strings.Contains(r.TypeUrl, "MsgUndelegateResponse") {
-			response := stakingtypes.MsgUndelegateResponse{}
-			if err := k.cdc.Unmarshal(r.Value, &response); err != nil {
-				return nil
-			}
-			completeTime = response.CompletionTime
-		}
-	}
-
 	var unbondCallArgs types.UnbondCallbackArgs
 	k.cdc.MustUnmarshal([]byte(callback.Args), &unbondCallArgs)
+
+	respLen := 0
+	var completeTime time.Time
+	for _, r := range txMsgData.MsgResponses {
+		if !strings.Contains(r.TypeUrl, "MsgUndelegateResponse") {
+			continue
+		}
+
+		response := stakingtypes.MsgUndelegateResponse{}
+		if err := k.cdc.Unmarshal(r.Value, &response); err != nil {
+			return err
+		}
+		completeTime = response.CompletionTime
+		respLen++
+	}
+
+	if respLen != len(unbondCallArgs.Validators) {
+		return types.ErrCallbackMismatch
+	}
 
 	epochUnbondings, found := k.GetEpochProxyUnboundings(ctx, unbondCallArgs.Epoch)
 	if !found {
