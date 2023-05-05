@@ -6,6 +6,7 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
+	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
@@ -372,3 +373,195 @@ func nextBlockWithRes(chain *ibctesting.TestChain, nextBlockTime time.Time) (abc
 	chain.NextBlock()
 	return endBlockres, beginBlockRes
 }
+
+type mockEpochProxyUnbondingEnv struct {
+	ctx            sdk.Context
+	cdc            codec.BinaryCodec
+	ctlChainApp    *app.App
+	srcChainParams types.SourceChain
+	epoch          uint64
+	sendedPacket   channeltypes.Packet
+	delegator      sdk.AccAddress
+	ibcCallback    types.IBCCallback
+}
+
+func (suite *KeeperTestSuite) mockEpochProxyUnbondingEnv() *mockEpochProxyUnbondingEnv {
+	cdc := suite.controlChain.Codec
+	ctx := suite.controlChain.GetContext()
+	stakedAmt := sdk.NewIntFromUint64(100000000000)
+	ctlChainApp := getCeliniumApp(suite.controlChain)
+
+	// mock staked env
+	srcChainParams := suite.mockSourceChainParams()
+	srcChainParams.StakedAmount = stakedAmt
+	srcChainParams.Validators = srcChainParams.AllocateTokenForValidator(stakedAmt).Validators
+
+	// delegator has already transferred derivative coin to module.
+	ctlChainApp.BankKeeper.MintCoins(ctx, types.ModuleName, sdk.Coins{sdk.NewCoin(srcChainParams.DerivativeDenom, stakedAmt)})
+
+	epoch := suite.delegationEpoch()
+	ctlChainApp.LiquidStakeKeeper.SetSourceChain(ctx, srcChainParams)
+	ctlChainApp.EpochsKeeper.SetEpochInfo(ctx, *epoch)
+
+	ctlChainUserAddr := suite.controlChain.SenderAccount.GetAddress()
+
+	mockPacket := channeltypes.Packet{
+		Sequence:      0,
+		SourcePort:    "transfer",
+		SourceChannel: "channel-0",
+	}
+
+	return &mockEpochProxyUnbondingEnv{
+		ctx:            ctx,
+		cdc:            cdc,
+		srcChainParams: *srcChainParams,
+		epoch:          uint64(epoch.CurrentEpoch),
+		sendedPacket:   mockPacket,
+		delegator:      ctlChainUserAddr,
+		ctlChainApp:    ctlChainApp,
+	}
+}
+
+func (suite *KeeperTestSuite) mockEpochProxyUnbondingStartedEnv() *mockEpochProxyUnbondingEnv {
+	env := suite.mockEpochProxyUnbondingEnv()
+
+	stakedAmt := env.srcChainParams.StakedAmount
+	epoch := env.epoch
+
+	// mock a started epochUnbondings
+	mockUserUnbonding := types.UserUnbonding{
+		ID:        types.AssembleUserUnbondingID(env.srcChainParams.ChainID, epoch, env.delegator.String()),
+		ChainID:   env.srcChainParams.ChainID,
+		Epoch:     epoch,
+		Delegator: env.delegator.String(),
+		Receiver:  env.delegator.String(),
+		RedeemCoin: sdk.Coin{
+			Denom:  env.srcChainParams.IbcDenom,
+			Amount: stakedAmt,
+		},
+		CliamStatus: types.UserUnbondingPending,
+	}
+
+	mockEpochUnbonding := types.EpochProxyUnbonding{
+		Epoch: epoch,
+		Unbondings: []types.ProxyUnbonding{
+			{
+				ChainID:                env.srcChainParams.ChainID,
+				BurnedDerivativeAmount: stakedAmt,
+				RedeemNativeToken: sdk.Coin{
+					Denom:  env.srcChainParams.NativeDenom,
+					Amount: stakedAmt,
+				},
+				UnbondTime:       0,
+				Status:           types.ProxyUnbondingStart,
+				UserUnbondingIds: []string{mockUserUnbonding.ID},
+			},
+		},
+	}
+
+	undelegateCallArgs := types.UnbondCallbackArgs{
+		Epoch:      env.epoch,
+		ChainID:    env.srcChainParams.ChainID,
+		Validators: env.srcChainParams.Validators,
+	}
+
+	callback := types.IBCCallback{
+		CallType: types.UndelegateCall,
+		Args:     string(env.cdc.MustMarshal(&undelegateCallArgs)),
+	}
+
+	env.ctlChainApp.LiquidStakeKeeper.SetUserUnbonding(env.ctx, &mockUserUnbonding)
+	env.ctlChainApp.LiquidStakeKeeper.SetEpochProxyUnboundings(env.ctx, &mockEpochUnbonding)
+
+	env.ctlChainApp.LiquidStakeKeeper.SetCallBack(
+		env.ctx,
+		env.sendedPacket.SourceChannel,
+		env.sendedPacket.SourcePort,
+		env.sendedPacket.Sequence,
+		&callback)
+
+	return &mockEpochProxyUnbondingEnv{
+		ctx:            env.ctx,
+		cdc:            env.cdc,
+		srcChainParams: env.srcChainParams,
+		epoch:          mockEpochUnbonding.Epoch,
+		sendedPacket:   env.sendedPacket,
+		delegator:      env.delegator,
+		ctlChainApp:    env.ctlChainApp,
+		ibcCallback:    callback,
+	}
+}
+
+// func (suite *KeeperTestSuite) mockEpochProxyUnbondingWithdrawEnv() *mockEpochProxyUnbondingEnv {
+// 	env := suite.mockEpochProxyUnbondingEnv()
+
+// 	stakedAmt := env.srcChainParams.StakedAmount
+// 	epoch := env.epoch
+
+// 	mockUserUnbonding := types.UserUnbonding{
+// 		ID:        types.AssembleUserUnbondingID(env.srcChainParams.ChainID, epoch, env.delegator.String()),
+// 		ChainID:   env.srcChainParams.ChainID,
+// 		Epoch:     epoch,
+// 		Delegator: env.delegator.String(),
+// 		Receiver:  env.delegator.String(),
+// 		RedeemCoin: sdk.Coin{
+// 			Denom:  env.srcChainParams.IbcDenom,
+// 			Amount: stakedAmt,
+// 		},
+// 		CliamStatus: types.UserUnbondingPending,
+// 	}
+
+// 	mockEpochUnbonding := types.EpochProxyUnbonding{
+// 		Epoch: epoch,
+// 		Unbondings: []types.ProxyUnbonding{
+// 			{
+// 				ChainID:                env.srcChainParams.ChainID,
+// 				BurnedDerivativeAmount: stakedAmt,
+// 				RedeemNativeToken: sdk.Coin{
+// 					Denom:  env.srcChainParams.NativeDenom,
+// 					Amount: stakedAmt,
+// 				},
+// 				UnbondTime:       0,
+// 				Status:           types.ProxyUnbondingStart,
+// 				UserUnbondingIds: []string{mockUserUnbonding.ID},
+// 			},
+// 		},
+// 	}
+
+// 	withdrawCallArgs := types.UnbondCallbackArgs{
+// 		Epoch:   epoch,
+// 		ChainID: env.srcChainParams.ChainID,
+// 	}
+
+// 	callback := types.IBCCallback{
+// 		CallType: types.WithdrawUnbondCall,
+// 		Args:     string(env.cdc.MustMarshal(&withdrawCallArgs)),
+// 	}
+
+// 	mockPacket := channeltypes.Packet{
+// 		Sequence:      0,
+// 		SourcePort:    "transfer",
+// 		SourceChannel: "channel-0",
+// 	}
+
+// 	env.ctlChainApp.LiquidStakeKeeper.SetUserUnbonding(env.ctx, &mockUserUnbonding)
+// 	env.ctlChainApp.LiquidStakeKeeper.SetEpochProxyUnboundings(env.ctx, &mockEpochUnbonding)
+
+// 	env.ctlChainApp.LiquidStakeKeeper.SetCallBack(
+// 		env.ctx,
+// 		mockPacket.SourceChannel,
+// 		mockPacket.SourcePort,
+// 		mockPacket.Sequence,
+// 		&callback)
+
+// 	return &mockEpochProxyUnbondingEnv{
+// 		ctx:            env.ctx,
+// 		cdc:            env.cdc,
+// 		srcChainParams: env.srcChainParams,
+// 		epoch:          mockEpochUnbonding.Epoch,
+// 		sendedPacket:   mockPacket,
+// 		delegator:      env.delegator,
+// 		ctlChainApp:    env.ctlChainApp,
+// 		ibcCallback:    callback,
+// 	}
+// }

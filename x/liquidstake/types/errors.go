@@ -20,4 +20,5 @@ var (
 	ErrICANotFound              = sdkioerrors.Register(ModuleName, 13, "can not find interchain account address")
 	ErrUserUndelegationNotExist = sdkioerrors.Register(ModuleName, 14, "the undelegation is not exist")
 	ErrUserUndelegationWatting  = sdkioerrors.Register(ModuleName, 15, "the undelegation is waitting")
+	ErrCallbackMismatch         = sdkioerrors.Register(ModuleName, 16, "mismatch callback")
 )

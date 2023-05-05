@@ -47,9 +47,9 @@ func (s *IntegrationTestSuite) mockRegisterSourceChain() *sourceChainParams {
 		valAddr := sdk.ValAddress(accAddr)
 
 		regparams.CliVals.Vals = append(regparams.CliVals.Vals, types.Validator{
-			Address:          valAddr.String(),
-			DelegationAmount: math.ZeroInt(),
-			Weight:           1000000,
+			Address:     valAddr.String(),
+			TokenAmount: math.ZeroInt(),
+			Weight:      1000000,
 		})
 	}
 
@@ -97,7 +97,6 @@ func (s *IntegrationTestSuite) LiquidStakeAddSourceChain(regparams *sourceChainP
 		return nil, err
 	}
 	s.Logf("Liquistake regisor source chain successful, chainID %s", regparams.ChainID)
-	// TODO check registe result ?
 	return &resp.SourceChain, nil
 }
 
@@ -156,10 +155,10 @@ func (s *IntegrationTestSuite) LiquistakeDelegate(sourceChain *types.SourceChain
 			Denom:  sourceChain.IbcDenom,
 			Amount: amount,
 		},
-		Status:            types.ProxyDelegationPending,
-		EpochNumber:       curEpoch,
-		ChainID:           sourceChain.ChainID,
-		TransferredAmount: math.ZeroInt(),
+		Status:         types.ProxyDelegationPending,
+		EpochNumber:    curEpoch,
+		ChainID:        sourceChain.ChainID,
+		ReinvestAmount: math.ZeroInt(),
 	}
 
 	s.True(compareProxyDelegation(&resp.Record, &targetProxyDelegation))
@@ -233,7 +232,7 @@ func (s *IntegrationTestSuite) LiquidstakeReinvest(sourceChain *types.SourceChai
 	// check trannferred amount
 	rcResp, err := queryLiquidstakeDelegation(s.ctlChain.encfg.Codec, ctlAPIEndpoint, sourceChain.ChainID, uint64(resp.CurrentEpoch))
 	s.NoError(err)
-	s.True(rcResp.Record.TransferredAmount.GT(delegateReward))
+	s.True(rcResp.Record.ReinvestAmount.GT(delegateReward))
 
 	// check withdraw address has been correctly setted.
 	withdrawAddressResp, err := queryDelegatorWithdrawalAddress(s.srcChain.encfg.Codec, srcAPIEndpoint, delegateICA)
@@ -246,7 +245,7 @@ func (s *IntegrationTestSuite) LiquidstakeReinvest(sourceChain *types.SourceChai
 	// check all reward has transferred to delegatorICA and correctly record.
 	balance, err := getSpecificBalance(s.srcChain.encfg.Codec, srcAPIEndpoint, delegateICA, sourceChain.NativeDenom)
 	s.NoError(err)
-	s.True(rcResp.Record.TransferredAmount.Equal(balance.Amount))
+	s.True(rcResp.Record.ReinvestAmount.Equal(balance.Amount))
 
 	s.Logf("Reinvest successfully")
 	return balance.Amount
@@ -350,7 +349,7 @@ func (s *IntegrationTestSuite) LiquistakeUndelegate(srcChain *types.SourceChain,
 
 	s.waitForNextEpoch(ctlAPIEndpoint, appparams.UndelegationEpochIdentifier, time.Second*10)
 	chainUnbondingResp, _ = queryLiquidstakeProxyUnbonding(s.ctlChain.encfg.Codec, ctlAPIEndpoint, srcChain.ChainID, uint64(epochRes.CurrentEpoch))
-	completeTimeStamp := chainUnbondingResp.ChainUnbonding.UnbondTIme
+	completeTimeStamp := chainUnbondingResp.ChainUnbonding.UnbondTime
 	completeTime := time.Unix(0, int64(completeTimeStamp))
 
 	s.Logf("Undelegate complete time %s", completeTime.Format(time.RFC3339))

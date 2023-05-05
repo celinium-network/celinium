@@ -74,7 +74,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.icaPath = copyConnectionAndClientToPath(suite.icaPath, suite.transferPath)
 
 	// create test coin, mint in sourcechain, then transfer to control chain by ibc
-	srcChainParams := suite.generateSourceChainParams()
+	srcChainParams := suite.mockSourceChainParams()
 
 	amount := uint64(rand.Int()%100000 + 100000) //nolint:gosec
 	testCoin := sdk.NewCoin(srcChainParams.NativeDenom, sdk.NewIntFromUint64(amount))

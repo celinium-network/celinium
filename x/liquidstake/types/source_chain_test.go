@@ -58,13 +58,13 @@ func TestSourceChainAllocateFunds(t *testing.T) {
 
 	totalFunds := sdk.NewIntFromUint64(rand.Uint64()%100000 + 1010101001001) //nolint:gosec
 
-	checkAlloc := func(srcChain *types.SourceChain, funds math.Int, allocFunds []types.ValidatorFund) {
-		if len(allocFunds) != len(srcChain.Validators) {
+	checkAlloc := func(srcChain *types.SourceChain, funds math.Int, allocVals types.Validators) {
+		if len(allocVals.Validators) != len(srcChain.Validators) {
 			t.Fatal("allocate fund error")
 		}
 		totalAmount := sdk.ZeroInt()
-		for _, f := range allocFunds {
-			totalAmount = totalAmount.Add(f.Amount)
+		for _, f := range allocVals.Validators {
+			totalAmount = totalAmount.Add(f.TokenAmount)
 		}
 		if !totalAmount.Equal(funds) {
 			t.Fatal("allocate amount not equal")
@@ -72,7 +72,7 @@ func TestSourceChainAllocateFunds(t *testing.T) {
 	}
 
 	for i := 0; i < len(srcChains); i++ {
-		allocFunds := srcChains[i].AllocateFundsForValidator(totalFunds)
+		allocFunds := srcChains[i].AllocateTokenForValidator(totalFunds)
 		checkAlloc(&srcChains[i], totalFunds, allocFunds)
 	}
 }

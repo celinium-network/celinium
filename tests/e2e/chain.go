@@ -61,7 +61,7 @@ func newChain(tag string) (*chain, error) {
 		ModuleBasicsGenesis: func() (json.RawMessage, error) {
 			return json.MarshalIndent(celiniumapp.ModuleBasics.DefaultGenesis(encfg.Codec), "", " ")
 		},
-		DokcerImage: "celinium", // TODO Use the local docker image compiled by the current code instead
+		DokcerImage: "celinium",
 	}, nil
 }
 

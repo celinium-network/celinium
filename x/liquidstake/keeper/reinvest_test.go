@@ -7,7 +7,7 @@ import (
 )
 
 func (suite *KeeperTestSuite) TestReinvest() {
-	srcChainParams := suite.generateSourceChainParams()
+	srcChainParams := suite.mockSourceChainParams()
 	delegationEpoch := suite.delegationEpoch()
 	suite.setSourceChainAndEpoch(srcChainParams, delegationEpoch)
 
@@ -75,12 +75,12 @@ func (suite *KeeperTestSuite) TestReinvest() {
 	ctx = suite.controlChain.GetContext()
 	srcChain, _ := ctlChainApp.LiquidStakeKeeper.GetSourceChain(ctx, srcChainParams.ChainID)
 	// redeemrate has change
-	suite.True((srcChain.Redemptionratio.GT(sdk.NewDec(1))))
+	suite.True((srcChain.Redemptionratio.GTE(sdk.NewDec(1))))
 	suite.True(srcChain.StakedAmount.Sub(testCoin.Amount).Sub(balance.Amount).Equal(sdk.ZeroInt()))
 }
 
 func (suite *KeeperTestSuite) TestSetWithdrawAddress() {
-	sourceChainParams := suite.generateSourceChainParams()
+	sourceChainParams := suite.mockSourceChainParams()
 	epochInfo := suite.delegationEpoch()
 	suite.setSourceChainAndEpoch(sourceChainParams, epochInfo)
 

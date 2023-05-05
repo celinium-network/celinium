@@ -10,7 +10,7 @@ import (
 )
 
 func (suite *KeeperTestSuite) TestGRPCQuerySourceChain() {
-	sourceChainParams := suite.generateSourceChainParams()
+	sourceChainParams := suite.mockSourceChainParams()
 	suite.setSourceChainAndEpoch(sourceChainParams, suite.delegationEpoch())
 
 	queryClient := suite.queryClient
@@ -62,7 +62,7 @@ func (suite *KeeperTestSuite) TestGRPCQuerySourceChain() {
 }
 
 func (suite *KeeperTestSuite) TestGRPCQueryDelegation() {
-	sourceChainParams := suite.generateSourceChainParams()
+	sourceChainParams := suite.mockSourceChainParams()
 	suite.setSourceChainAndEpoch(sourceChainParams, suite.delegationEpoch())
 
 	var req *types.QueryProxyDelegationRequest
@@ -135,7 +135,7 @@ func (suite *KeeperTestSuite) TestGRPCQueryDelegation() {
 }
 
 func (suite *KeeperTestSuite) TestGRPCQueryChainUnbondings() {
-	srcChainParams := suite.generateSourceChainParams()
+	srcChainParams := suite.mockSourceChainParams()
 	delegationEpochInfo := suite.delegationEpoch()
 	suite.setSourceChainAndEpoch(srcChainParams, delegationEpochInfo)
 
@@ -218,7 +218,7 @@ func (suite *KeeperTestSuite) TestGRPCQueryChainUnbondings() {
 }
 
 func (suite *KeeperTestSuite) TestGRPCQueryUserUnbonding() {
-	srcChainParams := suite.generateSourceChainParams()
+	srcChainParams := suite.mockSourceChainParams()
 	delegationEpochInfo := suite.delegationEpoch()
 	suite.setSourceChainAndEpoch(srcChainParams, delegationEpochInfo)
 

@@ -29,7 +29,7 @@ func (suite *KeeperTestSuite) TestCreateEpochUnbonding() {
 	ctx := suite.controlChain.GetContext()
 	ctlChainApp.EpochsKeeper.SetEpochInfo(ctx, *suite.delegationEpoch())
 
-	suite.setSourceChainAndEpoch(suite.generateSourceChainParams(), suite.unbondEpoch())
+	suite.setSourceChainAndEpoch(suite.mockSourceChainParams(), suite.unbondEpoch())
 
 	// check epoch unbonding at epoch 2
 	controlChainApp := getCeliniumApp(suite.controlChain)
@@ -40,7 +40,7 @@ func (suite *KeeperTestSuite) TestCreateEpochUnbonding() {
 }
 
 func (suite *KeeperTestSuite) TestUndelegate() {
-	srcChainParams := suite.generateSourceChainParams()
+	srcChainParams := suite.mockSourceChainParams()
 	delegationEpochInfo := suite.delegationEpoch()
 	suite.setSourceChainAndEpoch(srcChainParams, delegationEpochInfo)
 
@@ -98,17 +98,17 @@ func (suite *KeeperTestSuite) TestUndelegate() {
 
 	ctx = suite.sourceChain.GetContext()
 	UnbondingOnSrcChain := srcChainApp.StakingKeeper.GetAllUnbondingDelegations(ctx, sdk.MustAccAddressFromBech32(delegatorOnSourceChain))
-	allocatedUnbonding := srcChainParams.AllocateFundsForValidator(testCoin.Amount)
+	allocVals := srcChainParams.AllocateTokenForValidator(testCoin.Amount)
 	for _, unbonding := range UnbondingOnSrcChain {
-		for _, alloc := range allocatedUnbonding {
-			if alloc.Address != unbonding.ValidatorAddress {
+		for _, val := range allocVals.Validators {
+			if val.Address != unbonding.ValidatorAddress {
 				continue
 			}
 			totalUnbondingBal := math.ZeroInt()
 			for _, e := range unbonding.Entries {
 				totalUnbondingBal = totalUnbondingBal.Add(e.InitialBalance)
 			}
-			suite.True(alloc.Amount.Equal(totalUnbondingBal))
+			suite.True(val.TokenAmount.Equal(totalUnbondingBal))
 		}
 	}
 
@@ -118,7 +118,7 @@ func (suite *KeeperTestSuite) TestUndelegate() {
 }
 
 func (suite *KeeperTestSuite) TestWithdrawCompleteUnbond() {
-	sourceChainParams := suite.generateSourceChainParams()
+	sourceChainParams := suite.mockSourceChainParams()
 	delegationEpochInfo := suite.delegationEpoch()
 	suite.setSourceChainAndEpoch(sourceChainParams, delegationEpochInfo)
 
@@ -186,7 +186,7 @@ func (suite *KeeperTestSuite) WaitForUnbondingComplete(sourceChainParams *types.
 			continue
 		}
 		suite.Equal(unbonding.Status, types.ProxyUnbondingWaitting)
-		unbondCompleteTime = time.Unix(0, int64(unbonding.UnbondTIme))
+		unbondCompleteTime = time.Unix(0, int64(unbonding.UnbondTime))
 	}
 
 	// make the light client not expired.

@@ -11,7 +11,7 @@ import (
 )
 
 func (suite *KeeperTestSuite) TestCreateNewProxyDelegationAtEpochStart() {
-	suite.setSourceChainAndEpoch(suite.generateSourceChainParams(), suite.delegationEpoch())
+	suite.setSourceChainAndEpoch(suite.mockSourceChainParams(), suite.delegationEpoch())
 
 	controlChainApp := getCeliniumApp(suite.controlChain)
 
@@ -22,7 +22,7 @@ func (suite *KeeperTestSuite) TestCreateNewProxyDelegationAtEpochStart() {
 }
 
 func (suite *KeeperTestSuite) TestDelegate() {
-	sourceChainParams := suite.generateSourceChainParams()
+	sourceChainParams := suite.mockSourceChainParams()
 	suite.setSourceChainAndEpoch(sourceChainParams, suite.delegationEpoch())
 
 	ctlChainUserAddr := suite.controlChain.SenderAccount.GetAddress()
@@ -55,7 +55,7 @@ func (suite *KeeperTestSuite) TestDelegateWithDiffRedeemRatio() {
 		sdk.NewDecWithPrec(99999, 5),  // 0.99999
 	}
 
-	srcChainParams := suite.generateSourceChainParams()
+	srcChainParams := suite.mockSourceChainParams()
 	suite.setSourceChainAndEpoch(srcChainParams, suite.delegationEpoch())
 
 	ctlChainUserAddr := suite.controlChain.SenderAccount.GetAddress()
@@ -82,7 +82,7 @@ func (suite *KeeperTestSuite) TestDelegateWithDiffRedeemRatio() {
 }
 
 func (suite *KeeperTestSuite) TestProcessDelegationAfterAdvanceEpoch() {
-	srcChainParams := suite.generateSourceChainParams()
+	srcChainParams := suite.mockSourceChainParams()
 	epochInfo := suite.delegationEpoch()
 	suite.setSourceChainAndEpoch(srcChainParams, epochInfo)
 

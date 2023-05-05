@@ -17,6 +17,11 @@ func (k Keeper) SetCallBack(ctx sdk.Context, channel string, port string, sequen
 	store.Set(types.GetIBCCallbackKey([]byte(channel), []byte(port), sequence), bz)
 }
 
+func (k Keeper) RemoveCallBack(ctx sdk.Context, channel string, port string, sequence uint64) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.GetIBCCallbackKey([]byte(channel), []byte(port), sequence))
+}
+
 func (k Keeper) GetCallBack(ctx sdk.Context, channel string, port string, sequence uint64) (*types.IBCCallback, bool) {
 	store := ctx.KVStore(k.storeKey)
 
@@ -44,20 +49,13 @@ func GetResultFromAcknowledgement(acknowledgement []byte) ([]byte, error) {
 		}
 		return ack.GetResult(), nil
 	case *channeltypes.Acknowledgement_Error:
-		return nil, sdkerrors.Wrapf(channeltypes.ErrInvalidPacket, "invalid acknowledgement")
+		return nil, fmt.Errorf("acknowledgement has error: %s", ack.GetError())
 	default:
-		return nil, sdkerrors.Wrapf(channeltypes.ErrInvalidAcknowledgement, "unknown acknowledgement status")
-
+		return nil, fmt.Errorf("unknown acknowledgement status")
 	}
 }
 
-func (k Keeper) HandleIBCTransferAcknowledgement(ctx sdk.Context, packet *channeltypes.Packet, acknowledgement []byte) error {
-	_, err := GetResultFromAcknowledgement(acknowledgement)
-	if err != nil {
-		k.Logger(ctx).Error(fmt.Sprintf("IBC acknowledgement has error %v", err))
-		return nil
-	}
-
+func (k Keeper) HandleIBCAcknowledgement(ctx sdk.Context, packet *channeltypes.Packet, acknowledgement []byte) error {
 	callback, found := k.GetCallBack(ctx, packet.SourceChannel, packet.SourcePort, packet.Sequence)
 	if !found {
 		k.Logger(ctx).Error(fmt.Sprintf("callback not exit, channelID: %s, portID: %s, sequence: %d",
@@ -70,35 +68,12 @@ func (k Keeper) HandleIBCTransferAcknowledgement(ctx sdk.Context, packet *channe
 		return nil
 	}
 
-	return handler(&k, ctx, callback, nil)
-	// TODO consider remove callback ?, repeated receive same Acknowledgement
-}
-
-func (k Keeper) HandleICAAcknowledgement(ctx sdk.Context, packet *channeltypes.Packet, acknowledgement []byte) error {
-	res, err := GetResultFromAcknowledgement(acknowledgement)
-	if err != nil {
-		k.Logger(ctx).Error(fmt.Sprintf("IBC acknowledgement has error %v", err))
-		return nil
+	err := handler(&k, ctx, callback, acknowledgement)
+	if err == nil {
+		k.RemoveCallBack(ctx, packet.SourceChannel, packet.SourcePort, packet.Sequence)
+	} else {
+		k.Logger(ctx).Error(fmt.Sprintf("Handle IBC acknowledgement error: %v", err))
 	}
 
-	var txMsgData sdk.TxMsgData
-	if err := k.cdc.Unmarshal(res, &txMsgData); err != nil {
-		return err
-	}
-
-	callback, found := k.GetCallBack(ctx, packet.SourceChannel, packet.SourcePort, packet.Sequence)
-	if !found {
-		k.Logger(ctx).Error(fmt.Sprintf("callback not exit, channelID: %s, portID: %s, sequence: %d",
-			packet.SourceChannel, packet.SourcePort, packet.Sequence))
-		return nil
-	}
-
-	handler, ok := callbackHandlerRegistry[callback.CallType]
-	if !ok {
-		return nil
-	}
-
-	return handler(&k, ctx, callback, txMsgData.MsgResponses)
-
-	// TODO consider remove callback ?, repeated receive same Acknowledgement
+	return nil
 }

@@ -37,8 +37,8 @@ message ProxyDelegation{
     string chainID = 5;
 
     // A portion of the `DelegationCoin` that have been transferred to the source chain.
-    // This usually happens when reinvesting to get back the source chain staking rewards,
-    string transferredAmount = 6[
+    // This happens when reinvesting to get back the source chain staking rewards,
+    string reinvestAmount = 6[
         (cosmos_proto.scalar)  = "cosmos.Int",
         (gogoproto.customtype) = "Int",
         (gogoproto.nullable)   = false];
@@ -88,7 +88,7 @@ message ProxyUnbonding {
     cosmos.base.v1beta1.Coin redeemNativeToken = 3 [(gogoproto.nullable) = false];
     
     // The time at which the unbonding will complete and the native tokens will be redeemable.
-    uint64 unbondTIme = 4;
+    uint64 unbondTime = 4;
 
     // The status of the unbonding.
     // 1) Pending: waiting for the current epoch to end
@@ -101,8 +101,8 @@ message ProxyUnbonding {
         (gogoproto.nullable) = false
     ];
 
-    // The IDs of the UserUnbondRecord entries that correspond to this unbonding entry. 
-    repeated string userUnbondRecordIds = 6;
+    // The IDs of the UserUnbonding entries that correspond to this unbonding entry. 
+    repeated string UserUnbondingIds = 6;
 }
 
 // Represents a collection of unbonding entries for a given epoch.

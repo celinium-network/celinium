@@ -73,7 +73,7 @@ func compareProxyDelegation(oriRecord, targetRecord *liquidstaketypes.ProxyDeleg
 	if oriRecord.Status != targetRecord.Status {
 		return false
 	}
-	if !oriRecord.TransferredAmount.Equal(targetRecord.TransferredAmount) {
+	if !oriRecord.ReinvestAmount.Equal(targetRecord.ReinvestAmount) {
 		return false
 	}
 	return true

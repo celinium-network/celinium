@@ -13,10 +13,6 @@ const (
 	ProxyDelegationFailed
 )
 
-// TODO where the funds when status is DelegationTransferFailed and DelegateFailed
-// (1) When status equal DelegationTransferFailed, the funds will be refund to the ibc msg sender.
-// Maybe we don't need the status of DelegationTransferFailed, just set it to DelegationPending, and start over from scratch.
-// (2) When status equal DelegateFailed, the funds will is locked in source chain.
 func IsProxyDelegationProcessing(status ProxyDelegationStatus) bool {
 	return status != ProxyDelegationDone
 }

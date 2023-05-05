@@ -49,10 +49,14 @@ func (k Keeper) AddSouceChain(ctx sdk.Context, sourceChain *types.SourceChain) e
 
 	delegatieEpochInfo, found := k.epochKeeper.GetEpochInfo(ctx, appparams.DelegationEpochIdentifier)
 	if !found {
-		return sdkerrors.Wrapf(types.ErrUnknownEpoch, "unknown epoch, epoch identifier: %s", appparams.DelegationEpochIdentifier)
+		return sdkerrors.Wrapf(types.ErrUnknownEpoch, "unknown epoch, epoch identifier: %s",
+			appparams.DelegationEpochIdentifier)
 	}
 
-	k.createProxyDelegation(ctx, uint64(delegatieEpochInfo.CurrentEpoch), sourceChain.ChainID, sourceChain.IbcDenom)
+	if _, err := k.createProxyDelegation(ctx, uint64(delegatieEpochInfo.CurrentEpoch),
+		sourceChain.ChainID, sourceChain.IbcDenom); err != nil {
+		return err
+	}
 
 	k.SetSourceChain(ctx, sourceChain)
 
@@ -82,7 +86,7 @@ func (k Keeper) CreateProxyDelegationForEpoch(ctx sdk.Context, epochNumber uint6
 	}
 }
 
-func (k Keeper) createProxyDelegation(ctx sdk.Context, epochNumber uint64, chainID string, stakeDenom string) *types.ProxyDelegation {
+func (k Keeper) createProxyDelegation(ctx sdk.Context, epochNumber uint64, chainID string, stakeDenom string) (*types.ProxyDelegation, error) {
 	id := k.GetProxyDelegationID(ctx)
 
 	delegation := types.ProxyDelegation{
@@ -93,13 +97,16 @@ func (k Keeper) createProxyDelegation(ctx sdk.Context, epochNumber uint64, chain
 		ChainID:     chainID,
 	}
 
+	if err := k.IncreaseProxyDelegationID(ctx); err != nil {
+		// uint64 exhausted, shoudle change id store prefix of `ProxyDelegation`
+		return nil, err
+	}
+
 	k.SetChainProxyDelegationID(ctx, chainID, epochNumber, id)
 
 	k.SetProxyDelegation(ctx, id, &delegation)
 
-	k.IncreaseProxyDelegationID(ctx)
-
-	return &delegation
+	return &delegation, nil
 }
 
 // CreateProxyUnbondingForEpoch a new unbonding in current epoch.

@@ -12,8 +12,8 @@ message Validator{
     // The address of source chain validator account.
     string address  = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
     
-    // Total amount of delegation.
-    string delegationAmount = 2 [
+    // Total allocated amount.
+    string tokenAmount = 2 [
         (cosmos_proto.scalar)  = "cosmos.Int",
         (gogoproto.customtype) = "Int",
         (gogoproto.nullable)   = false];
@@ -68,4 +68,8 @@ message SourceChain {
         (gogoproto.customtype) = "Int",
         (gogoproto.nullable)   = false
     ];
+}
+
+message Validators {
+    repeated Validator validators  = 1 [(gogoproto.nullable) = false];
 }

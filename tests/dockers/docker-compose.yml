@@ -1,6 +1,5 @@
 version: "3.9"
 services:
-# TODO rename gaia to cosmoshub ?
   gaia-validator-1:
     build:
       dockerfile: dockerfiles/Dockerfile.gaia

@@ -1,8 +1,7 @@
 package keeper
 
 import (
-	"time"
-
+	"github.com/celinium-network/celinium/x/liquidstake/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	icatypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/types"
 	"github.com/gogo/protobuf/proto"
@@ -19,8 +18,7 @@ func (k Keeper) sendIBCMsg(ctx sdk.Context, msgs []proto.Message, connectionID s
 		Data: data,
 	}
 
-	// TODO timeout ?
-	timeoutTimestamp := ctx.BlockTime().Add(30 * time.Minute).UnixNano()
+	timeoutTimestamp := ctx.BlockTime().UnixNano() + types.DefaultICATimeoutNanos
 	sendPortID, err := icatypes.NewControllerPortID(sender)
 	if err != nil {
 		return 0, "", err

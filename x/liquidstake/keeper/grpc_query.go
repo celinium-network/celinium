@@ -49,7 +49,9 @@ func (k Querier) ProxyDelegation(goCtx context.Context, req *types.QueryProxyDel
 }
 
 // EpochProxyUnbonding implements types.QueryServer
-func (k Querier) EpochProxyUnbonding(goCtx context.Context, req *types.QueryEpochProxyUnbondingRequest) (*types.QueryEpochProxyUnbondingResponse, error) {
+func (k Querier) EpochProxyUnbonding(goCtx context.Context, req *types.QueryEpochProxyUnbondingRequest) (
+	*types.QueryEpochProxyUnbondingResponse, error,
+) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -119,7 +121,6 @@ func (k Querier) UserUnbonding(goCtx context.Context, req *types.QueryUserUnbond
 	}
 
 	var userUnbondings []types.UserUnbonding
-	// TODO the loop maybe expensive. so get epoch from request?
 	for i := uint64(0); i < uint64(curEpoch.CurrentEpoch); i++ {
 		record, found := k.GetUserUnbonding(ctx, req.ChainID, i, req.User)
 		if !found {

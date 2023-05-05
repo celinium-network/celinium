@@ -22,7 +22,7 @@ type IBCModule struct {
 
 // OnAcknowledgementPacket implements types.IBCModule
 func (im IBCModule) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, acknowledgement []byte, relayer sdk.AccAddress) error {
-	return im.keeper.HandleICAAcknowledgement(ctx, &packet, acknowledgement)
+	return im.keeper.HandleIBCAcknowledgement(ctx, &packet, acknowledgement)
 }
 
 // OnChanCloseConfirm implements types.IBCModule

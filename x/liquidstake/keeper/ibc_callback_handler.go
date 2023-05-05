@@ -7,7 +7,6 @@ import (
 
 	sdkerrors "cosmossdk.io/errors"
 	"cosmossdk.io/math"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -16,7 +15,7 @@ import (
 	"github.com/celinium-network/celinium/x/liquidstake/types"
 )
 
-type callbackHandler func(*Keeper, sdk.Context, *types.IBCCallback, []*codectypes.Any) error
+type callbackHandler func(*Keeper, sdk.Context, *types.IBCCallback, []byte) error
 
 var callbackHandlerRegistry map[types.CallType]callbackHandler
 
@@ -25,63 +24,125 @@ func init() {
 
 	callbackHandlerRegistry[types.DelegateTransferCall] = delegateTransferCallbackHandler
 	callbackHandlerRegistry[types.DelegateCall] = delegateCallbackHandler
-	callbackHandlerRegistry[types.UnbondCall] = undelegateCallbackHandler
+	callbackHandlerRegistry[types.UndelegateCall] = undelegateCallbackHandler
 	callbackHandlerRegistry[types.WithdrawUnbondCall] = withdrawUnbondCallbackHandler
 	callbackHandlerRegistry[types.WithdrawDelegateRewardCall] = withdrawDelegateRewardCallbackHandler
 	callbackHandlerRegistry[types.TransferRewardCall] = transferRewardCallbackHandler
 	callbackHandlerRegistry[types.SetWithdrawAddressCall] = setWithdrawAddressCallbackHandler
 }
 
-func delegateTransferCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCallback, response []*codectypes.Any) error {
+func delegateTransferCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCallback, acknowledgement []byte) error {
 	proxyDelegationID := sdk.BigEndianToUint64([]byte(callback.Args))
 	delegation, found := k.GetProxyDelegation(ctx, proxyDelegationID)
 	if !found {
-		return nil
+		return types.ErrNoExistProxyDelegation
+	}
+	k.Logger(ctx).Info(fmt.Sprintf("ibc callback `DelegateTransferCall`, chainID %s epoch %d",
+		delegation.ChainID, delegation.EpochNumber))
+
+	if delegation.Status != types.ProxyDelegationTransferring {
+		k.Logger(ctx).Error(fmt.Sprintf("ibc callback `DelegateTransferCall` with wrong status chainID %s epoch %d",
+			delegation.ChainID, delegation.EpochNumber))
+		return types.ErrCallbackMismatch
 	}
 
-	k.Logger(ctx).Info(fmt.Sprintf("delegateTransferCallbackHandler, chainID %s epoch %d", delegation.ChainID, delegation.EpochNumber))
-	k.AfterProxyDelegationTransfer(ctx, delegation, true)
-	return nil
-}
+	if _, err := GetResultFromAcknowledgement(acknowledgement); err != nil {
+		k.Logger(ctx).Error(fmt.Sprintf("proxydelegation ibc transfer failed. chainID %s, epoch %d",
+			delegation.ChainID, delegation.EpochNumber))
 
-func delegateCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCallback, response []*codectypes.Any) error {
-	proxyDelegationID := sdk.BigEndianToUint64([]byte(callback.Args))
-	delegation, found := k.GetProxyDelegation(ctx, proxyDelegationID)
-	if !found {
-		return nil
+		// let delegation become pending, try ibc send in next epoch.
+		delegation.Status = types.ProxyDelegationPending
+		k.SetProxyDelegation(ctx, delegation.Id, delegation)
+
+		return err
 	}
 
-	k.Logger(ctx).Info(fmt.Sprintf("delegateCallbackHandler, chainID %s epoch %d", delegation.ChainID, delegation.EpochNumber))
-	k.AfterProxyDelegationDone(ctx, delegation, true)
-
-	return nil
+	return k.afterProxyDelegationTransfer(ctx, delegation)
 }
 
-func undelegateCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCallback, responses []*codectypes.Any) error {
-	var completeTime time.Time
-	for _, r := range responses {
-		if strings.Contains(r.TypeUrl, "MsgUndelegateResponse") {
-			response := stakingtypes.MsgUndelegateResponse{}
-			if err := k.cdc.Unmarshal(r.Value, &response); err != nil {
-				return nil
-			}
-			completeTime = response.CompletionTime
+func delegateCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCallback, acknowledgement []byte) (err error) {
+	var delegateCallbackArgs types.DelegateCallbackArgs
+	k.cdc.MustUnmarshal([]byte(callback.Args), &delegateCallbackArgs)
+
+	checkProxyDelegationAck := true
+
+	defer func() { err = k.afterProxyDelegationDone(ctx, &delegateCallbackArgs, checkProxyDelegationAck) }()
+
+	ackRes, err := GetResultFromAcknowledgement(acknowledgement)
+	if err != nil {
+		checkProxyDelegationAck = false
+		return err
+	}
+
+	var txMsgData sdk.TxMsgData
+	if err := k.cdc.Unmarshal(ackRes, &txMsgData); err != nil {
+		checkProxyDelegationAck = false
+		return err
+	}
+
+	respLen := 0
+	for _, r := range txMsgData.MsgResponses {
+		if !strings.Contains(r.TypeUrl, "MsgDelegateResponse") { // "/cosmos.staking.v1beta1.MsgDelegateResponse"
+			continue
 		}
+		response := stakingtypes.MsgDelegate{}
+		if err := k.cdc.Unmarshal(r.Value, &response); err != nil {
+			checkProxyDelegationAck = false
+			return err
+		}
+		respLen++
 	}
-	var unbondCallArgs types.UnbondCallbackArgs
 
+	if checkProxyDelegationAck = (respLen == len(delegateCallbackArgs.Validators)); !checkProxyDelegationAck {
+		return types.ErrCallbackMismatch
+	}
+	return nil
+}
+
+func undelegateCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCallback, acknowledgement []byte) error {
+	res, err := GetResultFromAcknowledgement(acknowledgement)
+	if err != nil {
+		return err
+	}
+
+	var txMsgData sdk.TxMsgData
+	if err := k.cdc.Unmarshal(res, &txMsgData); err != nil {
+		return err
+	}
+
+	var unbondCallArgs types.UnbondCallbackArgs
 	k.cdc.MustUnmarshal([]byte(callback.Args), &unbondCallArgs)
+
+	respLen := 0
+	var completeTime time.Time
+	for _, r := range txMsgData.MsgResponses {
+		if !strings.Contains(r.TypeUrl, "MsgUndelegateResponse") {
+			continue
+		}
+
+		response := stakingtypes.MsgUndelegateResponse{}
+		if err := k.cdc.Unmarshal(r.Value, &response); err != nil {
+			return err
+		}
+		completeTime = response.CompletionTime
+		respLen++
+	}
+
+	if respLen != len(unbondCallArgs.Validators) {
+		return types.ErrCallbackMismatch
+	}
 
 	epochUnbondings, found := k.GetEpochProxyUnboundings(ctx, unbondCallArgs.Epoch)
 	if !found {
-		return nil
+		return sdkerrors.Wrapf(types.ErrUnknownSourceChain, "unknown epochUnbonding, chainID: %s, epoch %d",
+			unbondCallArgs.ChainID, unbondCallArgs.Epoch)
 	}
 
 	for i := 0; i < len(epochUnbondings.Unbondings); i++ {
 		if epochUnbondings.Unbondings[i].ChainID != unbondCallArgs.ChainID {
 			continue
 		}
-		epochUnbondings.Unbondings[i].UnbondTIme = uint64(completeTime.UnixNano())
+		epochUnbondings.Unbondings[i].UnbondTime = uint64(completeTime.UnixNano())
 		epochUnbondings.Unbondings[i].Status = types.ProxyUnbondingWaitting
 
 		// update sourcechain
@@ -89,7 +150,8 @@ func undelegateCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCa
 		if !found {
 			return sdkerrors.Wrapf(types.ErrUnknownSourceChain, "unknown source chain, chainID: %s", unbondCallArgs.ChainID)
 		}
-		sourceChain.StakedAmount = sourceChain.StakedAmount.Sub(epochUnbondings.Unbondings[i].RedeemNativeToken.Amount)
+
+		sourceChain.UpdateWithUnbondingValidators(unbondCallArgs.Validators)
 
 		burnedCoin := sdk.Coins{sdk.NewCoin(sourceChain.DerivativeDenom, epochUnbondings.Unbondings[i].BurnedDerivativeAmount)}
 		if err := k.bankKeeper.BurnCoins(ctx, types.ModuleName, burnedCoin); err != nil {
@@ -98,13 +160,22 @@ func undelegateCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCa
 		k.SetSourceChain(ctx, sourceChain)
 	}
 
-	// save
 	k.SetEpochProxyUnboundings(ctx, epochUnbondings)
 
 	return nil
 }
 
-func withdrawUnbondCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCallback, responses []*codectypes.Any) error {
+func withdrawUnbondCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCallback, acknowledgement []byte) error {
+	res, err := GetResultFromAcknowledgement(acknowledgement)
+	if err != nil {
+		return err
+	}
+
+	var txMsgData sdk.TxMsgData
+	if err := k.cdc.Unmarshal(res, &txMsgData); err != nil {
+		return err
+	}
+
 	var unbondCallArgs types.UnbondCallbackArgs
 	k.cdc.MustUnmarshal([]byte(callback.Args), &unbondCallArgs)
 	epochUnbondings, found := k.GetEpochProxyUnboundings(ctx, unbondCallArgs.Epoch)
@@ -120,7 +191,7 @@ func withdrawUnbondCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.I
 		}
 		unbondings[i].Status = types.ProxyUnbondingDone
 
-		for _, userUnDelegationID := range unbondings[i].UserUnbondRecordIds {
+		for _, userUnDelegationID := range unbondings[i].UserUnbondingIds {
 			userUnbonding, found := k.GetUserUnbondingID(ctx, userUnDelegationID)
 			if !found {
 				continue
@@ -133,7 +204,17 @@ func withdrawUnbondCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.I
 	return nil
 }
 
-func withdrawDelegateRewardCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCallback, responses []*codectypes.Any) error {
+func withdrawDelegateRewardCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCallback, acknowledgement []byte) error {
+	res, err := GetResultFromAcknowledgement(acknowledgement)
+	if err != nil {
+		return err
+	}
+
+	var txMsgData sdk.TxMsgData
+	if err := k.cdc.Unmarshal(res, &txMsgData); err != nil {
+		return err
+	}
+
 	var callbackArgs types.WithdrawDelegateRewardCallbackArgs
 	k.cdc.MustUnmarshal([]byte(callback.Args), &callbackArgs)
 	totalReward := math.ZeroInt()
@@ -141,7 +222,7 @@ func withdrawDelegateRewardCallbackHandler(k *Keeper, ctx sdk.Context, callback 
 	if !found {
 		return nil
 	}
-	for _, r := range responses {
+	for _, r := range txMsgData.MsgResponses {
 		if strings.Contains(r.TypeUrl, "MsgWithdrawDelegatorRewardResponse") {
 			response := distrtypes.MsgWithdrawDelegatorRewardResponse{}
 			if err := k.cdc.Unmarshal(r.Value, &response); err != nil {
@@ -162,7 +243,17 @@ func withdrawDelegateRewardCallbackHandler(k *Keeper, ctx sdk.Context, callback 
 	return nil
 }
 
-func transferRewardCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCallback, responses []*codectypes.Any) error {
+func transferRewardCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCallback, acknowledgement []byte) error {
+	res, err := GetResultFromAcknowledgement(acknowledgement)
+	if err != nil {
+		return err
+	}
+
+	var txMsgData sdk.TxMsgData
+	if err := k.cdc.Unmarshal(res, &txMsgData); err != nil {
+		return err
+	}
+
 	var callbackArgs types.TransferRewardCallbackArgs
 	k.cdc.MustUnmarshal([]byte(callback.Args), &callbackArgs)
 	epochInfo, found := k.epochKeeper.GetEpochInfo(ctx, appparams.DelegationEpochIdentifier)
@@ -182,11 +273,11 @@ func transferRewardCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.I
 	}
 
 	delegation.Coin = delegation.Coin.AddAmount(callbackArgs.Amount)
-	delegation.TransferredAmount = delegation.TransferredAmount.Add(callbackArgs.Amount)
+	delegation.ReinvestAmount = delegation.ReinvestAmount.Add(callbackArgs.Amount)
 	k.SetProxyDelegation(ctx, delegationID, delegation)
 	return nil
 }
 
-func setWithdrawAddressCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCallback, responses []*codectypes.Any) error {
+func setWithdrawAddressCallbackHandler(k *Keeper, ctx sdk.Context, callback *types.IBCCallback, acknowledgement []byte) error {
 	return nil
 }

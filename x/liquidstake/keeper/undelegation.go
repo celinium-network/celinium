@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
@@ -30,7 +29,7 @@ func (k Keeper) Undelegate(ctx sdk.Context, chainID string, amount math.Int, del
 		return nil, sdkerrors.Wrapf(types.ErrUnknownEpoch, "unknown epoch, epoch identifier: %s", appparams.UndelegationEpochIdentifier)
 	}
 
-	// TODO, epoch should be uint64 or int64
+	// save convert from int64 to uint64 , guaranteed by epoch handle entrypoint.
 	currentEpoch := uint64(epochInfo.CurrentEpoch)
 	delegatorAddr := delegator.String()
 
@@ -80,15 +79,15 @@ func (k Keeper) Undelegate(ctx sdk.Context, chainID string, amount math.Int, del
 			ChainID:                chainID,
 			BurnedDerivativeAmount: sdk.ZeroInt(),
 			RedeemNativeToken:      sdk.NewCoin(sourceChain.NativeDenom, sdk.ZeroInt()),
-			UnbondTIme:             0,
+			UnbondTime:             0,
 			Status:                 0,
-			UserUnbondRecordIds:    []string{},
+			UserUnbondingIds:       []string{},
 		}
 	}
 
 	curEpochChainProxyUnbonding.BurnedDerivativeAmount = curEpochChainProxyUnbonding.BurnedDerivativeAmount.Add(amount)
 	curEpochChainProxyUnbonding.RedeemNativeToken = curEpochChainProxyUnbonding.RedeemNativeToken.AddAmount(receiveAmount)
-	curEpochChainProxyUnbonding.UserUnbondRecordIds = append(curEpochChainProxyUnbonding.UserUnbondRecordIds, userUnbonding.ID)
+	curEpochChainProxyUnbonding.UserUnbondingIds = append(curEpochChainProxyUnbonding.UserUnbondingIds, userUnbonding.ID)
 
 	if chainProxyUnbondingIndex == -1 {
 		// just append it
@@ -164,7 +163,6 @@ func (k Keeper) ProcessUndelegationEpoch(ctx sdk.Context, epochNumber uint64) {
 	for ; iterator.Valid(); iterator.Next() {
 		bz := iterator.Value()
 		if bz == nil {
-			// TODO why come here ?
 			continue
 		}
 		epochProxyUnbondings := types.EpochProxyUnbonding{}
@@ -189,11 +187,9 @@ func (k Keeper) ProcessEpochProxyUnbondings(ctx sdk.Context, epoch uint64, proxy
 
 	chainIDs := make([]string, 0)
 
-	// TODO use index loop style.
 	for i, unbonding := range proxyUnbondings {
 		sourceChian, found := k.GetSourceChain(ctx, unbonding.ChainID)
 		if !found {
-			// TODO why come here ?
 			continue
 		}
 
@@ -220,8 +216,7 @@ func (k Keeper) ProcessEpochProxyUnbondings(ctx sdk.Context, epoch uint64, proxy
 			// TODO become pending and retry next epoch or retry now ?
 			// retry now maybe deadloop ?
 		case types.ProxyUnbondingWaitting:
-			// TODO timestamp become int64
-			if ctx.BlockTime().Before(time.Unix(0, int64(unbonding.UnbondTIme)).Add(5 * time.Minute)) {
+			if ctx.BlockTime().Before(time.Unix(0, int64(unbonding.UnbondTime)).Add(5 * time.Minute)) {
 				continue
 			}
 
@@ -257,12 +252,7 @@ func (k Keeper) ProcessEpochProxyUnbondings(ctx sdk.Context, epoch uint64, proxy
 }
 
 func (k Keeper) undelegateOnSourceChain(ctx sdk.Context, sourceChain *types.SourceChain, amount math.Int, epoch uint64) error {
-	validatorAllocateFunds := sourceChain.AllocateFundsForValidator(amount)
-
-	// TODO, Ensuring the order of Validators seems to be easy, as long as the order is determined when modifying them.
-	sort.Slice(sourceChain.Validators, func(i, j int) bool {
-		return strings.Compare(sourceChain.Validators[i].Address, sourceChain.Validators[j].Address) >= 0
-	})
+	allocVals := sourceChain.AllocateTokenForValidator(amount)
 
 	undelegateMsgs := make([]proto.Message, 0)
 	sourceChainUnbondAddress, err := k.GetSourceChainAddr(ctx, sourceChain.ConnectionID, sourceChain.DelegateAddress)
@@ -270,13 +260,13 @@ func (k Keeper) undelegateOnSourceChain(ctx sdk.Context, sourceChain *types.Sour
 		return err
 	}
 
-	for _, valFund := range validatorAllocateFunds {
+	for _, valFund := range allocVals.Validators {
 		undelegateMsgs = append(undelegateMsgs, &stakingtypes.MsgUndelegate{
 			DelegatorAddress: sourceChainUnbondAddress,
 			ValidatorAddress: valFund.Address,
 			Amount: sdk.Coin{
 				Denom:  sourceChain.NativeDenom,
-				Amount: valFund.Amount,
+				Amount: valFund.TokenAmount,
 			},
 		})
 	}
@@ -289,14 +279,15 @@ func (k Keeper) undelegateOnSourceChain(ctx sdk.Context, sourceChain *types.Sour
 	sendChannelID, _ := k.icaCtlKeeper.GetOpenActiveChannel(ctx, sourceChain.ConnectionID, portID)
 
 	unbondCallArgs := types.UnbondCallbackArgs{
-		Epoch:   epoch,
-		ChainID: sourceChain.ChainID,
+		Epoch:      epoch,
+		ChainID:    sourceChain.ChainID,
+		Validators: allocVals.Validators,
 	}
 
 	bzArgs := k.cdc.MustMarshal(&unbondCallArgs)
 
 	callback := types.IBCCallback{
-		CallType: types.UnbondCall,
+		CallType: types.UndelegateCall,
 		Args:     string(bzArgs),
 	}
 
@@ -313,13 +304,13 @@ func (k Keeper) withdrawUnbondFromSourceChain(ctx sdk.Context, sourceChain *type
 
 	witdrawMsgs := make([]proto.Message, 0)
 	timeoutTimestamp := ctx.BlockTime().Add(30 * time.Minute).UnixNano()
-	validatorAllocateFunds := sourceChain.AllocateFundsForValidator(amount)
+	allocVals := sourceChain.AllocateTokenForValidator(amount)
 
-	for _, valFund := range validatorAllocateFunds {
+	for _, valFund := range allocVals.Validators {
 		witdrawMsgs = append(witdrawMsgs, transfertypes.NewMsgTransfer(
 			transfertypes.PortID, // TODO the source chain maybe not use the default ibc transfer port. config it.
 			sourceChain.TransferChannelID,
-			sdk.NewCoin(sourceChain.NativeDenom, valFund.Amount),
+			sdk.NewCoin(sourceChain.NativeDenom, valFund.TokenAmount),
 			sourceChainUnbondAddr,
 			sourceChain.DelegateAddress,
 			ibcclienttypes.Height{},

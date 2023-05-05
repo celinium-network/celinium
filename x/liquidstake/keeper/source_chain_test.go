@@ -12,7 +12,7 @@ import (
 )
 
 func (suite *KeeperTestSuite) TestAddSourceChain() {
-	sourceChain := suite.generateSourceChainParams()
+	sourceChain := suite.mockSourceChainParams()
 
 	ctlChainApp := getCeliniumApp(suite.controlChain)
 	ctx := suite.controlChain.GetContext()
@@ -36,7 +36,7 @@ func getCreatedICAFromSourceChain(s *types.SourceChain) []string {
 	return []string{s.WithdrawAddress, s.DelegateAddress}
 }
 
-func (suite *KeeperTestSuite) generateSourceChainParams() *types.SourceChain {
+func (suite *KeeperTestSuite) mockSourceChainParams() *types.SourceChain {
 	sourceChainVals := len(suite.sourceChain.Vals.Validators)
 	randVals := rand.Int()%sourceChainVals + 1 //nolint:gosec
 	selectedVals := make([]types.Validator, 0)
