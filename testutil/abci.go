@@ -62,7 +62,7 @@ func Commit(ctx sdk.Context, app *app.App, t time.Duration, vs *tmtypes.Validato
 		Header: header,
 	})
 
-	return app.BaseApp.NewContext(false, header), nil
+	return app.BaseApp.NewContext(false, header), nil 
 }
 
 // DeliverTx delivers a cosmos tx for a given set of msgs
