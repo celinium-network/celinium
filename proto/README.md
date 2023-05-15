@@ -8,5 +8,7 @@
 
 ## grpc-gateway
 ```
-    version: v1.16.0
+    git clone git@github.com:grpc-ecosystem/grpc-gateway.git
+    git checkout v1.16.0
+    go install ./protoc-gen-grpc-gateway/
 ```
