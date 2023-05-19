@@ -6,8 +6,10 @@ import (
 
 	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/store/prefix"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/gogo/protobuf/proto"
 
 	"github.com/tendermint/tendermint/libs/log"
 
@@ -126,7 +128,7 @@ func (k Keeper) SetMultiStakingAgent(ctx sdk.Context, agent *types.MultiStakingA
 
 	store.Set(types.GetMultiStakingAgentKey(agent.Id), bz)
 
-	k.SetMultiStakingAgentIDByDenomAndVal(ctx, agent.Id, agent.StakeDenom, agent.AgentDelegatorAddress)
+	k.SetMultiStakingAgentIDByDenomAndVal(ctx, agent.Id, agent.StakeDenom, agent.DelegateAddress)
 	k.SetLatestMultiStakingAgentID(ctx, agent.Id)
 }
 
@@ -302,4 +304,24 @@ func (k Keeper) SetUBDQueueTimeSlice(ctx sdk.Context, timestamp time.Time, keys 
 	store := ctx.KVStore(k.storeKey)
 	bz := k.cdc.MustMarshal(&types.DAPairs{Pairs: keys})
 	store.Set(types.GetMultiStakingUnbondingDelegationTimeKey(timestamp), bz)
+}
+
+func (k Keeper) GetAllAgent(ctx sdk.Context) []types.MultiStakingAgent {
+	store := ctx.KVStore(k.storeKey)
+	prefixStore := prefix.NewStore(store, types.MultiStakingAgentIDPrefix)
+
+	iterator := sdk.KVStorePrefixIterator(prefixStore, nil)
+	defer iterator.Close()
+
+	agents := []types.MultiStakingAgent{}
+	for ; iterator.Valid(); iterator.Next() {
+		agent := types.MultiStakingAgent{}
+
+		err := proto.Unmarshal(iterator.Value(), &agent)
+		if err != nil {
+			panic(err)
+		}
+		agents = append(agents, agent)
+	}
+	return agents
 }

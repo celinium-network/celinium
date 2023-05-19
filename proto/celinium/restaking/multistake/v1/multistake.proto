@@ -44,23 +44,25 @@ message MultiStakingAgent{
 
     string stake_denom = 2;
 
-    string agent_delegator_address = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+    string delegate_address = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
-    string withdraw_address = 4 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+    string validator_address = 4 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
-    string staked_amount = 5 [
+    string withdraw_address = 5 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+    string staked_amount = 6 [
         (cosmos_proto.scalar)  = "cosmos.Int",
         (gogoproto.customtype) = "Int",
         (gogoproto.nullable)   = false
     ];
 
-    string shares = 6 [
+    string shares = 7 [
         (cosmos_proto.scalar)  = "cosmos.Int",
         (gogoproto.customtype) = "Int",
         (gogoproto.nullable)   = false
     ];
     
-    string reward_amount = 7 [
+    string reward_amount = 8 [
         (cosmos_proto.scalar)  = "cosmos.Int",
         (gogoproto.customtype) = "Int",
         (gogoproto.nullable)   = false
