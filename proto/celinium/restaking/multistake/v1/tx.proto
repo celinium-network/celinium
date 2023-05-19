@@ -11,20 +11,22 @@ option go_package = "celinium/x/restaking/multistaking/types";
 
 
 service Msg {
-    rpc RegisterMultiStakingDenom(MsgRegisterMultiStakingDenom) returns (MsgRegisterMultiStakingDenomResponse);
+    rpc AddMultiStakingDenom(MsgAddMultiStakingDenom) returns (MsgAddMultiStakingDenomResponse);
 
+    rpc MultiStakingDelegate(MsgMultiStakingDelegate) returns (MsgMultiStakingDelegateResponse);
     
+    rpc MultiStakingUndelegate(MsgMultiStakingUndelegate) returns (MsgMultiStakingDelegateResponse);
 }
 
-message MsgRegisterMultiStakingDenom{
+message MsgAddMultiStakingDenom{
     string sender = 1 [ (gogoproto.moretags) = "yaml:\"sender\"" ];
 
     string deonm = 2;
 }   
 
-message MsgRegisterMultiStakingDenomResponse{}
+message MsgAddMultiStakingDenomResponse{}
 
-message MsgDelegate{  
+message MsgMultiStakingDelegate{  
     option (gogoproto.equal)           = false;
     option (gogoproto.goproto_getters) = false;
   
@@ -33,10 +35,9 @@ message MsgDelegate{
     cosmos.base.v1beta1.Coin amount            = 3 [(gogoproto.nullable) = false];   
 }
 
-// MsgDelegateResponse defines the Msg/Delegate response type.
-message MsgDelegateResponse {}
+message MsgMultiStakingDelegateResponse {}
 
-message MsgUndelegate{
+message MsgMultiStakingUndelegate{
     option (gogoproto.equal)           = false;
     option (gogoproto.goproto_getters) = false;
   
@@ -45,7 +46,7 @@ message MsgUndelegate{
     cosmos.base.v1beta1.Coin amount            = 3 [(gogoproto.nullable) = false ];
 }
 
-message MsgUndelegateResponse {
+message MsgMultiStakingUndelegateResponse {
     google.protobuf.Timestamp completion_time = 1
         [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
   

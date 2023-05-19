@@ -1,6 +1,8 @@
 package types
 
 import (
+	time "time"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/celinium-network/celinium/utils"
@@ -33,6 +35,8 @@ var (
 
 	// Prefix for key which used in `{agent_id + delegator_address} => MultiStakingUnbonding`
 	MultiStakingUnbondingPrefix = []byte{0x31}
+
+	MultiStakingUnbondingQueueKey = []byte{0x32}
 
 	// Prefix for key which used in `{agent_id + delegator_address} => shares_amount`
 	MultiStakingSharesPrefix = []byte{0x41}
@@ -85,4 +89,17 @@ func GetMultiStakingUnbondingKey(agentID uint64, delegator string) []byte {
 	copy(bz[prefixLen+8:], delegatorBz)
 
 	return bz
+}
+
+func GetMultiStakingUnbondingDelegationTimeKey(timestamp time.Time) []byte {
+	bz := sdk.FormatTimeBytes(timestamp)
+	return append(MultiStakingUnbondingQueueKey, bz...)
+}
+
+func (ubd *MultiStakingUnbonding) RemoveEntry(i int64) {
+	ubd.Entries = append(ubd.Entries[:i], ubd.Entries[i+1:]...)
+}
+
+func (e MultiStakingUnbondingEntry) IsMature(currentTime time.Time) bool {
+	return !e.CompletionTime.After(currentTime)
 }
