@@ -68,8 +68,6 @@ func (k Keeper) mintAndDelegate(ctx sdk.Context, agent *types.MultiStakingAgent,
 		return err
 	}
 
-	k.bankKeeper.AddSupplyOffset(ctx, amount.Denom, amount.Amount)
-
 	if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, agentDelegateAccAddr, sdk.Coins{amount}); err != nil {
 		return err
 	}
@@ -138,7 +136,7 @@ func (k Keeper) undelegateAndBurn(ctx sdk.Context, agent *types.MultiStakingAgen
 		return err
 	}
 
-	undelegationCoins, err := k.stakingkeeper.InstantUndelegate(ctx, agentDelegateAccAddr, valAddr, stakedShares)
+	undelegationCoins, err := k.instantUndelegate(ctx, agentDelegateAccAddr, valAddr, stakedShares)
 	if err != nil {
 		return err
 	}
@@ -152,7 +150,6 @@ func (k Keeper) undelegateAndBurn(ctx sdk.Context, agent *types.MultiStakingAgen
 	if err := k.bankKeeper.BurnCoins(ctx, types.ModuleName, undelegationCoins); err != nil {
 		return err
 	}
-	k.bankKeeper.AddSupplyOffset(ctx, undelegationCoins[0].Denom, undelegationCoins[0].Amount)
 
 	return nil
 }
@@ -321,4 +318,33 @@ func (k Keeper) RefreshAgentDelegationAmount(ctx sdk.Context) {
 			k.undelegateAndBurn(ctx, &agents[i], valAddress, sdk.NewCoin(refreshedAmount.Denom, adjustment))
 		}
 	}
+}
+
+func (k Keeper) instantUndelegate(
+	ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount sdk.Dec,
+) (sdk.Coins, error) {
+	validator, found := k.stakingkeeper.GetValidator(ctx, valAddr)
+	if !found {
+		return nil, stakingtypes.ErrNoDelegatorForAddress
+	}
+
+	returnAmount, err := k.stakingkeeper.Unbond(ctx, delAddr, valAddr, sharesAmount)
+	if err != nil {
+		return nil, err
+	}
+
+	bondDenom := k.stakingkeeper.GetParams(ctx).BondDenom
+
+	amt := sdk.NewCoin(bondDenom, returnAmount)
+	res := sdk.NewCoins(amt)
+
+	moduleName := stakingtypes.NotBondedPoolName
+	if validator.IsBonded() {
+		moduleName = stakingtypes.BondedPoolName
+	}
+	err = k.bankKeeper.UndelegateCoinsFromModuleToAccount(ctx, moduleName, delAddr, res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }

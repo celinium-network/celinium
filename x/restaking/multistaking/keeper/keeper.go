@@ -35,7 +35,6 @@ func NewKeeper(
 	bankKeeper types.BankKeeper,
 	epochKeeper types.EpochKeeper,
 	stakingKeeper types.StakingKeeper,
-	calculator CalculateEquivalentCoin,
 ) Keeper {
 	return Keeper{
 		storeKey:                 storeKey,
@@ -44,11 +43,16 @@ func NewKeeper(
 		bankKeeper:               bankKeeper,
 		epochKeeper:              epochKeeper,
 		stakingkeeper:            stakingKeeper,
-		EquivalentCoinCalculator: calculator,
+		EquivalentCoinCalculator: defaultCalculateEquivalentCoin,
 	}
 }
 
+// TODO Temporarily use this method to feed prices !!!
 type CalculateEquivalentCoin func(ctx sdk.Context, coin sdk.Coin, targetDenom string) (sdk.Coin, error)
+
+func defaultCalculateEquivalentCoin(ctx sdk.Context, coin sdk.Coin, targetDenom string) (sdk.Coin, error) {
+	return sdk.NewCoin(targetDenom, coin.Amount.Neg()), nil
+}
 
 // Logger returns a module-specific logger.
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
