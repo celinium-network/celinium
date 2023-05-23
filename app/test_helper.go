@@ -310,8 +310,8 @@ func createRandomAccounts(accNum int) []sdk.AccAddress {
 	return testAddrs
 }
 
-// createIncrementalAccounts is a strategy used by addTestAddrs() in order to generated addresses in ascending order.
-func createIncrementalAccounts(accNum int) []sdk.AccAddress {
+// CreateIncrementalAccounts is a strategy used by addTestAddrs() in order to generated addresses in ascending order.
+func CreateIncrementalAccounts(accNum int) []sdk.AccAddress {
 	var addresses []sdk.AccAddress
 	var buffer bytes.Buffer
 
@@ -350,7 +350,7 @@ func AddTestAddrs(app *App, ctx sdk.Context, accNum int, accAmt math.Int) []sdk.
 // AddTestAddrsIncremental constructs and returns accNum amount of accounts with an
 // initial balance of accAmt in random order
 func AddTestAddrsIncremental(app *App, ctx sdk.Context, accNum int, accAmt math.Int) []sdk.AccAddress {
-	return addTestAddrs(app, ctx, accNum, accAmt, createIncrementalAccounts)
+	return addTestAddrs(app, ctx, accNum, accAmt, CreateIncrementalAccounts)
 }
 
 func addTestAddrs(app *App, ctx sdk.Context, accNum int, accAmt math.Int, strategy GenerateAccountStrategy) []sdk.AccAddress {

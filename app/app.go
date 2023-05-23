@@ -209,7 +209,7 @@ var (
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
 		ibcfeetypes.ModuleName:         nil,
 		liquidstaketypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
-		multistakingtypes.ModuleName:   nil,
+		multistakingtypes.ModuleName:   {authtypes.Minter, authtypes.Burner},
 	}
 )
 
@@ -322,6 +322,7 @@ func NewApp(
 		ibcfeetypes.StoreKey,
 		epochstypes.StoreKey,
 		liquidstaketypes.StoreKey,
+		multistakingtypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -484,7 +485,9 @@ func NewApp(
 		app.AccountKeeper,
 		app.BankKeeper,
 		app.EpochsKeeper,
-		app.StakingKeeper)
+		app.StakingKeeper,
+		app.DistrKeeper,
+	)
 
 	/****  IBC config ****/
 	// Create IBC Keeper
@@ -598,6 +601,7 @@ func NewApp(
 	// set epoch keeper
 	app.EpochsKeeper.SetHooks(epochskeeper.NewMultiEpochHooks(
 		app.LiquidStakeKeeper.Hooks(),
+		app.MultiStakingKeeper.Hooks(),
 	))
 
 	/****  Module Options ****/

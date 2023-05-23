@@ -20,10 +20,11 @@ type Keeper struct {
 	storeKey storetypes.StoreKey
 	cdc      codec.Codec
 
-	accountKeeper types.AccountKeeper
-	bankKeeper    types.BankKeeper
-	epochKeeper   types.EpochKeeper
-	stakingkeeper types.StakingKeeper
+	accountKeeper      types.AccountKeeper
+	bankKeeper         types.BankKeeper
+	epochKeeper        types.EpochKeeper
+	stakingkeeper      types.StakingKeeper
+	distributionKeeper types.DistributionKeeper
 
 	EquivalentCoinCalculator CalculateEquivalentCoin
 }
@@ -35,6 +36,7 @@ func NewKeeper(
 	bankKeeper types.BankKeeper,
 	epochKeeper types.EpochKeeper,
 	stakingKeeper types.StakingKeeper,
+	distributionKeeper types.DistributionKeeper,
 ) Keeper {
 	return Keeper{
 		storeKey:                 storeKey,
@@ -43,6 +45,7 @@ func NewKeeper(
 		bankKeeper:               bankKeeper,
 		epochKeeper:              epochKeeper,
 		stakingkeeper:            stakingKeeper,
+		distributionKeeper:       distributionKeeper,
 		EquivalentCoinCalculator: defaultCalculateEquivalentCoin,
 	}
 }
@@ -51,7 +54,7 @@ func NewKeeper(
 type CalculateEquivalentCoin func(ctx sdk.Context, coin sdk.Coin, targetDenom string) (sdk.Coin, error)
 
 func defaultCalculateEquivalentCoin(ctx sdk.Context, coin sdk.Coin, targetDenom string) (sdk.Coin, error) {
-	return sdk.NewCoin(targetDenom, coin.Amount.Neg()), nil
+	return sdk.NewCoin(targetDenom, coin.Amount), nil
 }
 
 // Logger returns a module-specific logger.
@@ -211,9 +214,26 @@ func (k Keeper) RemoveMultiStakingUnbonding(ctx sdk.Context, agentID uint64, del
 	store.Delete(types.GetMultiStakingUnbondingKey(agentID, delegatorAddr))
 }
 
+func (k Keeper) GetMultiStakingShares(ctx sdk.Context, agentID uint64, delegator string) math.Int {
+	amount := math.ZeroInt()
+	store := ctx.KVStore(k.storeKey)
+	key := types.GetMultiStakingSharesKey(agentID, delegator)
+	bz := store.Get(key)
+
+	if bz == nil {
+		return amount
+	}
+
+	if err := amount.Unmarshal(bz); err != nil {
+		return math.ZeroInt()
+	}
+
+	return amount
+}
+
 func (k Keeper) IncreaseMultiStakingShares(ctx sdk.Context, shares math.Int, agentID uint64, delegator string) error {
 	var err error
-	var amount math.Int
+	amount := math.ZeroInt()
 
 	store := ctx.KVStore(k.storeKey)
 	key := types.GetMultiStakingSharesKey(agentID, delegator)
