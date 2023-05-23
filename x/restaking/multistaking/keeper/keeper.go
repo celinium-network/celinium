@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -135,7 +136,7 @@ func (k Keeper) SetMultiStakingAgent(ctx sdk.Context, agent *types.MultiStakingA
 
 	store.Set(types.GetMultiStakingAgentKey(agent.Id), bz)
 
-	k.SetMultiStakingAgentIDByDenomAndVal(ctx, agent.Id, agent.StakeDenom, agent.DelegateAddress)
+	k.SetMultiStakingAgentIDByDenomAndVal(ctx, agent.Id, agent.StakeDenom, agent.ValidatorAddress)
 	k.SetLatestMultiStakingAgentID(ctx, agent.Id)
 }
 
@@ -274,6 +275,10 @@ func (k Keeper) DecreaseMultiStakingShares(ctx sdk.Context, shares math.Int, age
 	}
 
 	amount = amount.Sub(shares)
+	if amount.IsZero() {
+		store.Delete(key)
+	}
+
 	if bz, err = amount.Marshal(); err != nil {
 		return err
 	}
@@ -299,13 +304,13 @@ func (k Keeper) UBDQueueIterator(ctx sdk.Context, endTime time.Time) sdk.Iterato
 }
 
 func (k Keeper) InsertUBDQueue(ctx sdk.Context, ubd *types.MultiStakingUnbonding, completionTime time.Time) {
-	dvPair := types.DAPair{DelegatorAddress: ubd.DelegatorAddress, AgentId: ubd.AgentId}
+	daPair := types.DAPair{DelegatorAddress: ubd.DelegatorAddress, AgentId: ubd.AgentId}
 
 	timeSlice := k.GetUBDQueueTimeSlice(ctx, completionTime)
 	if len(timeSlice) == 0 {
-		k.SetUBDQueueTimeSlice(ctx, completionTime, []types.DAPair{dvPair})
+		k.SetUBDQueueTimeSlice(ctx, completionTime, []types.DAPair{daPair})
 	} else {
-		timeSlice = append(timeSlice, dvPair)
+		timeSlice = append(timeSlice, daPair)
 		k.SetUBDQueueTimeSlice(ctx, completionTime, timeSlice)
 	}
 }
@@ -332,7 +337,7 @@ func (k Keeper) SetUBDQueueTimeSlice(ctx sdk.Context, timestamp time.Time, keys 
 
 func (k Keeper) GetAllAgent(ctx sdk.Context) []types.MultiStakingAgent {
 	store := ctx.KVStore(k.storeKey)
-	prefixStore := prefix.NewStore(store, types.MultiStakingAgentIDPrefix)
+	prefixStore := prefix.NewStore(store, types.MultiStakingAgentPrefix)
 
 	iterator := sdk.KVStorePrefixIterator(prefixStore, nil)
 	defer iterator.Close()
@@ -341,6 +346,7 @@ func (k Keeper) GetAllAgent(ctx sdk.Context) []types.MultiStakingAgent {
 	for ; iterator.Valid(); iterator.Next() {
 		agent := types.MultiStakingAgent{}
 
+		fmt.Println(iterator.Value())
 		err := proto.Unmarshal(iterator.Value(), &agent)
 		if err != nil {
 			panic(err)

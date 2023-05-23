@@ -82,7 +82,7 @@ func (k Keeper) mintAndDelegate(ctx sdk.Context, agent *types.MultiStakingAgent,
 
 func (k Keeper) MultiStakingUndelegate(ctx sdk.Context, msg *types.MsgMultiStakingUndelegate) error {
 	agent, found := k.GetMultiStakingAgent(ctx, msg.Amount.Denom, msg.ValidatorAddress)
-	if found {
+	if !found {
 		return types.ErrNotExistedAgent
 	}
 	removeShares := agent.CalculateShares(msg.Amount.Amount)
@@ -108,7 +108,7 @@ func (k Keeper) MultiStakingUndelegate(ctx sdk.Context, msg *types.MsgMultiStaki
 	unbonding := k.GetOrCreateMultiStakingUnbonding(ctx, agent.Id, msg.DelegatorAddress)
 	unbondingTime := k.stakingkeeper.GetParams(ctx).UnbondingTime
 
-	// TODO Whether the length of Entry should be limited ?
+	// TODO Whether the length of the entries should be limited ?
 	undelegateCompleteTime := ctx.BlockTime().Add(unbondingTime)
 	unbonding.Entries = append(unbonding.Entries, types.MultiStakingUnbondingEntry{
 		CompletionTime: undelegateCompleteTime,
@@ -189,7 +189,7 @@ func (k Keeper) GetOrCreateMultiStakingAgent(ctx sdk.Context, denom, valAddr str
 	newAccount := k.GenerateAccount(ctx, denom, valAddr)
 
 	agent = &types.MultiStakingAgent{
-		Id:               newAgentID,
+		Id:               newAgentID + 1,
 		StakeDenom:       denom,
 		DelegateAddress:  newAccount.Address,
 		ValidatorAddress: valAddr,

@@ -61,7 +61,7 @@ func GetMultiStakingAgentIDKey(denom, valAddr string) []byte {
 
 func GetMultiStakingAgentKey(agentID uint64) []byte {
 	idBz := sdk.Uint64ToBigEndian(agentID)
-	return append(MultiStakingAgentIDPrefix, idBz...)
+	return append(MultiStakingAgentPrefix, idBz...)
 }
 
 func GetMultiStakingSharesKey(agentID uint64, delegator string) []byte {
