@@ -451,10 +451,20 @@ func NewApp(
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
+	app.MultiStakingKeeper = multistakingkeeper.NewKeeper(
+		appCodec,
+		keys[multistakingtypes.StoreKey],
+		app.AccountKeeper,
+		app.BankKeeper,
+		app.EpochsKeeper,
+		&app.StakingKeeper,
+		app.DistrKeeper,
+	)
+
 	// register the staking hooks
 	// NOTE: stakingKeeper above is passed by reference, so that it will contain these hooks
 	app.StakingKeeper = *stakingKeeper.SetHooks(
-		stakingtypes.NewMultiStakingHooks(app.DistrKeeper.Hooks(), app.SlashingKeeper.Hooks()),
+		stakingtypes.NewMultiStakingHooks(app.DistrKeeper.Hooks(), app.SlashingKeeper.Hooks(), app.MultiStakingKeeper.Hooks()),
 	)
 
 	// Create evidence Keeper for to register the IBC light client misbehaviour evidence route
@@ -478,16 +488,6 @@ func NewApp(
 
 	// Sealing prevents other modules from creating scoped sub-keepers
 	app.CapabilityKeeper.Seal()
-
-	app.MultiStakingKeeper = multistakingkeeper.NewKeeper(
-		appCodec,
-		keys[multistakingtypes.StoreKey],
-		app.AccountKeeper,
-		app.BankKeeper,
-		app.EpochsKeeper,
-		app.StakingKeeper,
-		app.DistrKeeper,
-	)
 
 	/****  IBC config ****/
 	// Create IBC Keeper
@@ -603,8 +603,6 @@ func NewApp(
 		app.LiquidStakeKeeper.Hooks(),
 		app.MultiStakingKeeper.Hooks(),
 	))
-
-	app.StakingKeeper.SetHooks(app.MultiStakingKeeper.Hooks())
 
 	/****  Module Options ****/
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
