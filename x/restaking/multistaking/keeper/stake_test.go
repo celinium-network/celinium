@@ -159,4 +159,3 @@ func (suite *KeeperTestSuite) TestUndelegateReward() {
 
 	// TODO check reward amount
 }
-

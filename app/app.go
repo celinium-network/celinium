@@ -604,6 +604,8 @@ func NewApp(
 		app.MultiStakingKeeper.Hooks(),
 	))
 
+	app.StakingKeeper.SetHooks(app.MultiStakingKeeper.Hooks())
+
 	/****  Module Options ****/
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
 	app.mm = module.NewManager(
