@@ -138,6 +138,10 @@ import (
 	liquidstake "github.com/celinium-network/celinium/x/liquidstake"
 	liquidstakekeeper "github.com/celinium-network/celinium/x/liquidstake/keeper"
 	liquidstaketypes "github.com/celinium-network/celinium/x/liquidstake/types"
+
+	multistaking "github.com/celinium-network/celinium/x/restaking/multistaking"
+	multistakingkeeper "github.com/celinium-network/celinium/x/restaking/multistaking/keeper"
+	multistakingtypes "github.com/celinium-network/celinium/x/restaking/multistaking/types"
 )
 
 const (
@@ -190,6 +194,7 @@ var (
 		ibcfee.AppModuleBasic{},
 		epochs.AppModuleBasic{},
 		liquidstake.AppModuleBasic{},
+		multistaking.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -204,6 +209,7 @@ var (
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
 		ibcfeetypes.ModuleName:         nil,
 		liquidstaketypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
+		multistakingtypes.ModuleName:   {authtypes.Minter, authtypes.Burner},
 	}
 )
 
@@ -259,6 +265,7 @@ type App struct {
 	IBCFeeKeeper        ibcfeekeeper.Keeper
 	EpochsKeeper        epochskeeper.Keeper
 	LiquidStakeKeeper   liquidstakekeeper.Keeper
+	MultiStakingKeeper  multistakingkeeper.Keeper
 
 	FeeGrantKeeper feegrantkeeper.Keeper
 	GroupKeeper    groupkeeper.Keeper
@@ -315,6 +322,7 @@ func NewApp(
 		ibcfeetypes.StoreKey,
 		epochstypes.StoreKey,
 		liquidstaketypes.StoreKey,
+		multistakingtypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -471,6 +479,16 @@ func NewApp(
 	// Sealing prevents other modules from creating scoped sub-keepers
 	app.CapabilityKeeper.Seal()
 
+	app.MultiStakingKeeper = multistakingkeeper.NewKeeper(
+		appCodec,
+		keys[multistakingtypes.StoreKey],
+		app.AccountKeeper,
+		app.BankKeeper,
+		app.EpochsKeeper,
+		app.StakingKeeper,
+		app.DistrKeeper,
+	)
+
 	/****  IBC config ****/
 	// Create IBC Keeper
 	app.IBCKeeper = ibckeeper.NewKeeper(
@@ -583,11 +601,13 @@ func NewApp(
 	// set epoch keeper
 	app.EpochsKeeper.SetHooks(epochskeeper.NewMultiEpochHooks(
 		app.LiquidStakeKeeper.Hooks(),
+		app.MultiStakingKeeper.Hooks(),
 	))
+
+	app.StakingKeeper.SetHooks(app.MultiStakingKeeper.Hooks())
 
 	/****  Module Options ****/
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
-
 	app.mm = module.NewManager(
 		genutil.NewAppModule(
 			app.AccountKeeper, app.StakingKeeper, app.BaseApp.DeliverTx,
@@ -615,6 +635,7 @@ func NewApp(
 		ibcFeeModule,
 		epochs.NewAppModule(appCodec, app.EpochsKeeper),
 		liquidstakeModule,
+		multistaking.NewAppModule(appCodec, app.MultiStakingKeeper),
 	)
 
 	app.mm.SetOrderBeginBlockers(
@@ -641,6 +662,7 @@ func NewApp(
 		ibcfeetypes.ModuleName,
 		epochstypes.ModuleName,
 		liquidstaketypes.ModuleName,
+		multistakingtypes.ModuleName,
 	)
 
 	app.mm.SetOrderEndBlockers(
@@ -667,6 +689,7 @@ func NewApp(
 		ibcfeetypes.ModuleName,
 		epochstypes.ModuleName,
 		liquidstaketypes.ModuleName,
+		multistakingtypes.ModuleName,
 	)
 
 	app.mm.SetOrderInitGenesis(
@@ -693,6 +716,7 @@ func NewApp(
 		ibcfeetypes.ModuleName,
 		epochstypes.ModuleName,
 		liquidstaketypes.ModuleName,
+		multistakingtypes.ModuleName,
 	)
 
 	app.mm.RegisterInvariants(&app.CrisisKeeper)
