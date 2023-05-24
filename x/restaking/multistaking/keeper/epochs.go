@@ -4,8 +4,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/celinium-network/celinium/x/restaking/multistaking/types"
-
-	
 )
 
 func (h Hooks) AfterEpochEnd(ctx sdk.Context, _ string, _ int64) {

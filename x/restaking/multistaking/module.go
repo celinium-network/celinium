@@ -2,8 +2,8 @@ package multistaking
 
 import (
 	"encoding/json"
-	"github.com/spf13/cobra"
 
+	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -74,11 +74,11 @@ type AppModule struct {
 	keeper keeper.Keeper
 }
 
-func NewAppModule(cdc codec.Codec, keeper keeper.Keeper) AppModule{
-   return AppModule{
-   	AppModuleBasic: NewAppModuleBasic(cdc),
-   	keeper:         keeper,
-   }
+func NewAppModule(cdc codec.Codec, keeper keeper.Keeper) AppModule {
+	return AppModule{
+		AppModuleBasic: NewAppModuleBasic(cdc),
+		keeper:         keeper,
+	}
 }
 
 // EndBlock implements module.EndBlockAppModule
