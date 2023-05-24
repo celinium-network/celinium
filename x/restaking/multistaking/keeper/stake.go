@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"strings"
 
 	sdkerrors "cosmossdk.io/errors"
@@ -99,6 +100,28 @@ func (k Keeper) MultiStakingUndelegate(ctx sdk.Context, msg *types.MsgMultiStaki
 	valAddr, err := sdk.ValAddressFromBech32(msg.ValidatorAddress)
 	if err != nil {
 		return err
+	}
+
+	agentDelegatorAccAddr := sdk.MustAccAddressFromBech32(agent.DelegateAddress)
+	rewards, err := k.distributionKeeper.WithdrawDelegationRewards(ctx, agentDelegatorAccAddr, valAddr)
+	if err != nil {
+		k.Logger(ctx).Error(fmt.Sprintf("withdraw delegation rewards failed %s", err))
+	}
+	agent.RewardAmount = agent.RewardAmount.Add(rewards.AmountOf(defaultBondDenom))
+
+	if !agent.RewardAmount.IsZero() {
+		rewardAmount := agent.RewardAmount.Mul(removeShares).Quo(agent.Shares)
+		if !rewardAmount.IsZero() {
+			delegatorAccAddr := sdk.MustAccAddressFromBech32(msg.DelegatorAddress)
+
+			if err := k.sendCoinsFromAccountToAccount(
+				ctx, agentDelegatorAccAddr, delegatorAccAddr,
+				sdk.Coins{sdk.NewCoin(defaultBondDenom, rewardAmount)},
+			); err != nil {
+				return err
+			}
+			agent.RewardAmount.Sub(rewardAmount)
+		}
 	}
 
 	if err := k.undelegateAndBurn(ctx, agent, valAddr, undelegateAmt); err != nil {

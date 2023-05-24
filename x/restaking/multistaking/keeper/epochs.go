@@ -29,6 +29,7 @@ func (h Hooks) BeforeEpochStart(ctx sdk.Context, epochIdentifier string, epochNu
 	case types.RefreshAgentDelegationEpochID:
 		h.k.RefreshAgentDelegationAmount(ctx)
 	case types.CollectAgentStakingRewardEpochID:
+		// TODO remove it from epoch ?
 		h.k.CollectAgentsReward(ctx)
 	}
 }
@@ -70,7 +71,7 @@ func (k Keeper) RefreshAgentDelegationAmount(ctx sdk.Context) {
 func (k Keeper) CollectAgentsReward(ctx sdk.Context) {
 	store := ctx.KVStore(k.storeKey)
 
-	iterator := sdk.KVStorePrefixIterator(store, types.MultiStakingAgentIDPrefix)
+	iterator := sdk.KVStorePrefixIterator(store, types.MultiStakingAgentPrefix)
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {

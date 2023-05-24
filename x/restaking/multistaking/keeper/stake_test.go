@@ -1,9 +1,13 @@
 package keeper_test
 
 import (
+	"time"
+
 	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/simapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 
 	"github.com/celinium-network/celinium/app"
 	"github.com/celinium-network/celinium/x/restaking/multistaking/types"
@@ -112,3 +116,47 @@ func (suite *KeeperTestSuite) TestUndelegate() {
 	suite.Require().Equal(unbondingDAPair.AgentId, agentID)
 	suite.Require().Equal(unbondingDAPair.DelegatorAddress, delegatorAddrs[0].String())
 }
+
+func (suite *KeeperTestSuite) TestUndelegateReward() {
+	delegatorAddrs, _ := createValAddrs(1)
+	validators := suite.app.StakingKeeper.GetAllValidators(suite.ctx)
+
+	multiRestakingCoin := sdk.NewCoin(mockMultiRestakingDenom, sdk.NewInt(10000000))
+	suite.mintCoin(multiRestakingCoin, delegatorAddrs[0])
+	suite.app.MultiStakingKeeper.SetMultiStakingDenom(suite.ctx, mockMultiRestakingDenom)
+
+	suite.app.MultiStakingKeeper.MultiStakingDelegate(suite.ctx, types.MsgMultiStakingDelegate{
+		DelegatorAddress: delegatorAddrs[0].String(),
+		ValidatorAddress: validators[0].OperatorAddress,
+		Amount:           multiRestakingCoin,
+	})
+
+	rewardAmount := sdk.NewIntFromUint64(500000)
+	rewardDenom := suite.app.StakingKeeper.GetParams(suite.ctx).BondDenom
+	rewardCoins := sdk.Coins{sdk.NewCoin(rewardDenom, rewardAmount)}
+
+	suite.app.BankKeeper.MintCoins(suite.ctx, minttypes.ModuleName, rewardCoins)
+	suite.app.BankKeeper.SendCoinsFromModuleToModule(suite.ctx, minttypes.ModuleName, distrtypes.ModuleName, rewardCoins)
+
+	agentID := suite.app.MultiStakingKeeper.GetLatestMultiStakingAgentID(suite.ctx)
+	agent, _ := suite.app.MultiStakingKeeper.GetMultiStakingAgentByID(suite.ctx, agentID)
+	valAddr, _ := sdk.ValAddressFromBech32(agent.ValidatorAddress)
+	validator := suite.app.StakingKeeper.Validator(suite.ctx, valAddr)
+
+	suite.app.DistrKeeper.AllocateTokensToValidator(suite.ctx, validator, sdk.DecCoins{
+		sdk.NewDecCoinFromDec(rewardDenom, sdk.NewDecFromInt(rewardAmount)),
+	})
+
+	suite.ctx = suite.ctx.
+		WithBlockHeight(suite.ctx.BlockHeight() + 100).
+		WithBlockTime(suite.ctx.BlockTime().Add(time.Hour))
+
+	suite.app.MultiStakingKeeper.MultiStakingUndelegate(suite.ctx, &types.MsgMultiStakingUndelegate{
+		DelegatorAddress: delegatorAddrs[0].String(),
+		ValidatorAddress: validators[0].OperatorAddress,
+		Amount:           multiRestakingCoin,
+	})
+
+	// TODO check reward amount
+}
+
