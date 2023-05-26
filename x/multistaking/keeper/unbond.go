@@ -5,7 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/celinium-network/celinium/x/restaking/multistaking/types"
+	"github.com/celinium-network/celinium/x/multistaking/types"
 )
 
 func (k Keeper) ProcessCompletedUnbonding(ctx sdk.Context) {

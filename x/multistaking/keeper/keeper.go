@@ -14,7 +14,7 @@ import (
 
 	"github.com/tendermint/tendermint/libs/log"
 
-	"github.com/celinium-network/celinium/x/restaking/multistaking/types"
+	"github.com/celinium-network/celinium/x/multistaking/types"
 )
 
 type Keeper struct {

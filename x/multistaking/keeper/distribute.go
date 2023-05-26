@@ -3,7 +3,7 @@ package keeper
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/celinium-network/celinium/x/restaking/multistaking/types"
+	"github.com/celinium-network/celinium/x/multistaking/types"
 )
 
 func (k Keeper) WithdrawRestakingReward(ctx sdk.Context, agentID uint64, delegator string) (sdk.Coin, error) {

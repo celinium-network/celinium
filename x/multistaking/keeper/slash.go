@@ -3,7 +3,7 @@ package keeper
 import (
 	"fmt"
 
-	"github.com/celinium-network/celinium/x/restaking/multistaking/types"
+	"github.com/celinium-network/celinium/x/multistaking/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 

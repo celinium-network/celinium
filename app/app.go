@@ -139,9 +139,9 @@ import (
 	liquidstakekeeper "github.com/celinium-network/celinium/x/liquidstake/keeper"
 	liquidstaketypes "github.com/celinium-network/celinium/x/liquidstake/types"
 
-	multistaking "github.com/celinium-network/celinium/x/restaking/multistaking"
-	multistakingkeeper "github.com/celinium-network/celinium/x/restaking/multistaking/keeper"
-	multistakingtypes "github.com/celinium-network/celinium/x/restaking/multistaking/types"
+	multistaking "github.com/celinium-network/celinium/x/multistaking"
+	multistakingkeeper "github.com/celinium-network/celinium/x/multistaking/keeper"
+	multistakingtypes "github.com/celinium-network/celinium/x/multistaking/types"
 )
 
 const (

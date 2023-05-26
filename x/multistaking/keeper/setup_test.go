@@ -12,7 +12,7 @@ import (
 	"github.com/celinium-network/celinium/testutil"
 
 	epochtypes "github.com/celinium-network/celinium/x/epochs/types"
-	"github.com/celinium-network/celinium/x/restaking/multistaking/types"
+	"github.com/celinium-network/celinium/x/multistaking/types"
 )
 
 type KeeperTestSuite struct {

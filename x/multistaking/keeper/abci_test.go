@@ -1,7 +1,7 @@
 package keeper_test
 
 import (
-	"github.com/celinium-network/celinium/x/restaking/multistaking/types"
+	"github.com/celinium-network/celinium/x/multistaking/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 

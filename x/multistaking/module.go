@@ -13,8 +13,8 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/celinium-network/celinium/x/restaking/multistaking/keeper"
-	"github.com/celinium-network/celinium/x/restaking/multistaking/types"
+	"github.com/celinium-network/celinium/x/multistaking/keeper"
+	"github.com/celinium-network/celinium/x/multistaking/types"
 )
 
 var (
