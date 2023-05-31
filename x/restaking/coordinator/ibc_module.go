@@ -107,7 +107,7 @@ func (IBCModule) OnChanOpenAck(
 	counterpartyChannelID string,
 	counterpartyVersion string,
 ) error {
-	panic("unimplemented")
+	return nil
 }
 
 // OnChanOpenConfirm implements types.IBCModule
